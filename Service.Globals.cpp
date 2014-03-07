@@ -182,9 +182,17 @@ namespace Service
 		if (!success)
 			return false;
 
-		DebugWriter()->WriteLine("reading certificate");
+		DebugWriter()->WriteLine("initializing certificate");
 
-		success = ReadCertificate();
+		if (!Service::globals->certificate_file_name.empty())
+		{
+			success = ReadCertificate();
+		}
+		else
+		{
+			success = false;
+		}
+
 		if (!success)
 		{
 			success = CreateSelfSignCert();
@@ -201,6 +209,9 @@ namespace Service
 	{
 		char pfx_path[MAX_PATH + 0x100];
 		GetFilePath(Service::globals->certificate_file_name.c_str(), pfx_path);
+
+		DebugWriter()->Write("reading ");
+		DebugWriter()->WriteLine(pfx_path);
 
 		this->pfx_file = ::CreateFileA(
 			pfx_path,
@@ -333,8 +344,6 @@ namespace Service
 
 	bool Globals::CreateSelfSignCert()
 	{
-		DebugWriter()->WriteLine("initializing transient self-sign certificate");
-
 		byte name[0x100];
 		uint32 count = _countof(name);
 
@@ -342,6 +351,9 @@ namespace Service
 
 		x_500 = "CN=";
 		x_500 += this->self_sign_domain;
+
+		DebugWriter()->Write("creating transient self-sign certificate ");
+		DebugWriter()->WriteLine(x_500.c_str());
 
 		bool success = (bool)CertStrToNameA(X509_ASN_ENCODING, x_500.c_str(), 0, 0, name, &count, 0);
 		if (!success)
@@ -825,32 +837,29 @@ int main(int argc, char* argv[])
 	Basic::globals = new Basic::Inline<Basic::Globals>();
 	Basic::globals->Initialize(Service::globals, Service::globals);
 
-	if (argc == 3)
+	if (argc == 3 && (0 == _stricmp(argv[1], "/u") || 0 == _stricmp(argv[1], "/uninstall")))
 	{
 		Service::globals->service_name = argv[2];
 
-		if (0 == _stricmp(argv[1], "/u") || 0 == _stricmp(argv[1], "/uninstall"))
+		SC_HANDLE sc_manager = ::OpenSCManagerA(0, 0, GENERIC_READ | GENERIC_WRITE);
+		if (sc_manager == 0)
+			return Service::globals->HandleError("OpenSCManagerA", GetLastError());
+
+		SC_HANDLE service = ::OpenServiceA(sc_manager, Service::globals->service_name.c_str(), SERVICE_QUERY_CONFIG);
+		if (service != 0)
 		{
-			SC_HANDLE sc_manager = ::OpenSCManagerA(0, 0, GENERIC_READ | GENERIC_WRITE);
-			if (sc_manager == 0)
-				return Service::globals->HandleError("OpenSCManagerA", GetLastError());
+			bool success = (bool)::DeleteService(service);
+			if (!success)
+				return Service::globals->HandleError("DeleteService", GetLastError());
 
-			SC_HANDLE service = ::OpenServiceA(sc_manager, Service::globals->service_name.c_str(), SERVICE_QUERY_CONFIG);
-			if (service != 0)
-			{
-				bool success = (bool)::DeleteService(service);
-				if (!success)
-					return Service::globals->HandleError("DeleteService", GetLastError());
-
-				::CloseServiceHandle(service);
-			}
-
-			::CloseServiceHandle(sc_manager);
-
-			printf("Uninstalled %hs service.", Service::globals->service_name.c_str());
-
-			return 0;
+			::CloseServiceHandle(service);
 		}
+
+		::CloseServiceHandle(sc_manager);
+
+		printf("Uninstalled %hs service.", Service::globals->service_name.c_str());
+
+		return 0;
 	}
 	else if (argc == 3 || argc == 4 || argc == 5)
 	{

@@ -119,7 +119,6 @@ namespace Service
 
 			strcpy_s(value, drive);
 			strcat_s(value, directory);
-			strcat_s(value, "\\");
 			strcat_s(value, name);
 		}
 
