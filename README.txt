@@ -1,7 +1,22 @@
+Copyright © 2014 Brian Spanton
+
 Eleweb
 ======
 
 Eleweb is an independent C++ implementation of sockets, TLS, HTTP, HTML, JSON and more, in a Windows service framework suitable for web crawler, web server, web client, web browser, load simulation, http proxy, or higher level applications.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 - tls 1.0 and 1.1 implementation based on applicable RFCs
 - http implementation based on applicable RFCs
@@ -21,3 +36,6 @@ Eleweb is an independent C++ implementation of sockets, TLS, HTTP, HTML, JSON an
 - cleanly decoupled namespaces for major subsystems
 - readable code with verbose but clean naming conventions
 - thoughtfully factored and object oriented
+
+Brian Spanton
+brian@spanton.net
