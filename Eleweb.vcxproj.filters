@@ -836,4 +836,8 @@
       <UniqueIdentifier>{e7ae404a-c6ee-4fba-ba6b-c933bffa4746}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
+    <Text Include="README.txt" />
+  </ItemGroup>
 </Project>
