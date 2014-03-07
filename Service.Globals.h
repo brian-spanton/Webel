@@ -44,8 +44,10 @@ namespace Service
 
 		static DWORD WINAPI Thread(void* param);
 		bool CompleteRead(AsyncBytes* bytes, int transferred, int error);
-		bool AcquireCert(AsyncBytes* bytes, int transferred, int error);
 		bool ParseCert(AsyncBytes* bytes, int transferred, int error);
+		bool ReadCertificate();
+		bool CreateSelfSignCert();
+		bool ExtractPrivateKey();
 
 	public:
 		typedef Basic::StringMapCaseInsensitive<Basic::ListenSocket::Ref> Listeners; // REF

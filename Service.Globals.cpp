@@ -184,6 +184,21 @@ namespace Service
 
 		DebugWriter()->WriteLine("reading certificate");
 
+		success = ReadCertificate();
+		if (!success)
+		{
+			success = CreateSelfSignCert();
+			if (!success)
+				return false;
+		}
+
+		SetThreadCount(0);
+
+		return true;
+	}
+
+	bool Globals::ReadCertificate()
+	{
 		char pfx_path[MAX_PATH + 0x100];
 		GetFilePath(Service::globals->certificate_file_name.c_str(), pfx_path);
 
@@ -203,7 +218,7 @@ namespace Service
 			return Basic::globals->HandleError("CreateIoCompletionPort", GetLastError());
 
 		LARGE_INTEGER size;
-		success = (bool)GetFileSizeEx(this->pfx_file, &size);
+		bool success = (bool)GetFileSizeEx(this->pfx_file, &size);
 		if (!success)
 			return Basic::globals->HandleError("GetFileSizeEx", GetLastError());
 
@@ -224,8 +239,6 @@ namespace Service
 				Service::globals->PostCompletion(this, pfx_data);
 			}
 		}
-
-		SetThreadCount(0);
 
 		return true;
 	}
@@ -271,14 +284,23 @@ namespace Service
 
 	bool Globals::CompleteRead(AsyncBytes* bytes, int transferred, int error)
 	{
-		bool success = AcquireCert(bytes, transferred, error);
+		bool success = ParseCert(bytes, transferred, error);
 		if (!success)
-			return false;
+		{
+			success = CreateSelfSignCert();
+			if (!success)
+				return false;
+		}
 
+		return true;
+	}
+
+	bool Globals::ExtractPrivateKey()
+	{
 		DWORD keySpec;
 		BOOL free;
 
-		success = (bool)CryptAcquireCertificatePrivateKey(
+		bool success = (bool)CryptAcquireCertificatePrivateKey(
 			this->cert,
 			CRYPT_ACQUIRE_SILENT_FLAG | CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
 			0,
@@ -309,33 +331,33 @@ namespace Service
 		return true;
 	}
 
-	bool Globals::AcquireCert(AsyncBytes* bytes, int transferred, int error)
+	bool Globals::CreateSelfSignCert()
 	{
-		bool success = ParseCert(bytes, transferred, error);
+		DebugWriter()->WriteLine("initializing transient self-sign certificate");
+
+		byte name[0x100];
+		uint32 count = _countof(name);
+
+		std::string x_500;
+
+		x_500 = "CN=";
+		x_500 += this->self_sign_domain;
+
+		bool success = (bool)CertStrToNameA(X509_ASN_ENCODING, x_500.c_str(), 0, 0, name, &count, 0);
 		if (!success)
-		{
-			DebugWriter()->WriteLine("initializing new self-sign certificate");
+			return Basic::globals->HandleError("Process::main CertStrToNameA", GetLastError());
 
-			byte name[0x100];
-			uint32 count = _countof(name);
+		CERT_NAME_BLOB blob;
+		blob.cbData = count;
+		blob.pbData = name;
 
-			std::string x_500;
+		this->cert = CertCreateSelfSignCertificate(0, &blob, 0, 0, 0, 0, 0, 0); // $ seems to spin up win32 thread pool?
+		if (this->cert == 0)
+			return Basic::globals->HandleError("Process::main CertCreateSelfSignCertificate", GetLastError());
 
-			x_500 = "CN=";
-			x_500 += this->self_sign_domain;
-
-			bool success = (bool)CertStrToNameA(X509_ASN_ENCODING, x_500.c_str(), 0, 0, name, &count, 0);
-			if (!success)
-				return Basic::globals->HandleError("Process::main CertStrToNameA", GetLastError());
-
-			CERT_NAME_BLOB blob;
-			blob.cbData = count;
-			blob.pbData = name;
-
-			this->cert = CertCreateSelfSignCertificate(0, &blob, 0, 0, 0, 0, 0, 0); // $ seems to spin up win32 thread pool?
-			if (this->cert == 0)
-				return Basic::globals->HandleError("Process::main CertCreateSelfSignCertificate", GetLastError());
-		}
+		success = ExtractPrivateKey();
+		if (!success)
+			return false;
 
 		return true;
 	}
@@ -358,6 +380,10 @@ namespace Service
 		this->cert = CertFindCertificateInStore(store, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_ANY, 0, 0);
 		if (this->cert == 0)
 			return Basic::globals->HandleError("Process::main CertFindCertificateInStore", GetLastError());
+
+		bool success = ExtractPrivateKey();
+		if (!success)
+			return false;
 
 		return true;
 	}
@@ -826,9 +852,10 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 	}
-	else if (argc == 4 || argc == 5)
+	else if (argc == 3 || argc == 4 || argc == 5)
 	{
 		Service::globals->service_name = argv[2];
+		Service::globals->self_sign_domain = "default_self_sign";
 
 		if (argc == 4)
 		{
@@ -918,10 +945,10 @@ int main(int argc, char* argv[])
 	}
 
 	printf("Help:\n");
-	printf("  /i or /install service_name\n");
 	printf("  /u or /uninstall service_name\n");
-	printf("  /c or /console service_name certificate_file_name certificate_file_password\n");
-	printf("  /s or /service service_name certificate_file_name certificate_file_password\n");
+	printf("  /i or /install service_name [self_sign_domain] | [certificate_file_name certificate_file_password]\n");
+	printf("  /c or /console service_name [self_sign_domain] | [certificate_file_name certificate_file_password]\n");
+	printf("  /s or /service service_name [self_sign_domain] | [certificate_file_name certificate_file_password]\n");
 
 	return 0;
 }
