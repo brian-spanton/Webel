@@ -98,6 +98,9 @@
     <ClInclude Include="Basic.ElementSource.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
     <ClInclude Include="Service.HttpServer.h" />
+    <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
+    <ClInclude Include="Tls.HeartbeatMessageFrame.h" />
+    <ClInclude Include="Tls.HeartbeatProtocol.h" />
     <ClInclude Include="Tls.ICertificate.h" />
     <ClInclude Include="Basic.ICompletionQueue.h" />
     <ClInclude Include="Basic.IDecoderFactory.h" />
@@ -312,6 +315,9 @@
     <ClCompile Include="Basic.DebugStream.cpp" />
     <ClCompile Include="Http.DisconnectBodyFrame.cpp" />
     <ClCompile Include="Http.BodyFrame.cpp" />
+    <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp" />
+    <ClCompile Include="Tls.HeartbeatMessageFrame.cpp" />
+    <ClCompile Include="Tls.HeartbeatProtocol.cpp" />
     <ClCompile Include="Web.Client.cpp" />
     <ClCompile Include="Http.CookieParser.cpp" />
     <ClCompile Include="Http.Globals.cpp" />

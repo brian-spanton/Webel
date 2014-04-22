@@ -12,6 +12,14 @@ namespace Tls
 
 	void Globals::Initialize()
 	{
+		// in order of preference
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_256_CBC_SHA256);
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_256_CBC_SHA);
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA256);
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA);
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_3DES_EDE_CBC_SHA);
+		//this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA); // $$
+		this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_RC4_128_MD5);
 	}
 
 	void Globals::PRF(PRFAlgorithm prf_algorithm, opaque* secret, uint32 secret_length, opaque* label, uint32 label_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_length)
@@ -97,6 +105,14 @@ namespace Tls
 			cng_algorithm = BCRYPT_SHA1_ALGORITHM;
 			break;
 
+		case MACAlgorithm::hmac_sha256:
+			cng_algorithm = BCRYPT_SHA256_ALGORITHM;
+			break;
+
+		case MACAlgorithm::hmac_md5:
+			cng_algorithm = BCRYPT_MD5_ALGORITHM;
+			break;
+
 		default:
 			throw new Exception("Tls::HMAC_hash unsupported mac_algorithm", 0);
 		}
@@ -123,27 +139,16 @@ namespace Tls
 		hashStream->WriteEOF();
 	}
 
-	bool Globals::SelectCipherSuite(CipherSuites* cipher_suites, CipherSuite* cipher_suite)
+	bool Globals::SelectCipherSuite(CipherSuites* proposed_cipher_suites, CipherSuite* selected_cipher_suite)
 	{
-		CipherSuites::iterator it = std::find(cipher_suites->begin(), cipher_suites->end(), CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA);
-		if (it != cipher_suites->end())
+		for (CipherSuites::iterator supported_cipher_suite_it = this->supported_cipher_suites.begin(); supported_cipher_suite_it != this->supported_cipher_suites.end(); supported_cipher_suite_it++)
 		{
-			(*cipher_suite) = CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA;
-			return true;
-		}
-
-		it = std::find(cipher_suites->begin(), cipher_suites->end(), CipherSuite::cs_TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-		if (it != cipher_suites->end())
-		{
-			(*cipher_suite) = CipherSuite::cs_TLS_RSA_WITH_3DES_EDE_CBC_SHA;
-			return true;
-		}
-
-		it = std::find(cipher_suites->begin(), cipher_suites->end(), CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-		if (it != cipher_suites->end())
-		{
-			(*cipher_suite) = CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA;
-			return true;
+			CipherSuites::iterator proposed_cipher_suite_it = std::find(proposed_cipher_suites->begin(), proposed_cipher_suites->end(), (*supported_cipher_suite_it));
+			if (proposed_cipher_suite_it != proposed_cipher_suites->end())
+			{
+				(*selected_cipher_suite) = (*supported_cipher_suite_it);
+				return true;
+			}
 		}
 
 		return Basic::globals->HandleError("Tls::SelectCipherSuite no match", 0);

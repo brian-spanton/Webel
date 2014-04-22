@@ -14,6 +14,7 @@ namespace Tls
 
 		this->serverHello = serverHello;
 		this->record_frame_length = record_frame_length;
+		this->serverHello->heartbeat_extension_initialized = false;
 		this->version_frame.Initialize(&this->serverHello->server_version);
 		this->random_frame.Initialize(&this->serverHello->random);
 		this->session_id_frame.Initialize(&this->serverHello->session_id);
@@ -45,11 +46,12 @@ namespace Tls
 			{
 				this->version_frame.Process(event, yield);
 			}
-			else if (this->version_frame.Failed())
+
+			if (this->version_frame.Failed())
 			{
 				switch_to_state(event, State::version_frame_failed);
 			}
-			else
+			else if (this->version_frame.Succeeded())
 			{
 				switch_to_state(event, State::random_frame_pending_state);
 			}
@@ -60,11 +62,12 @@ namespace Tls
 			{
 				this->random_frame.Process(event, yield);
 			}
-			else if (this->random_frame.Failed())
+
+			if (this->random_frame.Failed())
 			{
 				switch_to_state(event, State::random_frame_failed);
 			}
-			else
+			else if (this->random_frame.Succeeded())
 			{
 				switch_to_state(event, State::session_id_pending_state);
 			}
@@ -75,11 +78,12 @@ namespace Tls
 			{
 				this->session_id_frame.Process(event, yield);
 			}
-			else if (this->session_id_frame.Failed())
+
+			if (this->session_id_frame.Failed())
 			{
 				switch_to_state(event, State::session_id_frame_failed);
 			}
-			else
+			else if (this->session_id_frame.Succeeded())
 			{
 				switch_to_state(event, State::cipher_suite_frame_pending_state);
 			}
@@ -90,11 +94,12 @@ namespace Tls
 			{
 				this->cipher_suite_frame.Process(event, yield);
 			}
-			else if (this->cipher_suite_frame.Failed())
+
+			if (this->cipher_suite_frame.Failed())
 			{
 				switch_to_state(event, State::cipher_suite_frame_failed);
 			}
-			else
+			else if (this->cipher_suite_frame.Succeeded())
 			{
 				// IANA cipher suites registry
 				// http:// www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-3
@@ -107,11 +112,12 @@ namespace Tls
 			{
 				this->compression_method_frame.Process(event, yield);
 			}
-			else if (this->compression_method_frame.Failed())
+
+			if (this->compression_method_frame.Failed())
 			{
 				switch_to_state(event, State::compression_method_frame_failed);
 			}
-			else
+			else if (this->compression_method_frame.Succeeded())
 			{
 				uint32 received = this->counter->count;
 
@@ -135,11 +141,12 @@ namespace Tls
 			{
 				this->extensions_length_frame.Process(event, yield);
 			}
-			else if (this->extensions_length_frame.Failed())
+
+			if (this->extensions_length_frame.Failed())
 			{
 				switch_to_state(event, State::extensions_length_frame_failed);
 			}
-			else
+			else if (this->extensions_length_frame.Succeeded())
 			{
 				this->counter->count = 0;
 				this->extension_header_frame.Initialize(&this->extension_header);
@@ -152,11 +159,12 @@ namespace Tls
 			{
 				this->extension_header_frame.Process(event, yield);
 			}
-			else if (this->extension_header_frame.Failed())
+
+			if (this->extension_header_frame.Failed())
 			{
 				switch_to_state(event, State::extension_header_frame_failed);
 			}
-			else
+			else if (this->extension_header_frame.Succeeded())
 			{
 				uint32 received = this->counter->count;
 
@@ -168,6 +176,11 @@ namespace Tls
 				{
 					switch(this->extension_header.type)
 					{
+					case ExtensionType::heartbeat_extension_type:
+						this->heartbeat_extension_frame.Initialize(&this->serverHello->heartbeat_extension);
+						switch_to_state(event, State::heartbeat_extension_frame_pending_state);
+						break;
+
 					default:
 						this->unknown_extension_frame.Initialize(this->extension_header.length);
 						switch_to_state(event, State::unknown_extension_frame_pending_state);
@@ -177,16 +190,34 @@ namespace Tls
 			}
 			break;
 
+		case State::heartbeat_extension_frame_pending_state:
+			if (this->heartbeat_extension_frame.Pending())
+			{
+				this->heartbeat_extension_frame.Process(event, yield);
+			}
+
+			if (this->heartbeat_extension_frame.Failed())
+			{
+				switch_to_state(event, State::heartbeat_extension_frame_failed);
+			}
+			else if (this->heartbeat_extension_frame.Succeeded())
+			{
+				switch_to_state(event, State::next_extension_state);
+				this->serverHello->heartbeat_extension_initialized = true;
+			}
+			break;
+
 		case State::unknown_extension_frame_pending_state:
 			if (this->unknown_extension_frame.Pending())
 			{
 				this->unknown_extension_frame.Process(event, yield);
 			}
-			else if (this->unknown_extension_frame.Failed())
+
+			if (this->unknown_extension_frame.Failed())
 			{
 				switch_to_state(event, State::unknown_extension_frame_failed);
 			}
-			else
+			else if (this->unknown_extension_frame.Succeeded())
 			{
 				switch_to_state(event, State::next_extension_state);
 			}

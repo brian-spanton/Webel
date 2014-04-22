@@ -18,11 +18,12 @@ namespace Tls
 
 		this->transport_peer = peer;
 		this->application_stream = application_stream;
+		this->application_connected = false;
 		this->server = server;
 		this->certificate = certificate;
 
-		this->response_plain = New<ByteVector>();
-		this->response_plain->reserve(0x400);
+		this->record_buffer = New<ByteVector>();
+		this->record_buffer->reserve(0x400);
 
 		this->version_low = 0x0301;
 		this->version_high = 0x0302;
@@ -30,6 +31,9 @@ namespace Tls
 		this->version_finalized = false;
 
 		this->session_id.resize(32);
+
+		this->send_heartbeats = true; // $$
+		this->receive_heartbeats = false;
 
 		NTSTATUS error = BCryptGenRandom(0, &this->session_id[0], this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 		if (error != 0)
@@ -51,6 +55,9 @@ namespace Tls
 		this->alert_protocol = New<AlertProtocol>();
 		this->alert_protocol->Initialize(this);
 
+		this->heartbeat_protocol = New<HeartbeatProtocol>();
+		this->heartbeat_protocol->Initialize(this);
+
 		SecurityParameters::Ref security_parameters = New<SecurityParameters>();
 
 		this->active_read_state = New<ConnectionState>();
@@ -67,10 +74,9 @@ namespace Tls
 	{
 		if (event->get_type() == Basic::EventType::element_stream_ending_event)
 		{
-			switch_to_state(State::unconnected_state);
-
-			ElementStreamEndingEvent application_event;
-			this->application_stream->Process(&application_event);
+			DisconnectApplication();
+			(*yield) = true;
+			return;
 		}
 
 		switch (frame_state())
@@ -87,31 +93,11 @@ namespace Tls
 				ReadyForWriteBytesEvent handshake_event;
 				handshake_event.Initialize(&this->handshake_element_source);
 				this->handshake_protocol->Frame::Process(&handshake_event);
-			
-				switch_to_state(State::receive_record_state);
-			}
-			break;
 
-		case State::receive_record_state:
-			this->record_frame.Initialize(&this->record);
-			switch_to_state(State::record_frame_pending_state);
-			break;
-
-		case State::record_frame_pending_state:
-			if (this->record_frame.Pending())
-			{
-				this->record_frame.Process(event, yield);
-			}
-			else if (this->record_frame.Failed())
-			{
-				switch_to_state(State::record_frame_failed);
-			}
-			else
-			{
-				bool success = ProcessRecord(&this->record);
-				if (!success)
+				if (this->handshake_protocol->Failed())
 				{
-					switch_to_state(State::record_process_failed);
+					switch_to_state(State::handshake_protocol_failed);
+					return;
 				}
 				else
 				{
@@ -120,12 +106,66 @@ namespace Tls
 			}
 			break;
 
+		case State::receive_record_state:
+			switch_to_state(State::record_frame_pending_state);
+			this->record_frame.Initialize(&this->record);
+			break;
+
+		case State::record_frame_pending_state:
+			if (this->record_frame.Pending())
+			{
+				this->record_frame.Process(event, yield);
+			}
+
+			if (this->record_frame.Failed())
+			{
+				switch_to_state(State::record_frame_failed);
+				return;
+			}
+			else if (this->record_frame.Succeeded())
+			{
+				try
+				{
+					ProcessRecord(&this->record);
+				}
+				catch (State error_state)
+				{
+					switch_to_state(error_state);
+					return;
+				}
+
+				switch_to_state(State::receive_record_state);
+			}
+			break;
+
 		default:
 			throw new Exception("Tls::RecordLayer::Process unexpected state");
 		}
 	}
 
+	void RecordLayer::WriteAlert(AlertDescription description, AlertLevel level)
+	{
+		Alert alert;
+		alert.description = description;
+		alert.level = level;
+
+		Inline<AlertFrame> alert_frame;
+		alert_frame.Initialize(&alert);
+
+		this->current_type = ContentType::alert;
+		alert_frame.SerializeTo(this);
+
+		Flush();
+	}
+
 	void RecordLayer::WriteEOF()
+	{
+		WriteAlert(AlertDescription::close_notify, AlertLevel::warning);
+
+		CloseTransport();
+	}
+
+	void RecordLayer::CloseTransport()
 	{
 		this->transport_peer->WriteEOF();
 		this->transport_peer = 0;
@@ -135,8 +175,8 @@ namespace Tls
 	{
 		Write(ContentType::change_cipher_spec, &ChangeCipherSpec, sizeof(ChangeCipherSpec));
 
-		// make sure to actual send this record prior to changing the write states
-		Flush();
+		// make sure to actually send this record prior to changing the write states
+		FlushRecordBuffer();
 
 		this->active_write_state = this->pending_write_state;
 		this->pending_write_state = New<ConnectionState>();
@@ -144,13 +184,80 @@ namespace Tls
 
 	void RecordLayer::ConnectApplication()
 	{
+		this->application_connected = true;
+
 		this->current_type = ContentType::application_data;
 		ReadyForWriteBytesEvent event;
 		event.Initialize(&this->application_element_source);
 		this->application_stream->Process(&event);
+
+		if (this->application_stream->Failed())
+			throw State::application_stream_failed;
+
+		if (this->send_heartbeats)
+		{
+			HeartbeatMessage heartbeat_message;
+
+			heartbeat_message.type = HeartbeatMessageType::heartbeat_response;
+
+			// $$ heartbleed test
+			heartbeat_message.payload_length = 16;
+
+			heartbeat_message.payload.resize(16);
+			NTSTATUS error = BCryptGenRandom(0, &heartbeat_message.payload[0], heartbeat_message.payload.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+			if (error != 0)
+				throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+
+			heartbeat_message.padding.resize(16);
+			error = BCryptGenRandom(0, &heartbeat_message.padding[0], heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+			if (error != 0)
+				throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+
+			Inline<HeartbeatMessageFrame> heartbeat_message_frame;
+			heartbeat_message_frame.Initialize(&heartbeat_message, 0);
+
+			this->current_type = ContentType::heartbeat_content_type;
+			heartbeat_message_frame.SerializeTo(this);
+			Flush();
+		}
 	}
 
-	bool RecordLayer::ProcessRecord(Record* record)
+	void RecordLayer::DisconnectApplication()
+	{
+		ElementStreamEndingEvent application_event;
+		this->application_stream->Process(&application_event);
+	}
+
+	void RecordLayer::switch_to_state(uint32 state)
+	{
+		__super::switch_to_state(state);
+
+		if (Failed())
+		{
+			DisconnectApplication();
+
+			AlertDescription description;
+
+			switch (state)
+			{
+			case State::decrypt_stream_mac_mismatch_error:
+			case State::decrypt_block_padding_overflow_error:
+			case State::decrypt_block_padding_invalid_error:
+			case State::decrypt_block_mac_mismatch_error:
+				break;
+
+			default:
+				description = AlertDescription::internal_error;
+				break;
+			}
+
+			WriteAlert(description, AlertLevel::fatal);
+
+			CloseTransport();
+		}
+	}
+
+	void RecordLayer::ProcessRecord(Record* record)
 	{
 		// From http://www.ietf.org/rfc/rfc2246.txt section 6.2.1:
 		//     The length (in bytes) of the following TLSPlaintext.fragment.
@@ -158,69 +265,134 @@ namespace Tls
 		// brian: since it is only _should_, and I see some records in real life come back at 0x4020, let's
 		// give it double.
 		if (record->length > 0x8000)
-			return Basic::globals->HandleError("RecordLayer::ProcessRecord record->length > 0x8000", 0);
+			throw State::record_length_too_large_error;
 
 		if (this->version_finalized && record->version != this->version)
-			return Basic::globals->HandleError("RecordLayer::ProcessRecord this->version_finalized && record->version != this->version", 0);
+			throw State::record_version_mismatch_error;
 
 		Record compressed;
-		bool success = Decrypt(record, &compressed);
-		if (!success)
-			return false;
+		Decrypt(record, &compressed);
 
 		Record plaintext;
-		success = Decompress(&compressed, &plaintext);
-		if (!success)
-			return false;
+		Decompress(&compressed, &plaintext);
 
 		switch(plaintext.type)
 		{
 		case ContentType::change_cipher_spec:
 			{
+				// RFC 5246 section 6.2.1
+				// Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
+				// Alert, or ChangeCipherSpec content types.  Zero-length fragments of
+				// Application data MAY be sent as they are potentially useful as a
+				// traffic analysis countermeasure.
+
+				if (plaintext.length == 0)
+					throw State::change_cipher_spec_zero_fragment_error;
+
 				this->active_read_state = this->pending_read_state;
 				this->pending_read_state = New<ConnectionState>();
 
 				this->current_type = ContentType::handshake;
 				ChangeCipherSpecEvent event;
 				this->handshake_protocol->Frame::Process(&event);
+
+				if (this->handshake_protocol->Failed())
+					throw State::handshake_protocol_failed;
 			}
 			break;
 
 		case ContentType::alert:
 			{
+				// RFC 5246 section 6.2.1
+				// Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
+				// Alert, or ChangeCipherSpec content types.  Zero-length fragments of
+				// Application data MAY be sent as they are potentially useful as a
+				// traffic analysis countermeasure.
+
+				if (plaintext.length == 0)
+					throw State::alert_zero_fragment_error;
+
 				this->current_type = ContentType::alert;
 				this->alert_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
 				ReadyForReadBytesEvent event;
 				event.Initialize(&this->alert_element_source);
 				this->alert_protocol->Frame::Process(&event);
+
+				if (this->alert_protocol->Failed())
+					throw State::alert_protocol_failed;
+			}
+			break;
+
+		case ContentType::heartbeat_content_type:
+			{
+				if (this->receive_heartbeats == false)
+					throw State::unexpected_heartbeat_error;
+
+				if (plaintext.length == 0)
+					throw State::heartbeat_zero_fragment_error;
+
+				this->current_type = ContentType::heartbeat_content_type;
+				this->heartbeat_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+				ReadyForReadBytesEvent event;
+				event.Initialize(&this->heartbeat_element_source);
+				this->heartbeat_protocol->SetPlaintextLength(plaintext.length);
+				this->heartbeat_protocol->Frame::Process(&event);
+
+				if (this->heartbeat_protocol->Failed())
+					throw State::heartbeat_protocol_failed;
 			}
 			break;
 
 		case ContentType::handshake:
 			{
+				// RFC 5246 section 6.2.1
+				// Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
+				// Alert, or ChangeCipherSpec content types.  Zero-length fragments of
+				// Application data MAY be sent as they are potentially useful as a
+				// traffic analysis countermeasure.
+
+				if (plaintext.length == 0)
+					throw State::handshake_zero_fragment_error;
+
 				this->current_type = ContentType::handshake;
 				this->handshake_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
 				ReadyForReadBytesEvent event;
 				event.Initialize(&this->handshake_element_source);
 				this->handshake_protocol->Frame::Process(&event);
+
+				if (this->handshake_protocol->Failed())
+					throw State::handshake_protocol_failed;
 			}
 			break;
 
 		case ContentType::application_data:
 			{
-				this->current_type = ContentType::application_data;
-				this->application_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
-				ReadyForReadBytesEvent event;
-				event.Initialize(&this->application_element_source);
-				this->application_stream->Process(&event);
+				if (!this->application_connected)
+					throw State::unexpected_application_data_error;
+
+				// RFC 5246 section 6.2.1
+				// Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
+				// Alert, or ChangeCipherSpec content types.  Zero-length fragments of
+				// Application data MAY be sent as they are potentially useful as a
+				// traffic analysis countermeasure.
+
+				if (plaintext.length != 0)
+				{
+					this->current_type = ContentType::application_data;
+					this->application_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+					ReadyForReadBytesEvent event;
+					event.Initialize(&this->application_element_source);
+					this->application_stream->Process(&event);
+
+					if (this->application_stream->Failed())
+						throw State::application_stream_failed;
+				}
 			}
 			break;
 
 		default:
-			return Basic::globals->HandleError("Tls::RecordLayer::ProcessRecord unexpected record type", 0);
+			throw State::unexpected_record_type_error;
 		}
-
-		return true;
 	}
 
 	void RecordLayer::Write(const byte* elements, uint32 count)
@@ -232,9 +404,9 @@ namespace Tls
 	{
 		if (type != this->buffer_type)
 		{
-			if (this->response_plain->size() > 0)
+			if (this->record_buffer->size() > 0)
 			{
-				Flush();
+				FlushRecordBuffer();
 			}
 
 			this->buffer_type = type;
@@ -249,17 +421,17 @@ namespace Tls
 
 		while (true)
 		{
-			uint32 remaining = 0x4000 - this->response_plain->size();
+			uint32 remaining = 0x4000 - this->record_buffer->size();
 			uint32 useable = (count > remaining) ? remaining : count;
 
-			this->response_plain->insert(this->response_plain->end(), elements, elements + useable);
+			this->record_buffer->insert(this->record_buffer->end(), elements, elements + useable);
 
 			elements += useable;
 			count -= useable;
 
-			if (this->response_plain->size() == 0x4000)
+			if (this->record_buffer->size() == 0x4000)
 			{
-				Flush();
+				FlushRecordBuffer();
 			}
 
 			if (count == 0)
@@ -267,8 +439,9 @@ namespace Tls
 		}
 	}
 
-	void RecordLayer::Flush()
+	void RecordLayer::FlushRecordBuffer()
 	{
+		// RFC 5246 section 6.2.1
 		// Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
 		// Alert, or ChangeCipherSpec content types.  Zero-length fragments of
 		// Application data MAY be sent as they are potentially useful as a
@@ -278,15 +451,15 @@ namespace Tls
 			this->buffer_type == ContentType::change_cipher_spec ||
 			this->buffer_type == ContentType::handshake)
 		{
-			if (this->response_plain->size() == 0)
-				throw new Exception("RecordLayer::WriteRecord this->response_plain->size() == 0"); // REF
+			if (this->record_buffer->size() == 0)
+				throw State::send_zero_fragment_error;
 		}
 
 		Record plaintext;
 		plaintext.type = this->buffer_type;
 		plaintext.version = this->version;
-		plaintext.fragment = this->response_plain;
-		plaintext.length = this->response_plain->size();
+		plaintext.fragment = this->record_buffer;
+		plaintext.length = this->record_buffer->size();
 
 		Record compressed;
 		Compress(&plaintext, &compressed);
@@ -297,10 +470,20 @@ namespace Tls
 		Inline<RecordFrame> recordFrame;
 		recordFrame.Initialize(&encrypted);
 
-		recordFrame.SerializeTo(this->transport_peer);
+		recordFrame.SerializeTo(&this->transport_buffer);
 
-		this->response_plain->resize(0);
+		this->record_buffer->resize(0);
+	}
 
+	void RecordLayer::Flush()
+	{
+		if (this->record_buffer->size() > 0)
+		{
+			FlushRecordBuffer();
+		}
+
+		this->transport_buffer.SerializeTo(this->transport_peer);
+		this->transport_buffer.clear();
 		this->transport_peer->Flush();
 	}
 
@@ -317,7 +500,7 @@ namespace Tls
 			break;
 
 		default:
-			throw new Exception("Tls::RecordLayer::Compress unexpected CompressionMethod", 0);
+			throw State::compress_unexpected_compression_algorithm_error;
 		}
 	}
 
@@ -334,7 +517,7 @@ namespace Tls
 			return;
 
 		default:
-			throw new Exception("Tls::RecordLayer::Encrypt unexpected CipherType", 0);
+			throw State::encrypt_unexpected_cipher_type_error;
 		}
 	}
 
@@ -350,8 +533,52 @@ namespace Tls
 			encrypted->length = compressed->length;
 			break;
 
+		case BulkCipherAlgorithm::rc4:
+			{
+				uint8 mac_length = this->active_write_state->security_parameters->mac_length;
+
+				std::vector<byte> payload;
+				payload.reserve(compressed->fragment->size() + mac_length);
+
+				payload.insert(payload.end(), compressed->fragment->begin(), compressed->fragment->end());
+
+				int mac_index = payload.size();
+
+				payload.resize(mac_index + mac_length);
+
+				this->active_write_state->MAC(compressed, &payload[mac_index], mac_length);
+
+				encrypted->fragment = New<ByteVector>();
+				encrypted->fragment->resize(payload.size());
+
+				uint32 output_length;
+
+				NTSTATUS error = BCryptEncrypt(
+					this->active_write_state->key_handle,
+					&payload[0],
+					payload.size(),
+					0,
+					0,
+					0,
+					encrypted->fragment->FirstElement(),
+					encrypted->fragment->size(),
+					&output_length, 
+					0);
+				if (error != 0)
+					throw new Exception("BCryptEncrypt", error);
+
+				if (output_length > 0xffff)
+					throw State::encrypt_stream_output_overflow_error;
+
+				encrypted->fragment->resize(output_length);
+				encrypted->length = encrypted->fragment->size();
+
+				this->active_write_state->sequence_number++;
+			}
+			break;
+
 		default:
-			throw new Exception("Tls::RecordLayer::EncryptStream unexpected BulkCipherAlgorithm", 0);
+			throw State::encrypt_stream_unexpected_bulk_cipher_algorithm_error;
 		}
 	}
 
@@ -363,6 +590,7 @@ namespace Tls
 		switch(this->active_write_state->security_parameters->bulk_cipher_algorithm)
 		{
 		case BulkCipherAlgorithm::aes:
+		case BulkCipherAlgorithm::_3des:
 			{
 				uint8 mac_length = this->active_write_state->security_parameters->mac_length;
 				uint8 padding_length;
@@ -432,7 +660,7 @@ namespace Tls
 					throw new Exception("BCryptEncrypt", error);
 
 				if (output_length > 0xffff)
-					throw new Exception("Tls::RecordLayer::EncryptBlock output_length > 0xffff", 0);
+					throw State::encrypt_block_output_overflow_error;
 
 				encrypted->fragment->resize(record_iv_length + output_length);
 				encrypted->length = encrypted->fragment->size();
@@ -449,11 +677,11 @@ namespace Tls
 			break;
 
 		default:
-			throw new Exception("Tls::RecordLayer::EncryptBlock unexpected BulkCipherAlgorithm", 0);
+			throw State::encrypt_block_unexpected_bulk_cipher_algorithm_error;
 		}
 	}
 
-	bool RecordLayer::Decompress(Record* compressed, Record* plaintext)
+	void RecordLayer::Decompress(Record* compressed, Record* plaintext)
 	{
 		plaintext->type = compressed->type;
 		plaintext->version = compressed->version;
@@ -466,30 +694,28 @@ namespace Tls
 			break;
 
 		default:
-			return Basic::globals->HandleError("Tls::RecordLayer::Decompress unexpected CompressionMethod", 0);
+			throw State::decompress_unexpected_compression_algorithm_error;
 		}
-
-		return true;
 	}
 
-	bool RecordLayer::Decrypt(Record* encrypted, Record* compressed)
+	void RecordLayer::Decrypt(Record* encrypted, Record* compressed)
 	{
 		switch(this->active_read_state->security_parameters->cipher_type)
 		{
 		case CipherType::stream:
-			return DecryptStream(encrypted, compressed);
+			DecryptStream(encrypted, compressed);
+			break;
 
 		case CipherType::block:
-			return DecryptBlock(encrypted, compressed);
+			DecryptBlock(encrypted, compressed);
+			break;
 
 		default:
-			return Basic::globals->HandleError("Tls::RecordLayer::Decrypt unexpected CipherType", 0);
+			throw State::decrypt_unexpected_cipher_type_error;
 		}
-
-		return true;
 	}
 
-	bool RecordLayer::DecryptStream(Record* encrypted, Record* compressed)
+	void RecordLayer::DecryptStream(Record* encrypted, Record* compressed)
 	{
 		compressed->type = encrypted->type;
 		compressed->version = encrypted->version;
@@ -501,14 +727,64 @@ namespace Tls
 			compressed->length = encrypted->length;
 			break;
 
-		default:
-			return Basic::globals->HandleError("Tls::RecordLayer::DecryptStream unexpected BulkCipherAlgorithm", 0);
-		}
+		case BulkCipherAlgorithm::rc4:
+			{
+				ByteVector::Ref payload = New<ByteVector>();
+				payload->resize(encrypted->fragment->size());
 
-		return true;
+				uint32 output_length;
+				NTSTATUS error = BCryptDecrypt(
+					this->active_read_state->key_handle, 
+					encrypted->fragment->FirstElement(), 
+					encrypted->fragment->size(), 
+					0, 
+					0, 
+					0, 
+					payload->FirstElement(), 
+					payload->size(), 
+					&output_length, 
+					0);
+				if (error != 0)
+				{
+					Basic::globals->HandleError("BCryptDecrypt", error);
+					throw State::decrypt_stream_decryption_failed;
+				}
+
+				payload->resize(output_length);
+
+				uint8 mac_length = this->active_read_state->security_parameters->mac_length;
+
+				uint16 fragment_length = payload->size() - mac_length;
+
+				std::vector<opaque> received_MAC;
+				received_MAC.insert(received_MAC.end(), payload->begin() + fragment_length, payload->begin() + fragment_length + mac_length);
+
+				std::vector<opaque> expected_MAC;
+				expected_MAC.resize(mac_length);
+
+				payload->resize(fragment_length);
+				
+				compressed->fragment = payload;
+				compressed->length = compressed->fragment->size();
+
+				this->active_read_state->MAC(compressed, &expected_MAC[0], expected_MAC.size());
+
+				for (int i = 0; i < mac_length; i++)
+				{
+					if (received_MAC[i] != expected_MAC[i])
+						throw State::decrypt_stream_mac_mismatch_error;
+				}
+
+				this->active_read_state->sequence_number++;
+			}
+			break;
+
+		default:
+			throw State::decrypt_stream_unexpected_bulk_cipher_algorithm_error;
+		}
 	}
 
-	bool RecordLayer::DecryptBlock(Record* encrypted, Record* compressed)
+	void RecordLayer::DecryptBlock(Record* encrypted, Record* compressed)
 	{
 		compressed->type = encrypted->type;
 		compressed->version = encrypted->version;
@@ -516,6 +792,7 @@ namespace Tls
 		switch(this->active_read_state->security_parameters->bulk_cipher_algorithm)
 		{
 		case BulkCipherAlgorithm::aes:
+		case BulkCipherAlgorithm::_3des:
 			{
 				ByteVector::Ref mask;
 				uint8 record_iv_length;
@@ -550,7 +827,10 @@ namespace Tls
 					&output_length, 
 					0);
 				if (error != 0)
-					return Basic::globals->HandleError("BCryptDecrypt", error);
+				{
+					Basic::globals->HandleError("BCryptDecrypt", error);
+					throw State::decrypt_block_decryption_failed;
+				}
 
 				payload->resize(output_length);
 
@@ -568,11 +848,11 @@ namespace Tls
 				// only then reject the packet.  For instance, if the pad appears to be
 				// incorrect, the implementation might assume a zero-length pad and then
 				// compute the MAC.
-				std::string canvel;
+				State canvel_error = State::done_state;
 
 				if (padding_length > variable_portion)
 				{
-					canvel = "Tls::RecordLayer::DecryptBlock padding_length > variable_portion";
+					canvel_error = State::decrypt_block_padding_overflow_error;
 					padding_length = 0;
 				}
 
@@ -582,8 +862,8 @@ namespace Tls
 				{
 					if (payload->at(padding_index + i) != padding_length)
 					{
-						if (canvel.size() == 0)
-							canvel = "Tls::RecordLayer::DecryptBlock payload->at(i) != padding_length";
+						if (canvel_error != State::done_state)
+							canvel_error = State::decrypt_block_padding_invalid_error;
 
 						padding_length = 0;
 					}
@@ -604,16 +884,13 @@ namespace Tls
 
 				this->active_read_state->MAC(compressed, &expected_MAC[0], expected_MAC.size());
 
-				if (canvel.size() > 0)
-				{
-					// $ return bad_record_mac error per tls 1.1
-					return Basic::globals->HandleError(canvel.c_str(), 0);
-				}
+				if (canvel_error != State::done_state)
+					throw canvel_error;
 
 				for (int i = 0; i < mac_length; i++)
 				{
 					if (received_MAC[i] != expected_MAC[i])
-						return Basic::globals->HandleError("Tls::RecordLayer::DecryptBlock received_MAC[i] != expected_MAC[i]", 0);
+						throw State::decrypt_block_mac_mismatch_error;
 				}
 
 				if (this->version <= 0x0301)
@@ -628,26 +905,22 @@ namespace Tls
 			break;
 
 		default:
-			return Basic::globals->HandleError("Tls::RecordLayer::DecryptBlock unexpected BulkCipherAlgorithm", 0);
+			throw State::decrypt_block_unexpected_bulk_cipher_algorithm_error;
 		}
-
-		return true;
 	}
 
-	bool RecordLayer::FinalizeVersion(ProtocolVersion version)
+	void RecordLayer::FinalizeVersion(ProtocolVersion version)
 	{
 		if (this->version_finalized)
-			return Basic::globals->HandleError("RecordLayer::FinalizeVersion this->version_finalized", 0);
+			throw State::version_already_finalized_error;
 
 		this->version = version;
 		this->version_finalized = true;
 
 		// $ todo for tls 1.1:
 		//-  Handling of padding errors is changed to use the bad_record_mac
-		//   alert rather than the decryption_failed alert to protect against
+		//   alert rather than the decrypt_stream_decryption_failed alert to protect against
 		//   CBC attacks.
-
-		//-  IANA registries are defined for protocol parameters.
 
 		//-  Premature closes no longer cause a session to be nonresumable.
 
@@ -704,7 +977,5 @@ namespace Tls
 		//   multiple case arms to have the same encoding.
 
 		//-  Added an Implementation Pitfalls sections
-
-		return true;
 	}
 }

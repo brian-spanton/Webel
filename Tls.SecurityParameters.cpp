@@ -28,10 +28,39 @@ namespace Tls
 
 	bool SecurityParameters::InitializeCipherSuite(ProtocolVersion version, CipherSuite cipher_suite, KeyExchangeAlgorithm* key_exchange_algorithm)
 	{
+		//rfc 5246 section 7.4.9:
+		//In previous versions of TLS, the verify_data was always 12 octets
+		//long.  In the current version of TLS, it depends on the cipher
+		//suite.  Any cipher suite which does not explicitly specify
+		//verify_data_length has a verify_data_length equal to 12.  This
+		//includes all existing cipher suites.  Note that this
+		//representation has the same encoding as with previous versions.
+		//Future cipher suites MAY specify other lengths but such length
+		//MUST be at least 12 bytes.
+		this->verify_data_length = 12;
+
 		InterimCipher interim_cipher;
 
 		switch (cipher_suite)
 		{
+		case CipherSuite::cs_TLS_RSA_WITH_AES_256_CBC_SHA256:
+			(*key_exchange_algorithm) = KeyExchangeAlgorithm::_KEA_RSA;
+			interim_cipher = InterimCipher::ic_AES_256_CBC;
+			this->mac_algorithm = MACAlgorithm::hmac_sha256;
+			break;
+
+		case CipherSuite::cs_TLS_RSA_WITH_AES_256_CBC_SHA:
+			(*key_exchange_algorithm) = KeyExchangeAlgorithm::_KEA_RSA;
+			interim_cipher = InterimCipher::ic_AES_256_CBC;
+			this->mac_algorithm = MACAlgorithm::hmac_sha1;
+			break;
+
+		case CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA256:
+			(*key_exchange_algorithm) = KeyExchangeAlgorithm::_KEA_RSA;
+			interim_cipher = InterimCipher::ic_AES_128_CBC;
+			this->mac_algorithm = MACAlgorithm::hmac_sha256;
+			break;
+
 		case CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA:
 			(*key_exchange_algorithm) = KeyExchangeAlgorithm::_KEA_RSA;
 			interim_cipher = InterimCipher::ic_AES_128_CBC;
@@ -48,6 +77,12 @@ namespace Tls
 			(*key_exchange_algorithm) = KeyExchangeAlgorithm::DHE_DSS;
 			interim_cipher = InterimCipher::ic_3DES_EDE_CBC;
 			this->mac_algorithm = MACAlgorithm::hmac_sha1;
+			break;
+
+		case CipherSuite::cs_TLS_RSA_WITH_RC4_128_MD5:
+			(*key_exchange_algorithm) = KeyExchangeAlgorithm::_KEA_RSA;
+			interim_cipher = InterimCipher::ic_RC4_128;
+			this->mac_algorithm = MACAlgorithm::hmac_md5;
 			break;
 
 		default:
@@ -121,17 +156,6 @@ namespace Tls
 		default:
 			return Basic::globals->HandleError("Tls::SecurityParameters::Initialize unsupported interim_cipher", 0);
 		}
-
-		//rfc 5246 section 7.4.9:
-		//In previous versions of TLS, the verify_data was always 12 octets
-		//long.  In the current version of TLS, it depends on the cipher
-		//suite.  Any cipher suite which does not explicitly specify
-		//verify_data_length has a verify_data_length equal to 12.  This
-		//includes all existing cipher suites.  Note that this
-		//representation has the same encoding as with previous versions.
-		//Future cipher suites MAY specify other lengths but such length
-		//MUST be at least 12 bytes.
-		this->verify_data_length = 12;
 
 		// MAC       Algorithm    mac_length  mac_key_length
 		// --------  -----------  ----------  --------------

@@ -68,6 +68,7 @@ namespace Tls
 		alert = 21,
 		handshake = 22,
 		application_data = 23,
+		heartbeat_content_type = 24,
 	};
 
 	enum AlertLevel : uint8
@@ -124,9 +125,21 @@ namespace Tls
 		srp = 12, // RFC5054 
 		signature_algorithms = 13, // RFC5246 
 		use_srtp = 14, // RFC5764 
-		heartbeat = 15, // RFC6520 
+		heartbeat_extension_type = 15, // RFC6520 
 		SessionTicket_TLS = 35, // RFC4507 
 		renegotiation_info = 0xff01, // RFC5746 
+	};
+
+	enum HeartbeatMode : uint8
+	{
+		peer_allowed_to_send = 1,
+		peer_not_allowed_to_send = 2,
+	};
+
+	enum HeartbeatMessageType : uint8
+	{
+		heartbeat_request = 1,
+		heartbeat_response = 2,
 	};
 
 	enum HashAlgorithm : uint8
@@ -518,11 +531,7 @@ namespace Tls
 		cs_TLS_PSK_DHE_WITH_AES_256_CCM_8 = 0xC0AB, // [RFC6655] 
 	};
 
-	typedef std::vector<opaque> SessionId;
-	typedef std::vector<opaque> Certificate;
-	typedef std::vector<opaque> HostName;
-	typedef std::vector<opaque> RenegotiationInfo;
-
+	typedef std::vector<opaque> OpaqueVector;
 	typedef uint16 ProtocolVersion;
 
 	struct Random
@@ -540,13 +549,13 @@ namespace Tls
 	struct ServerName
 	{
 		NameType name_type;
-		HostName name;
+		std::vector<opaque> name;
 	};
 
 	typedef std::vector<CompressionMethod> CompressionMethods;
 	typedef std::vector<SignatureAndHashAlgorithm> SignatureAndHashAlgorithms;
 	typedef std::vector<CipherSuite> CipherSuites;
-	typedef std::vector<Certificate> Certificates;
+	typedef std::vector<OpaqueVector> Certificates;
 	typedef std::vector<ServerName> ServerNameList;
 
 	struct Record
@@ -574,14 +583,12 @@ namespace Tls
 		ocsp = 1,
 	};
 
-	typedef std::vector<opaque> ResponderID;
-	typedef std::vector<ResponderID> ResponderIDList;
-	typedef std::vector<opaque> Extensions;
+	typedef std::vector<OpaqueVector> ResponderIDList;
 
 	struct OCSPStatusRequest
 	{
 		ResponderIDList responder_id_list;
-		Extensions request_extensions;
+		std::vector<opaque> request_extensions;
 	};
 
 	struct CertificateStatusRequest
@@ -632,28 +639,37 @@ namespace Tls
 
 	typedef std::vector<ECPointFormat> ECPointFormatList;
 
+	struct HeartbeatExtension
+	{
+		HeartbeatMode mode;
+	};
+
 	struct ClientHello
 	{
 		ProtocolVersion client_version;
 		Random random;
-		SessionId session_id;
+		std::vector<opaque> session_id;
 		CipherSuites cipher_suites;
 		CompressionMethods compression_methods;
 		ServerNameList server_name_list;
 		SignatureAndHashAlgorithms supported_signature_algorithms;
-		RenegotiationInfo renegotiation_info;
+		std::vector<opaque> renegotiation_info;
 		CertificateStatusRequest certificate_status_request;
 		EllipticCurveList elliptic_curve_list;
 		ECPointFormatList ec_point_format_list;
+		HeartbeatExtension heartbeat_extension;
+		bool heartbeat_extension_initialized;
 	};
 
 	struct ServerHello
 	{
 		ProtocolVersion server_version;
 		Random random;
-		SessionId session_id;
+		std::vector<opaque> session_id;
 		CipherSuite cipher_suite;
 		CompressionMethod compression_method;
+		HeartbeatExtension heartbeat_extension;
+		bool heartbeat_extension_initialized;
 	};
 
 	struct PreMasterSecret
@@ -661,8 +677,6 @@ namespace Tls
 		ProtocolVersion client_version;
 		opaque random[46];
 	};
-
-	typedef std::vector<opaque> PublicKeyEncrypted;
 
 	static const uint8 ChangeCipherSpec = 1;
 
@@ -682,98 +696,11 @@ namespace Tls
 		virtual uint32 get_type();
 	};
 
-#if 0
-
-	// stream-ciphered
-	struct GenericStreamCipher
+	struct HeartbeatMessage
 	{
-		// opaque content[TLSCompressed.length];
-		// opaque MAC[SecurityParameters.mac_length];
+		HeartbeatMessageType type;
+		uint16 payload_length;
+		std::vector<opaque> payload;
+		std::vector<opaque> padding;
 	};
-
-	struct GenericAEADCipher
-	{
-		// opaque nonce_explicit[SecurityParameters.block_length];
-		// aead-ciphered
-		// opaque content[TLSCompressed.length];
-		// end aead-ciphered
-	};
-
-	// A.4.1.  Hello Messages
-
-	struct HelloRequest
-	{
-	};
-
-	// A.4.2.  Server Authentication and Key Exchange Messages
-
-	/* Ephemeral DH parameters */
-	struct ServerDHParams
-	{
-		// opaque dh_p<1..2^16-1>;
-		// opaque dh_g<1..2^16-1>;
-		// opaque dh_Ys<1..2^16-1>;
-	};
-
-	struct ServerKeyExchange
-	{
-		// select (KeyExchangeAlgorithm) {
-		// case dh_anon:
-		// ServerDHParams params;
-		// case dhe_dss:
-		// case dhe_rsa:
-		// ServerDHParams params;
-		// digitally-signed struct {
-		// opaque client_random[32];
-		// opaque server_random[32];
-		// ServerDHParams params;
-		// } signed_params;
-		// case rsa:
-		// case dh_dss:
-		// case dh_rsa:
-		// struct {} ;
-		/* message is omitted for rsa, dh_dss, and dh_rsa */
-		/* may be extended, e.g., for ECDH -- see [TLSECC] */
-	};
-
-	// opaque DistinguishedName<1..2^16-1>;
-
-	struct CertificateRequest
-	{
-		// ClientCertificateType certificate_types<1..2^8-1>;
-		// DistinguishedName certificate_authorities<0..2^16-1>;
-	};
-
-	// A.4.3.  Client Authentication and Key Exchange Messages
-
-	struct ClientKeyExchange
-	{
-		// select (KeyExchangeAlgorithm) {
-		// case rsa:
-		// EncryptedPreMasterSecret;
-		// case dhe_dss:
-		// case dhe_rsa:
-		// case dh_dss:
-		// case dh_rsa:
-		// case dh_anon:
-		// ClientDiffieHellmanPublic;
-		// } exchange_keys;
-	};
-
-	struct ClientDiffieHellmanPublic
-	{
-		// select (PublicValueEncoding) {
-		// case implicit: struct {};
-		// case explicit: opaque DH_Yc<1..2^16-1>;
-		// } dh_public;
-	};
-
-	struct CertificateVerify
-	{
-		// digitally-signed
-		// struct {
-		// opaque handshake_messages[handshake_messages_length];
-		// }
-	};
-#endif
 }

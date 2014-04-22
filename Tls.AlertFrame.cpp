@@ -26,11 +26,12 @@ namespace Tls
 			{
 				this->level_frame.Process(event, yield);
 			}
-			else if (this->level_frame.Failed())
+			
+			if (this->level_frame.Failed())
 			{
-				throw new Exception("level_frame.Failed()");
+				switch_to_state(State::level_frame_failed);
 			}
-			else
+			else if (this->level_frame.Succeeded())
 			{
 				switch_to_state(State::description_frame_pending_state);
 			}
@@ -41,11 +42,12 @@ namespace Tls
 			{
 				this->description_frame.Process(event, yield);
 			}
-			else if (this->description_frame.Failed())
+			
+			if (this->description_frame.Failed())
 			{
-				throw new Exception("description_frame.Failed()");
+				switch_to_state(State::description_frame_failed);
 			}
-			else
+			else if (this->description_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

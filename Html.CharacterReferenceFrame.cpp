@@ -203,11 +203,12 @@ namespace Html
 			{
 				this->match_frame.Process(event, yield);
 			}
-			else if (this->match_frame.Failed())
+			
+			if (this->match_frame.Failed())
 			{
 				throw new Exception("match_frame.Failed()");
 			}
-			else
+			else if (this->match_frame.Succeeded())
 			{
 				if (this->match_value == Html::globals->named_character_references_table->end())
 				{

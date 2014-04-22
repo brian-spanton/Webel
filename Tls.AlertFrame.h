@@ -18,6 +18,8 @@ namespace Tls
 			level_frame_pending_state = Start_State,
 			description_frame_pending_state,
 			done_state = Succeeded_State,
+			level_frame_failed,
+			description_frame_failed,
 		};
 
 		Alert* alert;

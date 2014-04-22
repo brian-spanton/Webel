@@ -49,6 +49,7 @@ namespace Tls
 			finished_received_error,
 			WriteMessage_3_failed,
 			unexpected_key_exchange_algorithm_2_error,
+			unexpected_heartbeat_mode_error,
 		};
 
 		ClientHello clientHello;

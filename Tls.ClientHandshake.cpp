@@ -39,8 +39,14 @@ namespace Tls
 				ClientHello clientHello;
 				clientHello.client_version = this->session->version_high;
 				clientHello.random = this->security_parameters->client_random;
-				clientHello.cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA);
+				clientHello.cipher_suites = Tls::globals->supported_cipher_suites;
 				clientHello.compression_methods.push_back(CompressionMethod::cm_null);
+
+				if (this->session->send_heartbeats)
+				{
+					clientHello.heartbeat_extension.mode = HeartbeatMode::peer_not_allowed_to_send;
+					clientHello.heartbeat_extension_initialized = true;
+				}
 
 				Inline<ClientHelloFrame> client_hello_frame;
 				client_hello_frame.Initialize(&clientHello, 0);
@@ -64,18 +70,22 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+			
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_1_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::server_hello)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_server_hello_error);
-			}
-			else
-			{
-				this->server_hello_frame.Initialize(&this->serverHello, this->handshake.length);
-				switch_to_state(State::server_hello_frame_pending_state);
+				if (this->handshake.msg_type != HandshakeType::server_hello)
+				{
+					switch_to_state(State::expecting_server_hello_error);
+				}
+				else
+				{
+					this->server_hello_frame.Initialize(&this->serverHello, this->handshake.length);
+					switch_to_state(State::server_hello_frame_pending_state);
+				}
 			}
 			break;
 
@@ -84,11 +94,12 @@ namespace Tls
 			{
 				this->server_hello_frame.Process(event, yield);
 			}
-			else if (this->server_hello_frame.Failed())
+			
+			if (this->server_hello_frame.Failed())
 			{
 				switch_to_state(State::server_hello_frame_failed);
 			}
-			else
+			else if (this->server_hello_frame.Succeeded())
 			{
 				if (this->serverHello.server_version < this->session->version_low || this->serverHello.server_version > this->session->version_high)
 				{
@@ -107,9 +118,32 @@ namespace Tls
 					return;
 				}
 
+				if (this->serverHello.heartbeat_extension_initialized)
+				{
+					switch (this->serverHello.heartbeat_extension.mode)
+					{
+					case HeartbeatMode::peer_allowed_to_send:
+						break;
+
+					case HeartbeatMode::peer_not_allowed_to_send:
+						this->session->send_heartbeats = false;
+						break;
+
+					default:
+						// RFC 6520 section 2:
+						// Upon reception of an unknown mode, an error Alert message using
+						// illegal_parameter as its AlertDescription MUST be sent in response.
+
+						this->session->WriteAlert(AlertDescription::illegal_parameter, AlertLevel::fatal);
+						switch_to_state(State::unexpected_heartbeat_mode_error);
+						return;
+					}
+				}
+
 				switch(this->key_exchange_algorithm)
 				{
 				case KeyExchangeAlgorithm::_KEA_RSA:
+				case KeyExchangeAlgorithm::DHE_DSS:
 					this->handshake_frame.Initialize(&this->handshake);
 					switch_to_state(State::expecting_certificate_state);
 					break;
@@ -126,17 +160,21 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+			
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_2_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::certificate)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_certificate_error);
-			}
-			else
-			{
-				switch_to_state(State::certificates_frame_pending_state);
+				if (this->handshake.msg_type != HandshakeType::certificate)
+				{
+					switch_to_state(State::expecting_certificate_error);
+				}
+				else
+				{
+					switch_to_state(State::certificates_frame_pending_state);
+				}
 			}
 			break;
 
@@ -145,11 +183,12 @@ namespace Tls
 			{
 				this->certificates_frame.Process(event, yield);
 			}
-			else if (this->certificates_frame.Failed())
+			
+			if (this->certificates_frame.Failed())
 			{
 				switch_to_state(State::certificates_frame_failed);
 			}
-			else
+			else if (this->certificates_frame.Succeeded())
 			{
 				this->handshake_frame.Initialize(&this->handshake);
 				switch_to_state(State::expecting_server_hello_done_state);
@@ -161,146 +200,147 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+			
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_3_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::server_hello_done)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_server_hello_done_error);
-			}
-			else if (this->handshake.length != 0)
-			{
-				switch_to_state(State::handshake_length_1_error);
-			}
-			else
-			{
-				Basic::PCCERT_CONTEXT cert = CertCreateCertificateContext(X509_ASN_ENCODING, &(this->certificates[0][0]), this->certificates[0].size());
-				if (cert == 0)
+				if (this->handshake.msg_type != HandshakeType::server_hello_done)
 				{
-					switch_to_state(State::CertCreateCertificateContext_failed);
-					return;
+					switch_to_state(State::expecting_server_hello_done_error);
 				}
-
-				Basic::BCRYPT_KEY_HANDLE public_key;
-				bool success = (bool)CryptImportPublicKeyInfoEx2(X509_ASN_ENCODING, &cert->pCertInfo->SubjectPublicKeyInfo, 0, 0, &public_key);
-				if (!success)
+				else if (this->handshake.length != 0)
 				{
-					switch_to_state(State::CryptImportPublicKeyInfoEx2_failed);
-					return;
+					switch_to_state(State::handshake_length_1_error);
 				}
-
-				PreMasterSecret pre_master_secret;
-				pre_master_secret.client_version = this->session->version_high;
-
-				NTSTATUS error = BCryptGenRandom(0, pre_master_secret.random, sizeof(pre_master_secret.random), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-				if (error != 0)
-				{
-					Basic::globals->HandleError("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
-					switch_to_state(State::BCryptGenRandom_failed);
-					return;
-				}
-
-				this->pre_master_secret_bytes = New<ByteVector>();
-
-				Inline<PreMasterSecretFrame> pre_master_secret_frame;
-				pre_master_secret_frame.Initialize(&pre_master_secret);
-
-				pre_master_secret_frame.SerializeTo(this->pre_master_secret_bytes);
-
-				// don't keep the pre_paster_secret in memory longer than necessary
-				ZeroMemory(&pre_master_secret, sizeof(pre_master_secret));
-
-				DWORD result_length = 0;
-
-				error = BCryptEncrypt(
-					public_key,
-					this->pre_master_secret_bytes->FirstElement(),
-					this->pre_master_secret_bytes->size(),
-					0,
-					0,
-					0,
-					0,
-					0,
-					&result_length,
-					BCRYPT_PAD_PKCS1);
-				if (error != 0)
-				{
-					Basic::globals->HandleError("ClientHandshake::Process BCryptEncrypt", error);
-					switch_to_state(State::BCryptEncrypt_1_failed);
-					return;
-				}
-
-				std::vector<opaque> pre_master_secret_encrypted;
-				pre_master_secret_encrypted.resize(result_length);
-
-				error = BCryptEncrypt(
-					public_key,
-					this->pre_master_secret_bytes->FirstElement(),
-					this->pre_master_secret_bytes->size(),
-					0,
-					0,
-					0,
-					&pre_master_secret_encrypted[0],
-					pre_master_secret_encrypted.size(),
-					&result_length,
-					BCRYPT_PAD_PKCS1);
-				if (error != 0)
-				{
-					Basic::globals->HandleError("ClientHandshake::Process BCryptEncrypt", error);
-					switch_to_state(State::BCryptEncrypt_2_failed);
-					return;
-				}
-
-				pre_master_secret_encrypted.resize(result_length);
-
-				CalculateKeys(this->pre_master_secret_bytes);
-
-				this->pre_master_secret_bytes = 0;
-
-				EncryptedPreMasterSecretFrame::Ref encryptedFrame = New<EncryptedPreMasterSecretFrame>();
-				if (this->session->version == 0x0300)
-					encryptedFrame->Initialize(&pre_master_secret_encrypted, 48);
 				else
+				{
+					Basic::PCCERT_CONTEXT cert = CertCreateCertificateContext(X509_ASN_ENCODING, &(this->certificates[0][0]), this->certificates[0].size());
+					if (cert == 0)
+					{
+						switch_to_state(State::CertCreateCertificateContext_failed);
+						return;
+					}
+
+					Basic::BCRYPT_KEY_HANDLE public_key;
+					bool success = (bool)CryptImportPublicKeyInfoEx2(X509_ASN_ENCODING, &cert->pCertInfo->SubjectPublicKeyInfo, 0, 0, &public_key);
+					if (!success)
+					{
+						switch_to_state(State::CryptImportPublicKeyInfoEx2_failed);
+						return;
+					}
+
+					PreMasterSecret pre_master_secret;
+					pre_master_secret.client_version = this->session->version_high;
+
+					NTSTATUS error = BCryptGenRandom(0, pre_master_secret.random, sizeof(pre_master_secret.random), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+					if (error != 0)
+					{
+						Basic::globals->HandleError("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+						switch_to_state(State::BCryptGenRandom_failed);
+						return;
+					}
+
+					this->pre_master_secret_bytes = New<ByteVector>();
+
+					Inline<PreMasterSecretFrame> pre_master_secret_frame;
+					pre_master_secret_frame.Initialize(&pre_master_secret);
+
+					pre_master_secret_frame.SerializeTo(this->pre_master_secret_bytes);
+
+					// don't keep the pre_paster_secret in memory longer than necessary
+					ZeroMemory(&pre_master_secret, sizeof(pre_master_secret));
+
+					DWORD result_length = 0;
+
+					error = BCryptEncrypt(
+						public_key,
+						this->pre_master_secret_bytes->FirstElement(),
+						this->pre_master_secret_bytes->size(),
+						0,
+						0,
+						0,
+						0,
+						0,
+						&result_length,
+						BCRYPT_PAD_PKCS1);
+					if (error != 0)
+					{
+						Basic::globals->HandleError("ClientHandshake::Process BCryptEncrypt", error);
+						switch_to_state(State::BCryptEncrypt_1_failed);
+						return;
+					}
+
+					std::vector<opaque> pre_master_secret_encrypted;
+					pre_master_secret_encrypted.resize(result_length);
+
+					error = BCryptEncrypt(
+						public_key,
+						this->pre_master_secret_bytes->FirstElement(),
+						this->pre_master_secret_bytes->size(),
+						0,
+						0,
+						0,
+						&pre_master_secret_encrypted[0],
+						pre_master_secret_encrypted.size(),
+						&result_length,
+						BCRYPT_PAD_PKCS1);
+					if (error != 0)
+					{
+						Basic::globals->HandleError("ClientHandshake::Process BCryptEncrypt", error);
+						switch_to_state(State::BCryptEncrypt_2_failed);
+						return;
+					}
+
+					pre_master_secret_encrypted.resize(result_length);
+
+					CalculateKeys(this->pre_master_secret_bytes);
+
+					this->pre_master_secret_bytes = 0;
+
+					EncryptedPreMasterSecretFrame::Ref encryptedFrame = New<EncryptedPreMasterSecretFrame>();
 					encryptedFrame->Initialize(&pre_master_secret_encrypted);
 
-				success = WriteMessage(this->session, HandshakeType::client_key_exchange, encryptedFrame.item());
-				if (!success)
-				{
-					switch_to_state(State::WriteMessage_2_failed);
-					return;
+					success = WriteMessage(this->session, HandshakeType::client_key_exchange, encryptedFrame.item());
+					if (!success)
+					{
+						switch_to_state(State::WriteMessage_2_failed);
+						return;
+					}
+
+					opaque clientFinishedLabel[] = { 'c', 'l', 'i', 'e', 'n', 't', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
+
+					this->finished_sent = New<ByteVector>();
+					this->finished_sent->resize(this->security_parameters->verify_data_length);
+
+					CalculateVerifyData(clientFinishedLabel, sizeof(clientFinishedLabel), this->finished_sent->FirstElement(), this->finished_sent->size());
+
+					this->session->WriteChangeCipherSpec();
+
+					success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent);
+					if (!success)
+					{
+						switch_to_state(State::WriteMessage_3_failed);
+						return;
+					}
+
+					opaque serverFinishedLabel[] = { 's', 'e', 'r', 'v', 'e', 'r', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
+
+					this->finished_expected.resize(this->security_parameters->verify_data_length);
+
+					Event::RemoveObserver<byte>(event, this->handshake_messages);
+
+					CalculateVerifyData(serverFinishedLabel, sizeof(serverFinishedLabel), &finished_expected[0], finished_expected.size());
+
+					ZeroMemory(this->handshake_messages->FirstElement(), this->handshake_messages->size());
+					this->handshake_messages->resize(0);
+
+					switch_to_state(State::expecting_cipher_change_state);
+
+					this->session->Flush();
 				}
-
-				opaque clientFinishedLabel[] = { 'c', 'l', 'i', 'e', 'n', 't', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
-
-				this->finished_sent = New<ByteVector>();
-				this->finished_sent->resize(this->security_parameters->verify_data_length);
-
-				CalculateVerifyData(clientFinishedLabel, sizeof(clientFinishedLabel), this->finished_sent->FirstElement(), this->finished_sent->size());
-
-				this->session->WriteChangeCipherSpec();
-
-				success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent);
-				if (!success)
-				{
-					switch_to_state(State::WriteMessage_3_failed);
-					return;
-				}
-
-				opaque serverFinishedLabel[] = { 's', 'e', 'r', 'v', 'e', 'r', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
-
-				this->finished_expected.resize(this->security_parameters->verify_data_length);
-
-				Event::RemoveObserver<byte>(event, this->handshake_messages);
-
-				CalculateVerifyData(serverFinishedLabel, sizeof(serverFinishedLabel), &finished_expected[0], finished_expected.size());
-
-				ZeroMemory(this->handshake_messages->FirstElement(), this->handshake_messages->size());
-				this->handshake_messages->resize(0);
-
-				switch_to_state(State::expecting_cipher_change_state);
-
-				this->session->Flush();
 			}
 			break;
 
@@ -322,24 +362,28 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+			
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_4_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::finished)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_finished_error);
-			}
-			else if (this->handshake.length != this->security_parameters->verify_data_length)
-			{
-				switch_to_state(State::handshake_length_2_error);
-			}
-			else
-			{
-				this->finished_received.resize(this->security_parameters->verify_data_length);
+				if (this->handshake.msg_type != HandshakeType::finished)
+				{
+					switch_to_state(State::expecting_finished_error);
+				}
+				else if (this->handshake.length != this->security_parameters->verify_data_length)
+				{
+					switch_to_state(State::handshake_length_2_error);
+				}
+				else
+				{
+					this->finished_received.resize(this->security_parameters->verify_data_length);
 
-				this->finished_received_frame.Initialize(&this->finished_received[0], this->finished_received.size());
-				switch_to_state(State::finished_received_frame_pending_state);
+					this->finished_received_frame.Initialize(&this->finished_received[0], this->finished_received.size());
+					switch_to_state(State::finished_received_frame_pending_state);
+				}
 			}
 			break;
 
@@ -348,11 +392,12 @@ namespace Tls
 			{
 				this->finished_received_frame.Process(event, yield);
 			}
-			else if (this->finished_received_frame.Failed())
+			
+			if (this->finished_received_frame.Failed())
 			{
 				switch_to_state(State::finished_received_frame_failed);
 			}
-			else
+			else if (this->finished_received_frame.Succeeded())
 			{
 				for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
 				{

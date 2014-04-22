@@ -184,11 +184,12 @@ namespace Html
 			{
 				this->char_ref_frame.Process(event, yield);
 			}
-			else if (this->char_ref_frame.Failed())
+			
+			if (this->char_ref_frame.Failed())
 			{
 				throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
 			}
-			else
+			else if (this->char_ref_frame.Succeeded())
 			{
 				if (this->character_reference->size() == 0)
 				{
@@ -252,11 +253,12 @@ namespace Html
 			{
 				this->char_ref_frame.Process(event, yield);
 			}
-			else if (this->char_ref_frame.Failed())
+			
+			if (this->char_ref_frame.Failed())
 			{
 				throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
 			}
-			else
+			else if (this->char_ref_frame.Succeeded())
 			{
 				if (this->character_reference->size() == 0)
 				{
@@ -1772,11 +1774,12 @@ namespace Html
 			{
 				this->char_ref_frame.Process(event, yield);
 			}
-			else if (this->char_ref_frame.Failed())
+			
+			if (this->char_ref_frame.Failed())
 			{
 				throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
 			}
-			else
+			else if (this->char_ref_frame.Succeeded())
 			{
 				if (this->character_reference->size() == 0)
 				{

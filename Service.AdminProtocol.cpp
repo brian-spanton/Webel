@@ -67,10 +67,17 @@ namespace Service
 
 			if (cookie_event->cookie.item() == this->get_cookie.item())
 			{
-				this->current_page = New<Web::Page>();
-				this->current_page->Initialize(this->html_parser->tree->document, this->client);
+				if (this->html_parser.item() != 0)
+				{
+					this->current_page = New<Web::Page>();
+					this->current_page->Initialize(this->html_parser->tree->document, this->client);
 
-				writer.WriteLine("Get completed");
+					writer.WriteLine("Get completed");
+				}
+				else
+				{
+					writer.WriteLine("Get failed to produce html");
+				}
 			}
 			else
 			{

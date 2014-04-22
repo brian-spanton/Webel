@@ -24,11 +24,12 @@ namespace Tls
 			{
 				this->type_frame.Process(event, yield);
 			}
-			else if (this->type_frame.Failed())
+
+			if (this->type_frame.Failed())
 			{
 				switch_to_state(State::type_frame_failed);
 			}
-			else
+			else if (this->type_frame.Succeeded())
 			{
 				switch_to_state(State::length_frame_pending_state);
 			}
@@ -39,11 +40,12 @@ namespace Tls
 			{
 				this->length_frame.Process(event, yield);
 			}
-			else if (this->length_frame.Failed())
+
+			if (this->length_frame.Failed())
 			{
 				switch_to_state(State::length_frame_failed);
 			}
-			else
+			else if (this->length_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

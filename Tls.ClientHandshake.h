@@ -53,6 +53,7 @@ namespace Tls
 			finished_received_error,
 			handshake_length_2_error,
 			BCryptGenRandom_failed,
+			unexpected_heartbeat_mode_error,
 		};
 
 		ServerHello serverHello;

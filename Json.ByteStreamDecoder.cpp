@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "Json.ByteStreamDecoder.h"
 #include "Json.Globals.h"
-#include "Basic.MemoryRange.h"
 #include "Basic.StreamFrame.h"
 #include "Basic.Globals.h"
 #include "Basic.Event.h"
@@ -39,12 +38,13 @@ namespace Json
 			{
 				this->bom_frame.Process(event, yield);
 			}
-			else if (this->bom_frame.Failed())
+			
+			if (this->bom_frame.Failed())
 			{
 				Event::RemoveObserver<byte>(event, this->unconsume);
 				switch_to_state(State::bom_frame_failed);
 			}
-			else
+			else if (this->bom_frame.Succeeded())
 			{
 				Event::RemoveObserver<byte>(event, this->unconsume);
 

@@ -25,11 +25,12 @@ namespace Tls
 			{
 				this->type_frame.Process(event, yield);
 			}
-			else if (this->type_frame.Failed())
+
+			if (this->type_frame.Failed())
 			{
 				switch_to_state(State::type_frame_failed);
 			}
-			else
+			else if (this->type_frame.Succeeded())
 			{
 				switch_to_state(State::version_frame_pending_state);
 			}
@@ -40,11 +41,12 @@ namespace Tls
 			{
 				this->version_frame.Process(event, yield);
 			}
-			else if (this->version_frame.Failed())
+
+			if (this->version_frame.Failed())
 			{
 				switch_to_state(State::version_frame_failed);
 			}
-			else
+			else if (this->version_frame.Succeeded())
 			{
 				switch_to_state(State::length_frame_pending_state);
 			}
@@ -55,11 +57,12 @@ namespace Tls
 			{
 				this->length_frame.Process(event, yield);
 			}
-			else if (this->length_frame.Failed())
+
+			if (this->length_frame.Failed())
 			{
 				switch_to_state(State::length_frame_failed);
 			}
-			else
+			else if (this->length_frame.Succeeded())
 			{
 				this->record->fragment = New<ByteVector>();
 				this->record->fragment->resize(this->record->length);
@@ -73,11 +76,12 @@ namespace Tls
 			{
 				this->fragment_frame.Process(event, yield);
 			}
-			else if (this->fragment_frame.Failed())
+
+			if (this->fragment_frame.Failed())
 			{
 				switch_to_state(State::fragment_frame_failed);
 			}
-			else
+			else if (this->fragment_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

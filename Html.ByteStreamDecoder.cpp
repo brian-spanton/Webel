@@ -5,7 +5,6 @@
 #include "Html.Globals.h"
 #include "Html.Parser.h"
 #include "Html.Types.h"
-#include "Basic.MemoryRange.h"
 #include "Basic.StreamFrame.h"
 
 namespace Html
@@ -40,12 +39,13 @@ namespace Html
 			{
 				this->bom_frame.Process(event, yield);
 			}
-			else if (this->bom_frame.Failed())
+			
+			if (this->bom_frame.Failed())
 			{
 				Event::RemoveObserver<byte>(event, this->unconsume);
 				switch_to_state(State::bom_frame_failed);
 			}
-			else
+			else if (this->bom_frame.Succeeded())
 			{
 				if (memcmp(this->bom, Basic::globals->utf_16_big_endian_bom, sizeof(Basic::globals->utf_16_big_endian_bom)) == 0)
 				{

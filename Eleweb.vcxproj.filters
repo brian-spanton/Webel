@@ -461,6 +461,15 @@
       <Filter>Service</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Tls.HeartbeatExtensionFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.HeartbeatMessageFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.HeartbeatProtocol.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -812,6 +821,15 @@
       <Filter>Service</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.HeartbeatMessageFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.HeartbeatProtocol.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Http">
@@ -835,9 +853,5 @@
     <Filter Include="Service">
       <UniqueIdentifier>{e7ae404a-c6ee-4fba-ba6b-c933bffa4746}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="LICENSE.txt" />
-    <Text Include="README.txt" />
   </ItemGroup>
 </Project>

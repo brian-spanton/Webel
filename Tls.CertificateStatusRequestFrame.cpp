@@ -24,11 +24,12 @@ namespace Tls
 			{
 				this->type_frame.Process(event, yield);
 			}
-			else if (this->type_frame.Failed())
+			
+			if (this->type_frame.Failed())
 			{
 				switch_to_state(State::type_frame_failed);
 			}
-			else
+			else if (this->type_frame.Succeeded())
 			{
 				switch (this->certificate_status_request->status_type)
 				{
@@ -48,11 +49,12 @@ namespace Tls
 			{
 				this->request_frame.Process(event, yield);
 			}
-			else if (this->request_frame.Failed())
+			
+			if (this->request_frame.Failed())
 			{
 				switch_to_state(State::request_frame_failed);
 			}
-			else
+			else if (this->request_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

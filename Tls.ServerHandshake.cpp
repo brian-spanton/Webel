@@ -36,18 +36,22 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_1_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::client_hello)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_client_hello_error);
-			}
-			else
-			{
-				this->client_hello_frame.Initialize(&this->clientHello, this->handshake.length);
-				switch_to_state(State::hello_frame_pending_state);
+				if (this->handshake.msg_type != HandshakeType::client_hello)
+				{
+					switch_to_state(State::expecting_client_hello_error);
+				}
+				else
+				{
+					this->client_hello_frame.Initialize(&this->clientHello, this->handshake.length);
+					switch_to_state(State::hello_frame_pending_state);
+				}
 			}
 			break;
 
@@ -56,11 +60,12 @@ namespace Tls
 			{
 				this->client_hello_frame.Process(event, yield);
 			}
-			else if (this->client_hello_frame.Failed())
+
+			if (this->client_hello_frame.Failed())
 			{
 				switch_to_state(State::hello_frame_failed);
 			}
-			else
+			else if (this->client_hello_frame.Succeeded())
 			{
 				if (this->clientHello.client_version < this->session->version_low)
 				{
@@ -145,6 +150,31 @@ namespace Tls
 				serverHello.server_version = this->session->version;
 				serverHello.session_id = this->session->session_id;
 				serverHello.random = this->security_parameters->server_random;
+				serverHello.heartbeat_extension_initialized = false;
+
+				if (this->clientHello.heartbeat_extension_initialized)
+				{
+					this->session->receive_heartbeats = true;
+
+					switch (this->clientHello.heartbeat_extension.mode)
+					{
+					case HeartbeatMode::peer_allowed_to_send:
+						break;
+
+					case HeartbeatMode::peer_not_allowed_to_send:
+						this->session->send_heartbeats = false;
+						break;
+
+					default:
+						// RFC 6520 section 2:
+						// Upon reception of an unknown mode, an error Alert message using
+						// illegal_parameter as its AlertDescription MUST be sent in response.
+
+						this->session->WriteAlert(AlertDescription::illegal_parameter, AlertLevel::fatal);
+						switch_to_state(State::unexpected_heartbeat_mode_error);
+						return;
+					}
+				}
 
 				Inline<ServerHelloFrame> server_hello_frame;
 				server_hello_frame.Initialize(&serverHello, 0);
@@ -172,6 +202,31 @@ namespace Tls
 					}
 					break;
 
+				// $$ implement DHE_DSS
+				//case KeyExchangeAlgorithm::DHE_DSS:
+				//	{
+				//		CertificatesFrame::Ref frame = New<Tls::CertificatesFrame>();
+				//		frame->Initialize(session->certificate->Certificates());
+
+				//		bool success = WriteMessage(this->session, HandshakeType::certificate, frame);
+				//		if (!success)
+				//		{
+				//			switch_to_state(State::WriteMessage_4_failed);
+				//			return;
+				//		}
+
+				//		ServerKeyExchangeFrame::Ref frame = New<Tls::CertificatesFrame>();
+				//		frame->Initialize(session->certificate->Certificates());
+
+				//		bool success = WriteMessage(this->session, HandshakeType::server_key_exchange, frame);
+				//		if (!success)
+				//		{
+				//			switch_to_state(State::WriteMessage_4_failed);
+				//			return;
+				//		}
+				//	}
+				//	break;
+
 				default:
 					switch_to_state(State::unexpected_key_exchange_algorithm_2_error);
 					return;
@@ -196,34 +251,44 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_2_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::client_key_exchange)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_client_key_exchange_error);
-			}
-			else
-			{
-				switch(this->key_exchange_algorithm)
+				if (this->handshake.msg_type != HandshakeType::client_key_exchange)
 				{
-				case KeyExchangeAlgorithm::_KEA_RSA:
+					switch_to_state(State::expecting_client_key_exchange_error);
+				}
+				else
+				{
+					switch(this->key_exchange_algorithm)
 					{
-						this->pre_master_secret_bytes = New<ByteVector>();
-
-						if (this->session->version == 0x0300)
-							this->pre_master_secret_frame.Initialize(this->pre_master_secret_bytes, 48);
-						else
+					case KeyExchangeAlgorithm::_KEA_RSA:
+						{
+							this->pre_master_secret_bytes = New<ByteVector>();
 							this->pre_master_secret_frame.Initialize(this->pre_master_secret_bytes);
 
-						switch_to_state(State::pre_master_secret_frame_pending);
-					}
-					break;
+							switch_to_state(State::pre_master_secret_frame_pending);
+						}
+						break;
 
-				default:
-					switch_to_state(State::unexpected_key_exchange_algorithm_1_error);
-					break;
+					// $$ implement DHE_DSS
+					//case KeyExchangeAlgorithm::DHE_DSS:
+					//	{
+					//		this->pre_master_secret_bytes = New<ByteVector>();
+					//		this->pre_master_secret_frame.Initialize(this->pre_master_secret_bytes);
+
+					//		switch_to_state(State::client_diffie_hellman_public_value_frame_pending);
+					//	}
+					//	break;
+
+					default:
+						switch_to_state(State::unexpected_key_exchange_algorithm_1_error);
+						break;
+					}
 				}
 			}
 			break;
@@ -233,11 +298,12 @@ namespace Tls
 			{
 				this->pre_master_secret_frame.Process(event, yield);
 			}
-			else if (this->pre_master_secret_frame.Failed())
+
+			if (this->pre_master_secret_frame.Failed())
 			{
 				switch_to_state(State::pre_master_secret_frame_failed);
 			}
-			else
+			else if (this->pre_master_secret_frame.Succeeded())
 			{
 				ByteVector::Ref pre_master_secret_bytes = New<ByteVector>();
 
@@ -303,23 +369,27 @@ namespace Tls
 			{
 				this->handshake_frame.Process(event, yield);
 			}
-			else if (this->handshake_frame.Failed())
+
+			if (this->handshake_frame.Failed())
 			{
 				switch_to_state(State::handshake_frame_3_failed);
 			}
-			else if (this->handshake.msg_type != HandshakeType::finished)
+			else if (this->handshake_frame.Succeeded())
 			{
-				switch_to_state(State::expecting_finished_error);
-			}
-			else if (this->handshake.length != this->security_parameters->verify_data_length)
-			{
-				switch_to_state(State::handshake_length_error);
-			}
-			else
-			{
-				this->finished_received.resize(this->security_parameters->verify_data_length);
-				this->finished_received_frame.Initialize(&this->finished_received[0], this->finished_received.size());
-				switch_to_state(State::finished_received_frame_pending_state);
+				if (this->handshake.msg_type != HandshakeType::finished)
+				{
+					switch_to_state(State::expecting_finished_error);
+				}
+				else if (this->handshake.length != this->security_parameters->verify_data_length)
+				{
+					switch_to_state(State::handshake_length_error);
+				}
+				else
+				{
+					this->finished_received.resize(this->security_parameters->verify_data_length);
+					this->finished_received_frame.Initialize(&this->finished_received[0], this->finished_received.size());
+					switch_to_state(State::finished_received_frame_pending_state);
+				}
 			}
 			break;
 
@@ -328,11 +398,12 @@ namespace Tls
 			{
 				this->finished_received_frame.Process(event, yield);
 			}
-			else if (this->finished_received_frame.Failed())
+
+			if (this->finished_received_frame.Failed())
 			{
 				switch_to_state(State::finished_received_frame_failed);
 			}
-			else
+			else if (this->finished_received_frame.Succeeded())
 			{
 				for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
 				{
@@ -428,6 +499,10 @@ namespace Tls
 					return Basic::globals->HandleError("Could be version roll-back attack.", 0);
 			}
 			break;
+
+		// $$ implement DHE_DSS
+		//case KeyExchangeAlgorithm::DHE_DSS:
+		//	break;
 
 		default:
 			return Basic::globals->HandleError("ServerHandshake::ProcessClientKeyExchange unexpected key_exchange_algorithm", 0);

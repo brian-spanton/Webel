@@ -73,11 +73,12 @@ namespace Json
 			{
 				this->script_frame.Process(event, yield);
 			}
-			else if (this->script_frame.Failed())
+			
+			if (this->script_frame.Failed())
 			{
 				switch_to_state(State::script_frame_failed);
 			}
-			else
+			else if (this->script_frame.Succeeded())
 			{
 				Html::Node::Ref element;
 
@@ -96,11 +97,12 @@ namespace Json
 			{
 				this->array_frame.Process(event, yield);
 			}
-			else if (this->array_frame.Failed())
+			
+			if (this->array_frame.Failed())
 			{
 				switch_to_state(State::array_frame_failed);
 			}
-			else
+			else if (this->array_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}
@@ -111,11 +113,12 @@ namespace Json
 			{
 				this->object_frame.Process(event, yield);
 			}
-			else if (this->object_frame.Failed())
+			
+			if (this->object_frame.Failed())
 			{
 				switch_to_state(State::object_frame_failed);
 			}
-			else
+			else if (this->object_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

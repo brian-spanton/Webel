@@ -13,6 +13,7 @@
 #include "Tls.CertificateStatusRequestFrame.h"
 #include "Tls.EllipticCurveListFrame.h"
 #include "Tls.ECPointFormatListFrame.h"
+#include "Tls.HeartbeatExtensionFrame.h"
 
 namespace Tls
 {
@@ -38,6 +39,7 @@ namespace Tls
 			elliptic_curve_list_frame_pending_state,
 			ec_point_format_list_frame_pending_state,
 			unknown_extension_frame_pending_state,
+			heartbeat_extension_frame_pending_state,
 			next_extension_state,
 			done_state = Succeeded_State,
 			version_frame_failed,
@@ -56,6 +58,7 @@ namespace Tls
 			elliptic_curve_list_frame_failed,
 			ec_point_format_list_frame_failed,
 			unknown_extension_frame_failed,
+			heartbeat_extension_frame_failed,
 		};
 
 		uint32 record_frame_length;
@@ -77,8 +80,10 @@ namespace Tls
 		Inline<EllipticCurveListFrame> elliptic_curve_list_frame;
 		Inline<ECPointFormatListFrame> ec_point_format_list_frame;
 		Inline<IgnoreFrame> unknown_extension_frame;
+		Inline<HeartbeatExtensionFrame> heartbeat_extension_frame;
 
 		void switch_to_state(IEvent* event, State state);
+		void SerializeExtensionsTo(IStream<byte>* stream);
 
 	public:
 		typedef Basic::Ref<ClientHelloFrame, IProcess> Ref;

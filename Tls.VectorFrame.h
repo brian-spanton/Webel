@@ -56,28 +56,6 @@ namespace Tls
 		}
 
 	protected:
-		void CalculateLength()
-		{
-			Inline<CountStream<byte> > countStream;
-			WriteItemsTo(&countStream);
-
-			this->encoded_length = countStream.count;
-
-			if (this->encoded_length < encoded_length_min)
-				throw new Exception("Tls::VectorFrame::Write too short");
-
-			if (this->encoded_length > encoded_length_max)
-				throw new Exception("Tls::VectorFrame::Write too long");
-		}
-
-		void WriteLengthTo(IStream<byte>* stream)
-		{
-			Inline<NumberFrame<uint32, length_of_encoded_length> > number;
-			number.Initialize(&this->encoded_length);
-
-			number.SerializeTo(stream);
-		}
-
 		void WriteItemsTo(IStream<byte>* stream)
 		{
 			for (Vector::iterator it = this->items->begin(); it != this->items->end(); it++)
@@ -111,14 +89,6 @@ namespace Tls
 			this->length_frame.Initialize(&this->encoded_length);
 		}
 
-		void Initialize(Vector* items, uint32 encoded_length)
-		{
-			__super::Initialize();
-			this->items = items;
-			this->encoded_length = encoded_length;
-			__super::switch_to_state(State::length_known_state);
-		}
-
 		virtual void IProcess::Process(IEvent* event, bool* yield)
 		{
 			switch (frame_state())
@@ -128,11 +98,12 @@ namespace Tls
 				{
 					this->length_frame.Process(event, yield);
 				}
-				else if (this->length_frame.Failed())
+
+				if (this->length_frame.Failed())
 				{
 					switch_to_state(event, State::length_frame_failed);
 				}
-				else
+				else if (this->length_frame.Succeeded())
 				{
 					switch_to_state(event, State::length_known_state);
 				}
@@ -216,8 +187,19 @@ namespace Tls
 
 		virtual void ISerializable::SerializeTo(IStream<byte>* stream)
 		{
-			CalculateLength();
-			WriteLengthTo(stream);
+			Inline<CountStream<byte> > countStream;
+			WriteItemsTo(&countStream);
+
+			if (countStream.count < encoded_length_min)
+				throw new Exception("Tls::VectorFrame::Write too short");
+
+			if (countStream.count > encoded_length_max)
+				throw new Exception("Tls::VectorFrame::Write too long");
+
+			Inline<NumberFrame<uint32, length_of_encoded_length> > number;
+			number.Initialize(&countStream.count);
+			number.SerializeTo(stream);
+
 			WriteItemsTo(stream);
 		}
 	};

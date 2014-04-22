@@ -123,11 +123,12 @@ namespace Http
 			{
 				this->headers_frame.Process(event, yield);
 			}
-			else if (this->headers_frame.Failed())
+			
+			if (this->headers_frame.Failed())
 			{
 				switch_to_state(State::headers_frame_failed);
 			}
-			else
+			else if (this->headers_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}

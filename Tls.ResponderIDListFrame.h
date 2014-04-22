@@ -6,7 +6,7 @@
 
 namespace Tls
 {
-	class ResponderIDListFrame : public VectorFrame<ResponderID, 0, 0xffff, 2>
+	class ResponderIDListFrame : public VectorFrame<OpaqueVector, 0, 0xffff, 2>
 	{
 	private:
 		virtual void GetItemFrame(Item* item, Basic::Ref<IProcess>* value)

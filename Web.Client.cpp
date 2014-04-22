@@ -91,7 +91,7 @@ namespace Web
 
 	void Client::Retry(Http::Request* request)
 	{
-		if (this->retries == 2)
+		if (this->retries == 0) // $$ was 2
 		{
 			Error("retry error");
 			this->planned_request = 0;

@@ -6,8 +6,6 @@
 #include "Basic.HashAlgorithm.h"
 #include "Basic.HashStream.h"
 #include "Basic.Cng.h"
-#include "Tls.ClientHelloFrame.h"
-#include "Tls.ServerHelloFrame.h"
 #include "Tls.RecordLayer.h"
 #include "Tls.HandshakeFrame.h"
 #include "Tls.CertificatesFrame.h"
@@ -38,10 +36,6 @@ namespace Tls
 		if (Succeeded())
 		{
 			this->session->ConnectApplication();
-		}
-		else if (Failed())
-		{
-			this->session->WriteEOF();
 		}
 	}
 

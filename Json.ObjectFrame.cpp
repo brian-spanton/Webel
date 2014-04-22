@@ -61,11 +61,12 @@ namespace Json
 			{
 				this->script_frame.Process(event, yield);
 			}
-			else if (this->script_frame.Failed())
+			
+			if (this->script_frame.Failed())
 			{
 				switch_to_state(State::script_frame_failed);
 			}
-			else
+			else if (this->script_frame.Succeeded())
 			{
 				Html::Node::Ref element;
 

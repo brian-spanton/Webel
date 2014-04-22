@@ -4,7 +4,7 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.AlertFrame.h"
+#include "Tls.HeartbeatMessageFrame.h"
 
 namespace Tls
 {
@@ -12,26 +12,27 @@ namespace Tls
 
 	class RecordLayer;
 
-	class AlertProtocol : public Frame
+	class HeartbeatProtocol : public Frame
 	{
 	protected:
 		enum State
 		{
 			start_state = Start_State,
-			alert_frame_pending_state,
+			heartbeat_message_frame_pending_state,
 			done_state = Succeeded_State,
-			alert_frame_failed,
-			alert_frame_peer_close_notify_state,
+			heartbeat_message_frame_failed,
+			unexpected_type_error,
 		};
 
 		RecordLayer* session;
-		Alert alert;
-		Inline<AlertFrame> alert_frame;
+		HeartbeatMessage heartbeat_message;
+		Inline<HeartbeatMessageFrame> heartbeat_message_frame;
 
 	public:
-		typedef Basic::Ref<AlertProtocol, IProcess> Ref;
+		typedef Basic::Ref<HeartbeatProtocol, IProcess> Ref;
 
 		void Initialize(RecordLayer* session);
 		virtual void IProcess::Process(IEvent* event, bool* yield);
+		void SetPlaintextLength(uint16 plaintext_length);
 	};
 }

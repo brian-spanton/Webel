@@ -12,6 +12,7 @@
 #include "Tls.CipherSuitesFrame.h"
 #include "Tls.ExtensionHeaderFrame.h"
 #include "Tls.VectorFrames.h"
+#include "Tls.HeartbeatExtensionFrame.h"
 
 namespace Tls
 {
@@ -31,6 +32,7 @@ namespace Tls
 			extensions_length_frame_pending_state,
 			extension_header_frame_pending_state,
 			unknown_extension_frame_pending_state,
+			heartbeat_extension_frame_pending_state,
 			next_extension_state,
 			done_state = Succeeded_State,
 			version_frame_failed,
@@ -43,6 +45,7 @@ namespace Tls
 			extension_header_frame_failed,
 			extensions_length_error,
 			unknown_extension_frame_failed,
+			heartbeat_extension_frame_failed,
 		};
 
 		uint32 record_frame_length;
@@ -58,6 +61,7 @@ namespace Tls
 		Inline<NumberFrame<uint32, sizeof(uint16)> > extensions_length_frame;
 		Inline<ExtensionHeaderFrame> extension_header_frame;
 		Inline<IgnoreFrame> unknown_extension_frame;
+		Inline<HeartbeatExtensionFrame> heartbeat_extension_frame;
 
 		void switch_to_state(IEvent* event, State state);
 

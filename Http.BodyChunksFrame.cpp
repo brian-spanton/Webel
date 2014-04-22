@@ -72,11 +72,12 @@ namespace Http
 			{
 				this->chunk_frame.Process(event, yield);
 			}
-			else if (this->chunk_frame.Failed())
+			
+			if (this->chunk_frame.Failed())
 			{
 				switch_to_state(State::chunk_frame_failed);
 			}
-			else
+			else if (this->chunk_frame.Succeeded())
 			{
 				byte b;
 				if (!Event::ReadNext(event, &b, yield))

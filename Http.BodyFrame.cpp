@@ -123,11 +123,12 @@ namespace Http
 			{
 				this->chunks_frame.Process(event, yield);
 			}
-			else if (this->chunks_frame.Failed())
+			
+			if (this->chunks_frame.Failed())
 			{
 				switch_to_state(State::chunks_frame_failed);
 			}
-			else
+			else if (this->chunks_frame.Succeeded())
 			{
 				this->headers_frame.Initialize(this->headers);
 				switch_to_state(State::headers_frame_pending);
@@ -139,11 +140,12 @@ namespace Http
 			{
 				this->chunk_frame.Process(event, yield);
 			}
-			else if (this->chunk_frame.Failed())
+			
+			if (this->chunk_frame.Failed())
 			{
 				switch_to_state(State::chunk_frame_failed);
 			}
-			else
+			else if (this->chunk_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}
@@ -154,11 +156,12 @@ namespace Http
 			{
 				this->disconnect_frame.Process(event, yield);
 			}
-			else if (this->disconnect_frame.Failed())
+			
+			if (this->disconnect_frame.Failed())
 			{
 				switch_to_state(State::disconnect_frame_failed);
 			}
-			else
+			else if (this->disconnect_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}
@@ -169,11 +172,12 @@ namespace Http
 			{
 				this->headers_frame.Process(event, yield);
 			}
-			else if (this->headers_frame.Failed())
+			
+			if (this->headers_frame.Failed())
 			{
 				switch_to_state(State::header_frame_failed);
 			}
-			else
+			else if (this->headers_frame.Succeeded())
 			{
 				switch_to_state(State::done_state);
 			}
