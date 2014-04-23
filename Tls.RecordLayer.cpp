@@ -32,7 +32,7 @@ namespace Tls
 
 		this->session_id.resize(32);
 
-		this->send_heartbeats = true; // $$
+		this->send_heartbeats = false; // $$
 		this->receive_heartbeats = false;
 
 		NTSTATUS error = BCryptGenRandom(0, &this->session_id[0], this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
@@ -200,7 +200,7 @@ namespace Tls
 
 			heartbeat_message.type = HeartbeatMessageType::heartbeat_response;
 
-			// $$ heartbleed test
+			// $$ heartbleed test could be here
 			heartbeat_message.payload_length = 16;
 
 			heartbeat_message.payload.resize(16);
