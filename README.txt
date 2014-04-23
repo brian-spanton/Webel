@@ -1,11 +1,11 @@
-Copyright © 2014 Brian Spanton
+﻿Copyright © 2014 Brian Spanton
 
-Eleweb
-======
+Webel
+=====
 
-Eleweb is an independent C++ implementation of sockets, TLS, HTTP, HTML, JSON and more,
-in a Windows service framework suitable for web crawler, web server, web client, web browser,
-load simulation, http proxy, or higher level applications.
+Webel (web elements) is an independent C++ implementation of sockets, TLS, HTTP, HTML, JSON 
+and more, in a Windows service framework suitable for web crawler, web server, web client, 
+web browser, load simulation, http proxy, or higher level applications.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
