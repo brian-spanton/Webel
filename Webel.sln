@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Eleweb", "Eleweb.vcxproj", "{B8130999-244D-47B0-966B-8649520242DE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Webel", "Webel.vcxproj", "{B8130999-244D-47B0-966B-8649520242DE}"
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
@@ -9,7 +9,7 @@ Global
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://atlas:8080/tfs/defaultcollection
 		SccLocalPath0 = .
-		SccProjectUniqueName1 = Eleweb.vcxproj
+		SccProjectUniqueName1 = Webel.vcxproj
 		SccLocalPath1 = .
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
