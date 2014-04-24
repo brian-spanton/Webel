@@ -6,32 +6,32 @@
 
 namespace Http
 {
-	void MediaType::Initialize()
-	{
-		this->type = New<UnicodeString>();
-		this->subtype = New<UnicodeString>();
-		this->parameters = New<NameValueCollection >();
-	}
+    void MediaType::Initialize()
+    {
+        this->type = New<UnicodeString>();
+        this->subtype = New<UnicodeString>();
+        this->parameters = New<NameValueCollection >();
+    }
 
-	void MediaType::Initialize(UnicodeString* value)
-	{
-		Initialize();
+    void MediaType::Initialize(UnicodeString* value)
+    {
+        Initialize();
 
-		Inline<MediaTypeStream> frame;
-		frame.Initialize(this);
+        Inline<MediaTypeStream> frame;
+        frame.Initialize(this);
 
-		frame.Write(value->c_str(), value->size());
-		frame.WriteEOF();
-	}
+        frame.Write(value->c_str(), value->size());
+        frame.WriteEOF();
+    }
 
-	bool MediaType::equals(MediaType* value)
-	{
-		if (!value->type.equals<false>(this->type))
-			return false;
+    bool MediaType::equals(MediaType* value)
+    {
+        if (!value->type.equals<false>(this->type))
+            return false;
 
-		if (!value->subtype.equals<false>(this->subtype))
-			return false;
+        if (!value->subtype.equals<false>(this->subtype))
+            return false;
 
-		return true;
-	}
+        return true;
+    }
 }

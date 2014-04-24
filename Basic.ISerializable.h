@@ -7,8 +7,8 @@
 
 namespace Basic
 {
-	__interface ISerializable : public IRefCounted
-	{
-		void SerializeTo(IStream<byte>* stream);
-	};
+    __interface ISerializable : public IRefCounted
+    {
+        void SerializeTo(IStream<byte>* stream);
+    };
 }

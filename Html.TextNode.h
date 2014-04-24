@@ -7,17 +7,17 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class TextNode : public Node
-	{
-	public:
-		typedef Basic::Ref<TextNode> Ref;
+    class TextNode : public Node
+    {
+    public:
+        typedef Basic::Ref<TextNode> Ref;
 
-		UnicodeString::Ref data; // REF
+        UnicodeString::Ref data; // REF
 
-		TextNode();
+        TextNode();
 
-		virtual void write_to_human(IStream<Codepoint>* stream, bool verbose);
-	};
+        virtual void write_to_human(IStream<Codepoint>* stream, bool verbose);
+    };
 }

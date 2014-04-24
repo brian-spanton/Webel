@@ -6,9 +6,9 @@
 
 namespace Basic
 {
-	template <class T>
-	__interface IBufferedStream : public IStream<T>
-	{
-		void Flush();
-	};
+    template <class T>
+    __interface IBufferedStream : public IStream<T>
+    {
+        void Flush();
+    };
 }

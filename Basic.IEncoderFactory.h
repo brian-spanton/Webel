@@ -6,8 +6,8 @@
 
 namespace Basic
 {
-	__interface IEncoderFactory : public IRefCounted
-	{
-		void CreateEncoder(Ref<IEncoder>* value);
-	};
+    __interface IEncoderFactory : public IRefCounted
+    {
+        void CreateEncoder(Ref<IEncoder>* value);
+    };
 }

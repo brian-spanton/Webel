@@ -6,9 +6,9 @@
 
 namespace Basic
 {
-	__interface IEncoder : public IStream<Codepoint>
-	{
-		void set_destination(IStream<byte>* destination);
-		void set_error_replacement_byte(byte b);
-	};
+    __interface IEncoder : public IStream<Codepoint>
+    {
+        void set_destination(IStream<byte>* destination);
+        void set_error_replacement_byte(byte b);
+    };
 }

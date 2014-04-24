@@ -7,22 +7,22 @@
 
 namespace Http
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class DisconnectBodyFrame : public Frame
-	{
-	private:
-		enum State
-		{
-			receiving_body_state = Start_State,
-			done_state = Succeeded_State,
-		};
+    class DisconnectBodyFrame : public Frame
+    {
+    private:
+        enum State
+        {
+            receiving_body_state = Start_State,
+            done_state = Succeeded_State,
+        };
 
-		Ref<IStream<byte> > body_stream; // REF
+        Ref<IStream<byte> > body_stream; // REF
 
-	public:
-		void Initialize(IStream<byte>* body_stream);
+    public:
+        void Initialize(IStream<byte>* body_stream);
 
-		virtual void IProcess::Process(IEvent* event, bool* yield);
-	};
+        virtual void IProcess::Process(IEvent* event, bool* yield);
+    };
 }

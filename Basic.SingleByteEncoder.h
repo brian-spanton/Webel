@@ -8,40 +8,40 @@
 
 namespace Basic
 {
-	class SingleByteEncoder : public IEncoder
-	{
-	private:
-		Ref<IStream<byte> > destination; // REF
-		Ref<ISingleByteEncodingIndex> index; // REF
-		byte error_replacement_byte;
+    class SingleByteEncoder : public IEncoder
+    {
+    private:
+        Ref<IStream<byte> > destination; // REF
+        Ref<ISingleByteEncodingIndex> index; // REF
+        byte error_replacement_byte;
 
-		void Emit(byte b);
-		void EncoderError(Codepoint codepoint);
+        void Emit(byte b);
+        void EncoderError(Codepoint codepoint);
 
-	public:
-		typedef Basic::Ref<SingleByteEncoder> Ref;
+    public:
+        typedef Basic::Ref<SingleByteEncoder> Ref;
 
-		SingleByteEncoder();
+        SingleByteEncoder();
 
-		void Initialize(ISingleByteEncodingIndex* index);
-		void Initialize(ISingleByteEncodingIndex* index, IStream<byte>* destination);
+        void Initialize(ISingleByteEncodingIndex* index);
+        void Initialize(ISingleByteEncodingIndex* index, IStream<byte>* destination);
 
-		void IEncoder::set_destination(IStream<byte>* destination);
-		void IEncoder::set_error_replacement_byte(byte b);
-		void IEncoder::Write(const Codepoint* elements, uint32 count);
-		void IEncoder::WriteEOF();
-	};
+        void IEncoder::set_destination(IStream<byte>* destination);
+        void IEncoder::set_error_replacement_byte(byte b);
+        void IEncoder::Write(const Codepoint* elements, uint32 count);
+        void IEncoder::WriteEOF();
+    };
 
-	class SingleByteEncoderFactory : public IEncoderFactory
-	{
-	private:
-		Ref<ISingleByteEncodingIndex> index; // REF
+    class SingleByteEncoderFactory : public IEncoderFactory
+    {
+    private:
+        Ref<ISingleByteEncodingIndex> index; // REF
 
-	public:
-		typedef Ref<SingleByteEncoderFactory, IEncoderFactory> Ref;
+    public:
+        typedef Ref<SingleByteEncoderFactory, IEncoderFactory> Ref;
 
-		void Initialize(ISingleByteEncodingIndex* index);
+        void Initialize(ISingleByteEncodingIndex* index);
 
-		virtual void IEncoderFactory::CreateEncoder(Basic::Ref<IEncoder>* encoder);
-	};
+        virtual void IEncoderFactory::CreateEncoder(Basic::Ref<IEncoder>* encoder);
+    };
 }

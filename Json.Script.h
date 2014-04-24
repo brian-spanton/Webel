@@ -9,19 +9,19 @@
 
 namespace Json
 {
-	class Script
-	{
-	private:
-		void deep_text(Html::Node::Ref domain, UnicodeString::Ref* result);
+    class Script
+    {
+    private:
+        void deep_text(Html::Node::Ref domain, UnicodeString::Ref* result);
 
-	public:
-		Basic::UnicodeString::Ref element_name; // REF
-		Basic::UnicodeString::Ref attribute_name; // REF
-		Basic::UnicodeString::Ref method_name; // REF
-		Value::Ref parameter_value; // REF
+    public:
+        Basic::UnicodeString::Ref element_name; // REF
+        Basic::UnicodeString::Ref attribute_name; // REF
+        Basic::UnicodeString::Ref method_name; // REF
+        Value::Ref parameter_value; // REF
 
-		void Initialize();
-		bool Execute(Html::Node::Ref domain, Html::Node::Ref after, Html::Node::Ref* result);
-		bool Execute(Html::Node::Ref domain, UnicodeString::Ref* result);
-	};
+        void Initialize();
+        bool Execute(Html::Node::Ref domain, Html::Node::Ref after, Html::Node::Ref* result);
+        bool Execute(Html::Node::Ref domain, UnicodeString::Ref* result);
+    };
 }

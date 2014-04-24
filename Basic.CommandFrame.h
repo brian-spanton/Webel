@@ -7,24 +7,24 @@
 
 namespace Basic
 {
-	class CommandFrame : public Frame, public IRefHolder
-	{
-	private:
-		enum State
-		{
-			word_state = Start_State,
-			done_state = Succeeded_State,
-		};
+    class CommandFrame : public Frame, public IRefHolder
+    {
+    private:
+        enum State
+        {
+            word_state = Start_State,
+            done_state = Succeeded_State,
+        };
 
-		UnicodeString::Ref word;
-		std::vector<UnicodeString::Ref>* command; // REF
+        UnicodeString::Ref word;
+        std::vector<UnicodeString::Ref>* command; // REF
 
-	public:
-		typedef Basic::Ref<CommandFrame, IProcess> Ref;
+    public:
+        typedef Basic::Ref<CommandFrame, IProcess> Ref;
 
-		CommandFrame();
+        CommandFrame();
 
-		void Initialize(std::vector<UnicodeString::Ref>* command);
-		virtual void IProcess::Process(IEvent* event, bool* yield);
-	};
+        void Initialize(std::vector<UnicodeString::Ref>* command);
+        virtual void IProcess::Process(IEvent* event, bool* yield);
+    };
 }

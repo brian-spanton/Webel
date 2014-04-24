@@ -9,18 +9,18 @@
 
 namespace Service
 {
-	using namespace Http;
+    using namespace Http;
 
-	class HttpServer : public Web::Server
-	{
-	private:
-		static void AdminRequest(Request* request, Response* response);
-		static void EchoRequest(Request* request, Response* response);
-		static void QuestionRequest(Request* request, Response* response);
+    class HttpServer : public Web::Server
+    {
+    private:
+        static void AdminRequest(Request* request, Response* response);
+        static void EchoRequest(Request* request, Response* response);
+        static void QuestionRequest(Request* request, Response* response);
 
-	public:
-		typedef Basic::Ref<HttpServer, IProcess> Ref;
+    public:
+        typedef Basic::Ref<HttpServer, IProcess> Ref;
 
-		virtual void Process();
-	};
+        virtual void Process();
+    };
 }

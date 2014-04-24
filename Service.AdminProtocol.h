@@ -18,36 +18,36 @@
 
 namespace Service
 {
-	class AdminProtocol : public Basic::Frame
-	{
-	private:
-		enum State
-		{
-			start_state = Start_State,
-			command_frame_pending_state,
-			done_state = Succeeded_State,
-			peer_write_failed,
-			peer_flush_failed,
-		};
+    class AdminProtocol : public Basic::Frame
+    {
+    private:
+        enum State
+        {
+            start_state = Start_State,
+            command_frame_pending_state,
+            done_state = Succeeded_State,
+            peer_write_failed,
+            peer_flush_failed,
+        };
 
-		Basic::Lock lock;
-		std::vector<Basic::UnicodeString::Ref> command; // REF
-		Basic::Inline<Basic::CommandFrame> command_frame;
-		Basic::Ref<Basic::IStream<Codepoint> > peer; // REF
-		Web::Client::Ref client; // REF
-		Html::Parser::Ref html_parser; // REF
-		Web::Page::Ref current_page; // REF
-		Web::Form::Ref current_form; // REF
-		Basic::ByteString::Ref get_cookie; // REF
+        Basic::Lock lock;
+        std::vector<Basic::UnicodeString::Ref> command; // REF
+        Basic::Inline<Basic::CommandFrame> command_frame;
+        Basic::Ref<Basic::IStream<Codepoint> > peer; // REF
+        Web::Client::Ref client; // REF
+        Html::Parser::Ref html_parser; // REF
+        Web::Page::Ref current_page; // REF
+        Web::Form::Ref current_form; // REF
+        Basic::ByteString::Ref get_cookie; // REF
 
-		void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
+        void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
 
-	public:
-		typedef Basic::Ref<AdminProtocol, IProcess> Ref;
+    public:
+        typedef Basic::Ref<AdminProtocol, IProcess> Ref;
 
-		void Initialize(Basic::IStream<Codepoint>* peer);
-		void set_peer(Basic::IStream<Codepoint>* peer);
+        void Initialize(Basic::IStream<Codepoint>* peer);
+        void set_peer(Basic::IStream<Codepoint>* peer);
 
-		virtual void Basic::IProcess::Process(Basic::IEvent* event, bool* yield);
-	};
+        virtual void Basic::IProcess::Process(Basic::IEvent* event, bool* yield);
+    };
 }

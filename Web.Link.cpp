@@ -8,31 +8,31 @@
 
 namespace Web
 {
-	void Link::Initialize(ElementNode* element, Uri* document_url)
-	{
-		this->element = element;
+    void Link::Initialize(ElementNode* element, Uri* document_url)
+    {
+        this->element = element;
 
-		UnicodeString::Ref href_attribute_value;
-		this->element->get_attribute(Html::globals->href_attribute_name, &href_attribute_value);
+        UnicodeString::Ref href_attribute_value;
+        this->element->get_attribute(Html::globals->href_attribute_name, &href_attribute_value);
 
-		if (href_attribute_value.is_null_or_empty() == false)
-		{
-			Uri::Ref url = New<Uri>();
-			url->Initialize();
+        if (href_attribute_value.is_null_or_empty() == false)
+        {
+            Uri::Ref url = New<Uri>();
+            url->Initialize();
 
-			bool success = url->Parse(href_attribute_value, document_url);
-			if (success)
-			{
-				this->url = url;
-			}
-		}
+            bool success = url->Parse(href_attribute_value, document_url);
+            if (success)
+            {
+                this->url = url;
+            }
+        }
 
-		this->text = New<UnicodeString>();
-		this->text->reserve(0x100);
+        this->text = New<UnicodeString>();
+        this->text->reserve(0x100);
 
-		Inline<TextSanitizer> stream;
-		stream.Initialize(this->text);
+        Inline<TextSanitizer> stream;
+        stream.Initialize(this->text);
 
-		element->extract_text(&stream);
-	}
+        element->extract_text(&stream);
+    }
 }

@@ -6,8 +6,8 @@
 
 namespace Basic
 {
-	__interface ICompletion : public IRefCounted
-	{
-		void CompleteAsync(OVERLAPPED_ENTRY& entry);
-	};
+    __interface ICompletion : public IRefCounted
+    {
+        void CompleteAsync(OVERLAPPED_ENTRY& entry);
+    };
 }

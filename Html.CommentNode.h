@@ -7,15 +7,15 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class CommentNode : public Node
-	{
-	public:
-		typedef Basic::Ref<CommentNode> Ref;
+    class CommentNode : public Node
+    {
+    public:
+        typedef Basic::Ref<CommentNode> Ref;
 
-		UnicodeString::Ref data; // REF
+        UnicodeString::Ref data; // REF
 
-		CommentNode();
-	};
+        CommentNode();
+    };
 }

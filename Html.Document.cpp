@@ -5,21 +5,21 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	Document::Document() :
-		Node(NodeType::DOCUMENT_NODE)
-	{
-	}
+    Document::Document() :
+        Node(NodeType::DOCUMENT_NODE)
+    {
+    }
 
-	void Document::Initialize(Uri::Ref url)
-	{
-		this->url = url;
-	}
+    void Document::Initialize(Uri::Ref url)
+    {
+        this->url = url;
+    }
 
-	void Document::Append(Node* node)
-	{
-		__super::Append(node);
-		node->html_document = this;
-	}
+    void Document::Append(Node* node)
+    {
+        __super::Append(node);
+        node->html_document = this;
+    }
 }

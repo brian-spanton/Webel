@@ -5,11 +5,11 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	CommentToken::CommentToken() :
-		Token(Token::Type::comment_token)
-	{
-		this->data = New<UnicodeString>();
-	}
+    CommentToken::CommentToken() :
+        Token(Token::Type::comment_token)
+    {
+        this->data = New<UnicodeString>();
+    }
 }

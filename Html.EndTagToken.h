@@ -6,15 +6,15 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class EndTagToken : public TagToken
-	{
-	public:
-		typedef Basic::Ref<EndTagToken> Ref;
+    class EndTagToken : public TagToken
+    {
+    public:
+        typedef Basic::Ref<EndTagToken> Ref;
 
-		EndTagToken();
+        EndTagToken();
 
-		virtual void GetDebugString(char* debug_string, int count);
-	};
+        virtual void GetDebugString(char* debug_string, int count);
+    };
 }

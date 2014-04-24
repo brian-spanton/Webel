@@ -8,32 +8,32 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class Parser;
+    class Parser;
 
-	class InputStreamPreprocessor : public IStream<Codepoint>
-	{
-	private:
-		enum State
-		{
-			bom_state,
-			normal_state,
-			ignore_lf_state,
-		};
+    class InputStreamPreprocessor : public IStream<Codepoint>
+    {
+    private:
+        enum State
+        {
+            bom_state,
+            normal_state,
+            ignore_lf_state,
+        };
 
-		State state;
-		Basic::Ref<IStream<Codepoint> > output; // REF
-		Parser* parser;
+        State state;
+        Basic::Ref<IStream<Codepoint> > output; // REF
+        Parser* parser;
 
-		bool IsValid(Codepoint c);
+        bool IsValid(Codepoint c);
 
-	public:
-		typedef Basic::Ref<InputStreamPreprocessor, IStream<Codepoint> > Ref;
+    public:
+        typedef Basic::Ref<InputStreamPreprocessor, IStream<Codepoint> > Ref;
 
-		void Initialize(Parser* parser, IStream<Codepoint>* output);
+        void Initialize(Parser* parser, IStream<Codepoint>* output);
 
-		virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-		virtual void IStream<Codepoint>::WriteEOF();
-	};
+        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
+        virtual void IStream<Codepoint>::WriteEOF();
+    };
 }

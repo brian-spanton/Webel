@@ -7,29 +7,29 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class Token : public IRefCounted
-	{
-	public:
-		enum Type
-		{
-			DOCTYPE_token,
-			start_tag_token,
-			end_tag_token,
-			comment_token,
-			character_token,
-			end_of_file_token,
-		};
+    class Token : public IRefCounted
+    {
+    public:
+        enum Type
+        {
+            DOCTYPE_token,
+            start_tag_token,
+            end_tag_token,
+            comment_token,
+            character_token,
+            end_of_file_token,
+        };
 
-		typedef Basic::Ref<Token> Ref;
+        typedef Basic::Ref<Token> Ref;
 
-		Type type;
+        Type type;
 
-		Token(Type type);
+        Token(Type type);
 
-		virtual void GetDebugString(char* debug_string, int count);
-	};
+        virtual void GetDebugString(char* debug_string, int count);
+    };
 
-	typedef Token* TokenPointer;
+    typedef Token* TokenPointer;
 }

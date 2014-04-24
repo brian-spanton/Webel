@@ -7,21 +7,21 @@
 
 namespace Tls
 {
-	class CipherSuitesFrame : public VectorFrame<CipherSuite, 2, 0xfffe, 2>
-	{
-	private:
-		virtual void GetItemFrame(Item* item, Basic::Ref<IProcess>* value)
-		{
-			NumberFrame<CipherSuite>::Ref frame = New<NumberFrame<CipherSuite> >();
-			frame->Initialize(item);
-			(*value) = frame;
-		}
+    class CipherSuitesFrame : public VectorFrame<CipherSuite, 2, 0xfffe, 2>
+    {
+    private:
+        virtual void GetItemFrame(Item* item, Basic::Ref<IProcess>* value)
+        {
+            NumberFrame<CipherSuite>::Ref frame = New<NumberFrame<CipherSuite> >();
+            frame->Initialize(item);
+            (*value) = frame;
+        }
 
-		virtual void GetItemSerializer(Item* item, Basic::Ref<ISerializable>* value)
-		{
-			NumberFrame<CipherSuite>::Ref frame = New<NumberFrame<CipherSuite> >();
-			frame->Initialize(item);
-			(*value) = frame;
-		}
-	};
+        virtual void GetItemSerializer(Item* item, Basic::Ref<ISerializable>* value)
+        {
+            NumberFrame<CipherSuite>::Ref frame = New<NumberFrame<CipherSuite> >();
+            frame->Initialize(item);
+            (*value) = frame;
+        }
+    };
 }

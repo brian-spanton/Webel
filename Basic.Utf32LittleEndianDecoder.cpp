@@ -6,49 +6,49 @@
 
 namespace Basic
 {
-	void Utf32LittleEndianDecoder::set_destination(IStream<Codepoint>* destination)
-	{
-		this->destination = destination;
-		this->received = 0;
-	}
+    void Utf32LittleEndianDecoder::set_destination(IStream<Codepoint>* destination)
+    {
+        this->destination = destination;
+        this->received = 0;
+    }
 
-	void Utf32LittleEndianDecoder::Write(const byte* elements, uint32 count)
-	{
-		for (uint32 i = 0; i != count; i++)
-		{
-			byte b = elements[i];
+    void Utf32LittleEndianDecoder::Write(const byte* elements, uint32 count)
+    {
+        for (uint32 i = 0; i != count; i++)
+        {
+            byte b = elements[i];
 
-			byte* value_bytes = reinterpret_cast<byte*>(&this->codepoint);
-			int index = this->received;
-			value_bytes[index] = b;
+            byte* value_bytes = reinterpret_cast<byte*>(&this->codepoint);
+            int index = this->received;
+            value_bytes[index] = b;
 
-			this->received++;
+            this->received++;
 
-			if (this->received == 4)
-			{
-				this->received = 0;
-				Emit(this->codepoint);
-			}
-		}
-	}
+            if (this->received == 4)
+            {
+                this->received = 0;
+                Emit(this->codepoint);
+            }
+        }
+    }
 
-	void Utf32LittleEndianDecoder::WriteEOF()
-	{
-		if (this->received != 0)
-		{
-			HandleError("end of stream with received != 0");
-		}
+    void Utf32LittleEndianDecoder::WriteEOF()
+    {
+        if (this->received != 0)
+        {
+            HandleError("end of stream with received != 0");
+        }
 
-		Emit(EOF);
-	}
+        Emit(EOF);
+    }
 
-	void Utf32LittleEndianDecoder::Emit(Codepoint codepoint)
-	{
-		this->destination->Write(&codepoint, 1);
-	}
+    void Utf32LittleEndianDecoder::Emit(Codepoint codepoint)
+    {
+        this->destination->Write(&codepoint, 1);
+    }
 
-	void Utf32LittleEndianDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder)
-	{
-		(*decoder) = New<Utf32LittleEndianDecoder>();
-	}
+    void Utf32LittleEndianDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder)
+    {
+        (*decoder) = New<Utf32LittleEndianDecoder>();
+    }
 }

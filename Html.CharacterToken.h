@@ -6,15 +6,15 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class CharacterToken : public Token
-	{
-	public:
-		typedef Basic::Ref<CharacterToken> Ref;
+    class CharacterToken : public Token
+    {
+    public:
+        typedef Basic::Ref<CharacterToken> Ref;
 
-		Codepoint data;
+        Codepoint data;
 
-		CharacterToken();
-	};
+        CharacterToken();
+    };
 }

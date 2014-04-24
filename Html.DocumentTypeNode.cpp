@@ -5,10 +5,10 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	DocumentTypeNode::DocumentTypeNode() :
-		Node(NodeType::DOCUMENT_TYPE_NODE)
-	{
-	}
+    DocumentTypeNode::DocumentTypeNode() :
+        Node(NodeType::DOCUMENT_TYPE_NODE)
+    {
+    }
 }

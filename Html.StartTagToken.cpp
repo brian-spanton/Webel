@@ -5,17 +5,17 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	StartTagToken::StartTagToken() :
-		TagToken(Token::Type::start_tag_token)
-	{
-	}
+    StartTagToken::StartTagToken() :
+        TagToken(Token::Type::start_tag_token)
+    {
+    }
 
-	void StartTagToken::GetDebugString(char* debug_string, int count)
-	{
-		std::string name;
-		name.insert(name.end(), this->name->begin(), this->name->begin() + this->name->size());
-		sprintf_s(debug_string, count, "<%s>", name.c_str());
-	}
+    void StartTagToken::GetDebugString(char* debug_string, int count)
+    {
+        std::string name;
+        name.insert(name.end(), this->name->begin(), this->name->begin() + this->name->size());
+        sprintf_s(debug_string, count, "<%s>", name.c_str());
+    }
 }

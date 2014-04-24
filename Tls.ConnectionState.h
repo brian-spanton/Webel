@@ -9,26 +9,26 @@
 
 namespace Tls
 {
-	class ConnectionState : public IRefCounted
-	{
-	public:
-		typedef Basic::Ref<ConnectionState> Ref;
+    class ConnectionState : public IRefCounted
+    {
+    public:
+        typedef Basic::Ref<ConnectionState> Ref;
 
-		// compression_state
-		Basic::BCRYPT_KEY_HANDLE key_handle;
+        // compression_state
+        Basic::BCRYPT_KEY_HANDLE key_handle;
 
-		std::vector<opaque> MAC_key;
-		std::vector<opaque> encryption_key;
-		ByteVector::Ref IV; // REF
+        std::vector<opaque> MAC_key;
+        std::vector<opaque> encryption_key;
+        ByteVector::Ref IV; // REF
 
-		uint64 sequence_number;
-		SecurityParameters::Ref security_parameters; // REF
+        uint64 sequence_number;
+        SecurityParameters::Ref security_parameters; // REF
 
-		ConnectionState();
-		virtual ~ConnectionState();
+        ConnectionState();
+        virtual ~ConnectionState();
 
-		bool Initialize(SecurityParameters* params);
-		void MAC(Record* compressed, opaque* output, uint8 output_max);
-	};
+        bool Initialize(SecurityParameters* params);
+        void MAC(Record* compressed, opaque* output, uint8 output_max);
+    };
 
 }

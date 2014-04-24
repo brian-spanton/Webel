@@ -11,32 +11,32 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	void Parser::Initialize(Uri::Ref url, UnicodeString::Ref charset)
-	{
-		this->tree = New<TreeConstruction>();
-		this->tree->Initialize(this, url);
+    void Parser::Initialize(Uri::Ref url, UnicodeString::Ref charset)
+    {
+        this->tree = New<TreeConstruction>();
+        this->tree->Initialize(this, url);
 
-		this->tokenizer = New<Tokenizer>();
-		this->tokenizer->Initialize(this, this->tree);
+        this->tokenizer = New<Tokenizer>();
+        this->tokenizer->Initialize(this, this->tree);
 
-		FrameStream<Codepoint>::Ref tokenizer_stream = New<FrameStream<Codepoint> >();
-		tokenizer_stream->Initialize(this->tokenizer);
+        FrameStream<Codepoint>::Ref tokenizer_stream = New<FrameStream<Codepoint> >();
+        tokenizer_stream->Initialize(this->tokenizer);
 
-		this->preprocessor = New<InputStreamPreprocessor>();
-		this->preprocessor->Initialize(this, tokenizer_stream);
+        this->preprocessor = New<InputStreamPreprocessor>();
+        this->preprocessor->Initialize(this, tokenizer_stream);
 
-		this->decoder = New<ByteStreamDecoder>();
-		this->decoder->Initialize(this, charset, this->preprocessor);
+        this->decoder = New<ByteStreamDecoder>();
+        this->decoder->Initialize(this, charset, this->preprocessor);
 
-		__super::Initialize(this->decoder);
-	}
+        __super::Initialize(this->decoder);
+    }
 
-	bool Parser::ParseError(const char* error)
-	{
-		std::string parse_error = "Parse error: ";
-		parse_error += error;
-		return Basic::globals->HandleError(parse_error.c_str(), 0);
-	}
+    bool Parser::ParseError(const char* error)
+    {
+        std::string parse_error = "Parse error: ";
+        parse_error += error;
+        return Basic::globals->HandleError(parse_error.c_str(), 0);
+    }
 }

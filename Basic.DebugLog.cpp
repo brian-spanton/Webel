@@ -7,42 +7,42 @@
 
 namespace Basic
 {
-	DebugLog::DebugLog() :
-		first(0),
-		count(0)
-	{
-	}
+    DebugLog::DebugLog() :
+        first(0),
+        count(0)
+    {
+    }
 
-	void DebugLog::Write(AsyncBytes* bytes)
-	{
-		bytes->bytes[bytes->count] = 0;
-		OutputDebugStringA((LPCSTR)bytes->bytes);
-		printf((LPCSTR)bytes->bytes);
+    void DebugLog::Write(AsyncBytes* bytes)
+    {
+        bytes->bytes[bytes->count] = 0;
+        OutputDebugStringA((LPCSTR)bytes->bytes);
+        printf((LPCSTR)bytes->bytes);
 
-		{
-			Hold hold(tailLock);
+        {
+            Hold hold(tailLock);
 
-			int next = (first + this->count) % _countof(tail);
+            int next = (first + this->count) % _countof(tail);
 
-			if (this->count == _countof(tail))
-				first = (first + 1) % _countof(tail);
-			else
-				this->count++;
+            if (this->count == _countof(tail))
+                first = (first + 1) % _countof(tail);
+            else
+                this->count++;
 
-			tail[next] = bytes;
-		}
+            tail[next] = bytes;
+        }
 
-		__super::Write(bytes);
-	}
+        __super::Write(bytes);
+    }
 
-	void DebugLog::WriteTo(TextWriter* text)
-	{
-		Hold hold(tailLock);
+    void DebugLog::WriteTo(TextWriter* text)
+    {
+        Hold hold(tailLock);
 
-		for (uint32 i = 0; i < this->count; i++)
-		{
-			int next = (first + i) % _countof(tail);
-			text->Write((const char*)tail[next]->bytes, tail[next]->count);
-		}
-	}
+        for (uint32 i = 0; i < this->count; i++)
+        {
+            int next = (first + i) % _countof(tail);
+            text->Write((const char*)tail[next]->bytes, tail[next]->count);
+        }
+    }
 }

@@ -10,11 +10,11 @@
 
 namespace Basic
 {
-	__interface ICompletionQueue : public IRefCounted
-	{
-		void BindToCompletionQueue(Socket::Ref socket);
-		void BindToCompletionQueue(LogFile::Ref socket);
-		void PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
-		void QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie);
-	};
+    __interface ICompletionQueue : public IRefCounted
+    {
+        void BindToCompletionQueue(Socket::Ref socket);
+        void BindToCompletionQueue(LogFile::Ref socket);
+        void PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
+        void QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie);
+    };
 }

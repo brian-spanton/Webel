@@ -6,8 +6,8 @@
 
 namespace Tls
 {
-	uint32 ChangeCipherSpecEvent::get_type()
-	{
-		return Tls::EventType::change_cipher_spec_event;
-	}
+    uint32 ChangeCipherSpecEvent::get_type()
+    {
+        return Tls::EventType::change_cipher_spec_event;
+    }
 }

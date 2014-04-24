@@ -9,20 +9,20 @@
 
 namespace Web
 {
-	using namespace Basic;
-	using namespace Html;
+    using namespace Basic;
+    using namespace Html;
 
-	class Link : public IRefCounted
-	{
-	public:
-		typedef Basic::Ref<Link> Ref;
+    class Link : public IRefCounted
+    {
+    public:
+        typedef Basic::Ref<Link> Ref;
 
-		Basic::Ref<ElementNode> element; // REF
-		Uri::Ref url; // REF
-		UnicodeString::Ref text; // REF
+        Basic::Ref<ElementNode> element; // REF
+        Uri::Ref url; // REF
+        UnicodeString::Ref text; // REF
 
-		void Initialize(ElementNode* element, Uri* document_url);
-	};
+        void Initialize(ElementNode* element, Uri* document_url);
+    };
 
-	typedef std::vector<Link::Ref> LinkList; // REF
+    typedef std::vector<Link::Ref> LinkList; // REF
 }

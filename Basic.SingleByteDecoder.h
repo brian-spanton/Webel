@@ -8,37 +8,37 @@
 
 namespace Basic
 {
-	class SingleByteDecoder : public IDecoder
-	{
-	private:
-		Ref<IStream<Codepoint> > destination; // REF
-		Ref<ISingleByteEncodingIndex> index; // REF
+    class SingleByteDecoder : public IDecoder
+    {
+    private:
+        Ref<IStream<Codepoint> > destination; // REF
+        Ref<ISingleByteEncodingIndex> index; // REF
 
-		void Emit(Codepoint codepoint);
-		void EmitDecoderError(byte b);
-		void EmitDecoderError(const char* error);
+        void Emit(Codepoint codepoint);
+        void EmitDecoderError(byte b);
+        void EmitDecoderError(const char* error);
 
-	public:
-		typedef Basic::Ref<SingleByteDecoder, IDecoder> Ref;
+    public:
+        typedef Basic::Ref<SingleByteDecoder, IDecoder> Ref;
 
-		void Initialize(ISingleByteEncodingIndex* index);
-		void Initialize(ISingleByteEncodingIndex* index, IStream<Codepoint>* destination);
+        void Initialize(ISingleByteEncodingIndex* index);
+        void Initialize(ISingleByteEncodingIndex* index, IStream<Codepoint>* destination);
 
-		void IDecoder::set_destination(IStream<Codepoint>* destination);
-		void IDecoder::Write(const byte* elements, uint32 count);
-		void IDecoder::WriteEOF();
-	};
+        void IDecoder::set_destination(IStream<Codepoint>* destination);
+        void IDecoder::Write(const byte* elements, uint32 count);
+        void IDecoder::WriteEOF();
+    };
 
-	class SingleByteDecoderFactory : public IDecoderFactory
-	{
-	private:
-		Ref<ISingleByteEncodingIndex> index; // REF
+    class SingleByteDecoderFactory : public IDecoderFactory
+    {
+    private:
+        Ref<ISingleByteEncodingIndex> index; // REF
 
-	public:
-		typedef Ref<SingleByteDecoderFactory, IDecoderFactory> Ref;
+    public:
+        typedef Ref<SingleByteDecoderFactory, IDecoderFactory> Ref;
 
-		void Initialize(ISingleByteEncodingIndex* index);
+        void Initialize(ISingleByteEncodingIndex* index);
 
-		virtual void IDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder);
-	};
+        virtual void IDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder);
+    };
 }

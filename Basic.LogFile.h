@@ -8,22 +8,22 @@
 
 namespace Basic
 {
-	class LogFile : public ICompletion
-	{
-	private:
-		static byte encoding[];
+    class LogFile : public ICompletion
+    {
+    private:
+        static byte encoding[];
 
-	public:
-		typedef Basic::Ref<LogFile> Ref;
+    public:
+        typedef Basic::Ref<LogFile> Ref;
 
-		HANDLE file;
+        HANDLE file;
 
-		LogFile();
-		virtual ~LogFile();
+        LogFile();
+        virtual ~LogFile();
 
-		void Initialize(const char* name);
+        void Initialize(const char* name);
 
-		virtual void Write(AsyncBytes* line);
-		virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
-	};
+        virtual void Write(AsyncBytes* line);
+        virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
+    };
 }

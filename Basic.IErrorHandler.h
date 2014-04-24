@@ -8,10 +8,10 @@
 
 namespace Basic
 {
-	__interface IErrorHandler : public IRefCounted
-	{
-		bool HandleError(const char* context, uint32 error);
-		Basic::IStream<Codepoint>* DebugStream();
-		Basic::TextWriter* DebugWriter();
-	};
+    __interface IErrorHandler : public IRefCounted
+    {
+        bool HandleError(const char* context, uint32 error);
+        Basic::IStream<Codepoint>* DebugStream();
+        Basic::TextWriter* DebugWriter();
+    };
 }

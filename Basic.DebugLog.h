@@ -9,20 +9,20 @@
 
 namespace Basic
 {
-	class DebugLog : public LogFile
-	{
-	private:
-		Lock tailLock;
-		AsyncBytes::Ref tail[0x400]; // REF
-		int first;
-		uint32 count;
+    class DebugLog : public LogFile
+    {
+    private:
+        Lock tailLock;
+        AsyncBytes::Ref tail[0x400]; // REF
+        int first;
+        uint32 count;
 
-	public:
-		typedef Basic::Ref<DebugLog, LogFile> Ref;
+    public:
+        typedef Basic::Ref<DebugLog, LogFile> Ref;
 
-		DebugLog();
+        DebugLog();
 
-		virtual void Write(AsyncBytes* bytes);
-		virtual void WriteTo(TextWriter* text);
-	};
+        virtual void Write(AsyncBytes* bytes);
+        virtual void WriteTo(TextWriter* text);
+    };
 }

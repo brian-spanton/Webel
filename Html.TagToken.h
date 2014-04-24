@@ -8,20 +8,20 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class TagToken : public Token
-	{
-	public:
-		typedef Basic::Ref<TagToken> Ref;
+    class TagToken : public Token
+    {
+    public:
+        typedef Basic::Ref<TagToken> Ref;
 
-		UnicodeString::Ref name; // REF
-		bool self_closing;
-		bool acknowledged;
-		StringMap::Ref attributes; // REF
+        UnicodeString::Ref name; // REF
+        bool self_closing;
+        bool acknowledged;
+        StringMap::Ref attributes; // REF
 
-		TagToken(Type type);
+        TagToken(Type type);
 
-		bool HasNameOf(ElementName* element);
-	};
+        bool HasNameOf(ElementName* element);
+    };
 }

@@ -7,26 +7,26 @@
 
 namespace Basic
 {
-	class Socket : public ICompletion
-	{
-	protected:
-		static const DWORD addressLength;
+    class Socket : public ICompletion
+    {
+    protected:
+        static const DWORD addressLength;
 
-		Lock lock;
+        Lock lock;
 
-		void Initialize();
-		virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
-		virtual void CompleteWrite(AsyncBytes* bytes, int transferred, int error);
-		virtual void CompleteOther(int transferred, int error);
+        void Initialize();
+        virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
+        virtual void CompleteWrite(AsyncBytes* bytes, int transferred, int error);
+        virtual void CompleteOther(int transferred, int error);
 
-	public:
-		typedef Basic::Ref<Socket, ICompletion> Ref;
+    public:
+        typedef Basic::Ref<Socket, ICompletion> Ref;
 
-		SOCKET socket;
+        SOCKET socket;
 
-		Socket();
-		virtual ~Socket();
+        Socket();
+        virtual ~Socket();
 
-		virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
-	};
+        virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
+    };
 }

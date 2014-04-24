@@ -5,10 +5,10 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	CharacterToken::CharacterToken() :
-		Token(Token::Type::character_token)
-	{
-	}
+    CharacterToken::CharacterToken() :
+        Token(Token::Type::character_token)
+    {
+    }
 }

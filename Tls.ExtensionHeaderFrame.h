@@ -8,31 +8,31 @@
 
 namespace Tls
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class ExtensionHeaderFrame : public Frame, public ISerializable
-	{
-	private:
-		enum State
-		{
-			start_state = Start_State,
-			type_frame_pending_state,
-			length_frame_pending_state,
-			done_state = Succeeded_State,
-			type_frame_failed,
-			length_frame_failed,
-		};
+    class ExtensionHeaderFrame : public Frame, public ISerializable
+    {
+    private:
+        enum State
+        {
+            start_state = Start_State,
+            type_frame_pending_state,
+            length_frame_pending_state,
+            done_state = Succeeded_State,
+            type_frame_failed,
+            length_frame_failed,
+        };
 
-		ExtensionHeader* extension;
-		Inline<NumberFrame<ExtensionType> > type_frame;
-		Inline<NumberFrame<uint16> > length_frame;
+        ExtensionHeader* extension;
+        Inline<NumberFrame<ExtensionType> > type_frame;
+        Inline<NumberFrame<uint16> > length_frame;
 
-	public:
-		typedef Basic::Ref<ExtensionHeaderFrame, IProcess> Ref;
+    public:
+        typedef Basic::Ref<ExtensionHeaderFrame, IProcess> Ref;
 
-		void Initialize(ExtensionHeader* extension);
+        void Initialize(ExtensionHeader* extension);
 
-		virtual void IProcess::Process(IEvent* event, bool* yield);
-		virtual void ISerializable::SerializeTo(IStream<byte>* stream);
-	};
+        virtual void IProcess::Process(IEvent* event, bool* yield);
+        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    };
 }

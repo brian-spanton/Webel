@@ -8,8 +8,8 @@
 
 namespace Basic
 {
-	__interface IProtocolFactory : public IRefCounted
-	{
-		void CreateProtocol(IBufferedStream<byte>* peer, Ref<IStream<byte> >* protocol);
-	};
+    __interface IProtocolFactory : public IRefCounted
+    {
+        void CreateProtocol(IBufferedStream<byte>* peer, Ref<IStream<byte> >* protocol);
+    };
 }

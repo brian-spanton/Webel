@@ -6,8 +6,8 @@
 
 namespace Basic
 {
-	__interface IDecoder : public IStream<byte>
-	{
-		void set_destination(IStream<Codepoint>* destination);
-	};
+    __interface IDecoder : public IStream<byte>
+    {
+        void set_destination(IStream<Codepoint>* destination);
+    };
 }

@@ -5,10 +5,10 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	CommentNode::CommentNode() :
-		Node(NodeType::COMMENT_NODE)
-	{
-	}
+    CommentNode::CommentNode() :
+        Node(NodeType::COMMENT_NODE)
+    {
+    }
 }

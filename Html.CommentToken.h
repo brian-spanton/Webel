@@ -6,15 +6,15 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class CommentToken : public Token
-	{
-	public:
-		typedef Basic::Ref<CommentToken> Ref;
+    class CommentToken : public Token
+    {
+    public:
+        typedef Basic::Ref<CommentToken> Ref;
 
-		UnicodeString::Ref data; // REF
+        UnicodeString::Ref data; // REF
 
-		CommentToken();
-	};
+        CommentToken();
+    };
 }

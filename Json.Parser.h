@@ -9,25 +9,25 @@
 
 namespace Json
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class Parser : public FrameStream<byte>
-	{
-	private:
-		friend class ByteStreamDecoder;
-		friend class Tokenizer;
-		friend class Text;
+    class Parser : public FrameStream<byte>
+    {
+    private:
+        friend class ByteStreamDecoder;
+        friend class Tokenizer;
+        friend class Text;
 
-		ByteStreamDecoder::Ref decoder; // REF
-		Tokenizer::Ref tokenizer; // REF
+        ByteStreamDecoder::Ref decoder; // REF
+        Tokenizer::Ref tokenizer; // REF
 
-		bool ParseError(const char* error);
+        bool ParseError(const char* error);
 
-	public:
-		typedef Basic::Ref<Parser, IStream<byte> > Ref;
+    public:
+        typedef Basic::Ref<Parser, IStream<byte> > Ref;
 
-		Text::Ref text; // REF
+        Text::Ref text; // REF
 
-		void Initialize(Html::Node::Ref domain, UnicodeString::Ref charset);
-	};
+        void Initialize(Html::Node::Ref domain, UnicodeString::Ref charset);
+    };
 }

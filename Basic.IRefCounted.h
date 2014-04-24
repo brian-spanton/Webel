@@ -4,13 +4,13 @@
 
 namespace Basic
 {
-	__interface IRefHolder
-	{
-	};
+    __interface IRefHolder
+    {
+    };
 
-	__interface IRefCounted
-	{
-		void AddRef(IRefHolder* holder);
-		void Release(IRefHolder* holder);
-	};
+    __interface IRefCounted
+    {
+        void AddRef(IRefHolder* holder);
+        void Release(IRefHolder* holder);
+    };
 }

@@ -8,22 +8,22 @@
 
 namespace Basic
 {
-	class ListenSocket : public Socket
-	{
-	protected:
-		virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
+    class ListenSocket : public Socket
+    {
+    protected:
+        virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
 
-	public:
-		typedef Basic::Ref<ListenSocket, ICompletion> Ref;
+    public:
+        typedef Basic::Ref<ListenSocket, ICompletion> Ref;
 
-		enum Face
-		{
-			Face_Local,
-			Face_External,
-			Face_Default,
-		};
+        enum Face
+        {
+            Face_Local,
+            Face_External,
+            Face_Default,
+        };
 
-		void Initialize(Face face, short port);
-		void StartAccept(ServerSocket* acceptPeer);
-	};
+        void Initialize(Face face, short port);
+        void StartAccept(ServerSocket* acceptPeer);
+    };
 }

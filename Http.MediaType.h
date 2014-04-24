@@ -4,18 +4,18 @@
 
 namespace Http
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	struct MediaType : public IRefCounted
-	{
-		typedef Basic::Ref<MediaType> Ref;
+    struct MediaType : public IRefCounted
+    {
+        typedef Basic::Ref<MediaType> Ref;
 
-		UnicodeString::Ref type; // REF
-		UnicodeString::Ref subtype; // REF
-		NameValueCollection::Ref parameters; // REF
+        UnicodeString::Ref type; // REF
+        UnicodeString::Ref subtype; // REF
+        NameValueCollection::Ref parameters; // REF
 
-		void Initialize();
-		void Initialize(UnicodeString* value);
-		bool equals(MediaType* value);
-	};
+        void Initialize();
+        void Initialize(UnicodeString* value);
+        bool equals(MediaType* value);
+    };
 }

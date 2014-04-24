@@ -7,17 +7,17 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class DocumentTypeNode : public Node
-	{
-	public:
-		typedef Basic::Ref<DocumentTypeNode> Ref;
+    class DocumentTypeNode : public Node
+    {
+    public:
+        typedef Basic::Ref<DocumentTypeNode> Ref;
 
-		UnicodeString::Ref name; // REF
-		UnicodeString::Ref publicId; // REF
-		UnicodeString::Ref systemId; // REF
+        UnicodeString::Ref name; // REF
+        UnicodeString::Ref publicId; // REF
+        UnicodeString::Ref systemId; // REF
 
-		DocumentTypeNode();
-	};
+        DocumentTypeNode();
+    };
 }

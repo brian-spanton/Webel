@@ -7,18 +7,18 @@
 
 namespace Basic
 {
-	class HashAlgorithm : public IRefCounted
-	{
-	public:
-		typedef Basic::Ref<HashAlgorithm> Ref;
+    class HashAlgorithm : public IRefCounted
+    {
+    public:
+        typedef Basic::Ref<HashAlgorithm> Ref;
 
-		Basic::BCRYPT_ALG_HANDLE hash_algorithm;
-		DWORD hash_output_length;
-		bool hmac;
+        Basic::BCRYPT_ALG_HANDLE hash_algorithm;
+        DWORD hash_output_length;
+        bool hmac;
 
-		HashAlgorithm();
-		virtual ~HashAlgorithm();
+        HashAlgorithm();
+        virtual ~HashAlgorithm();
 
-		void Initialize(LPCWSTR algorithm, bool hmac);
-	};
+        void Initialize(LPCWSTR algorithm, bool hmac);
+    };
 }

@@ -8,174 +8,174 @@
 
 namespace Basic
 {
-	ConnectedSocket::~ConnectedSocket()
-	{
-	}
+    ConnectedSocket::~ConnectedSocket()
+    {
+    }
 
-	void ConnectedSocket::InitializeProtocol(IProcess* protocol)
-	{
-		this->protocol = protocol;
-	}
+    void ConnectedSocket::InitializeProtocol(IProcess* protocol)
+    {
+        this->protocol = protocol;
+    }
 
-	void ConnectedSocket::InitializePeer(sockaddr_in* remoteAddress)
-	{
-		this->remoteAddress = (*remoteAddress);
+    void ConnectedSocket::InitializePeer(sockaddr_in* remoteAddress)
+    {
+        this->remoteAddress = (*remoteAddress);
 
-		UnicodeString::Ref id = New<UnicodeString>();
-		id->reserve(0x40);
+        UnicodeString::Ref id = New<UnicodeString>();
+        id->reserve(0x40);
 
-		TextWriter text(id);
-		text.WriteFormat<0x40>(
-			"%d.%d.%d.%d:%d",
-			this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
-			this->remoteAddress.sin_addr.S_un.S_un_b.s_b2,
-			this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
-			this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
-			this->remoteAddress.sin_port);
-	}
+        TextWriter text(id);
+        text.WriteFormat<0x40>(
+            "%d.%d.%d.%d:%d",
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b2,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
+            this->remoteAddress.sin_port);
+    }
 
-	void ConnectedSocket::Received(const byte* bytes, uint32 count)
-	{
-		if (socket != INVALID_SOCKET)
-		{
-			if (count == 0)
-			{
-				DisconnectAndNotifyProtocol();
-			}
-			else
-			{
-				this->protocol_element_source.Initialize(bytes, count);
+    void ConnectedSocket::Received(const byte* bytes, uint32 count)
+    {
+        if (socket != INVALID_SOCKET)
+        {
+            if (count == 0)
+            {
+                DisconnectAndNotifyProtocol();
+            }
+            else
+            {
+                this->protocol_element_source.Initialize(bytes, count);
 
-				ReadyForReadBytesEvent event;
-				event.Initialize(&this->protocol_element_source);
+                ReadyForReadBytesEvent event;
+                event.Initialize(&this->protocol_element_source);
 
-				this->protocol->Process(&event);
+                this->protocol->Process(&event);
 
-				if (!this->protocol_element_source.Exhausted() && !this->protocol->Failed())
-					throw new Exception("Basic::ReadyForReadBytesEvent::Consume this->elements_read < this->count");
-			}
-		}
-	}
+                if (!this->protocol_element_source.Exhausted() && !this->protocol->Failed())
+                    throw new Exception("Basic::ReadyForReadBytesEvent::Consume this->elements_read < this->count");
+            }
+        }
+    }
 
-	void ConnectedSocket::StartReceive()
-	{
-		uint32 count;
-		DWORD flags = 0;
+    void ConnectedSocket::StartReceive()
+    {
+        uint32 count;
+        DWORD flags = 0;
 
-		AsyncBytes::Ref bytes = New<AsyncBytes>("2");
-		bytes->Initialize(0x400);
-		bytes->PrepareForReceive("ConnectedSocket::StartReceive WSARecv", this);
+        AsyncBytes::Ref bytes = New<AsyncBytes>("2");
+        bytes->Initialize(0x400);
+        bytes->PrepareForReceive("ConnectedSocket::StartReceive WSARecv", this);
 
-		int error = WSARecv(socket, &bytes->wsabuf, 1, &count, &flags, bytes, 0);
-		if (error == SOCKET_ERROR)
-		{
-			error = WSAGetLastError();
-			if (error != ERROR_IO_PENDING)
-			{
-				bytes->Internal = error;
-				Basic::globals->PostCompletion(this, bytes);
-			}
-		}
-	}
+        int error = WSARecv(socket, &bytes->wsabuf, 1, &count, &flags, bytes, 0);
+        if (error == SOCKET_ERROR)
+        {
+            error = WSAGetLastError();
+            if (error != ERROR_IO_PENDING)
+            {
+                bytes->Internal = error;
+                Basic::globals->PostCompletion(this, bytes);
+            }
+        }
+    }
 
-	void ConnectedSocket::DisconnectAndNotifyProtocol()
-	{
-		Basic::Ref<IProcess> protocol;
-		Disconnect(&protocol);
+    void ConnectedSocket::DisconnectAndNotifyProtocol()
+    {
+        Basic::Ref<IProcess> protocol;
+        Disconnect(&protocol);
 
-		if (protocol.item() != 0)
-		{
-			ElementStreamEndingEvent event;
-			protocol->Process(&event);
-		}
-	}
+        if (protocol.item() != 0)
+        {
+            ElementStreamEndingEvent event;
+            protocol->Process(&event);
+        }
+    }
 
-	void ConnectedSocket::Disconnect(Basic::Ref<IProcess>* protocol)
-	{
-		Hold hold(this->lock);
+    void ConnectedSocket::Disconnect(Basic::Ref<IProcess>* protocol)
+    {
+        Hold hold(this->lock);
 
-		if (socket != INVALID_SOCKET)
-		{
-			shutdown(socket, SD_BOTH);
-			closesocket(socket);
+        if (socket != INVALID_SOCKET)
+        {
+            shutdown(socket, SD_BOTH);
+            closesocket(socket);
 
-			socket = INVALID_SOCKET;
-		}
+            socket = INVALID_SOCKET;
+        }
 
-		if (protocol != 0)
-			(*protocol) = this->protocol;
+        if (protocol != 0)
+            (*protocol) = this->protocol;
 
-		this->protocol = 0;
-	}
+        this->protocol = 0;
+    }
 
-	void ConnectedSocket::Write(const byte* elements, uint32 count)
-	{
-		while(true)
-		{
-			if (count == 0)
-				break;
+    void ConnectedSocket::Write(const byte* elements, uint32 count)
+    {
+        while(true)
+        {
+            if (count == 0)
+                break;
 
-			AsyncBytes::Ref buffer = New<AsyncBytes>("3");
-			buffer->Initialize(0x1000);
+            AsyncBytes::Ref buffer = New<AsyncBytes>("3");
+            buffer->Initialize(0x1000);
 
-			uint32 remaining = buffer->maxCount - buffer->count;
-			uint32 useable = (count > remaining) ? remaining : count;
+            uint32 remaining = buffer->maxCount - buffer->count;
+            uint32 useable = (count > remaining) ? remaining : count;
 
-			buffer->Write(elements, useable);
+            buffer->Write(elements, useable);
 
-			count -= useable;
-			elements += useable;
+            count -= useable;
+            elements += useable;
 
-			Send(buffer);
-		}
-	}
+            Send(buffer);
+        }
+    }
 
-	void ConnectedSocket::Send(AsyncBytes* buffer)
-	{
-		if (buffer->count == 0)
-			throw new Exception("ConnectedSocket::Send 0 bytes");
+    void ConnectedSocket::Send(AsyncBytes* buffer)
+    {
+        if (buffer->count == 0)
+            throw new Exception("ConnectedSocket::Send 0 bytes");
 
-		uint32 count;
-		DWORD flags = 0;
+        uint32 count;
+        DWORD flags = 0;
 
-		buffer->PrepareForSend("ConnectedSocket::Flush WSASend", this);
+        buffer->PrepareForSend("ConnectedSocket::Flush WSASend", this);
 
-		int error = WSASend(socket, &buffer->wsabuf, 1, &count, flags, buffer, 0);
-		if (error == SOCKET_ERROR)
-		{
-			error = WSAGetLastError();
-			if (error != ERROR_IO_PENDING)
-			{
-				buffer->Internal = error;
-				Basic::globals->PostCompletion(this, buffer);
-			}
-		}
-	}
+        int error = WSASend(socket, &buffer->wsabuf, 1, &count, flags, buffer, 0);
+        if (error == SOCKET_ERROR)
+        {
+            error = WSAGetLastError();
+            if (error != ERROR_IO_PENDING)
+            {
+                buffer->Internal = error;
+                Basic::globals->PostCompletion(this, buffer);
+            }
+        }
+    }
 
-	void ConnectedSocket::Flush()
-	{
-	}
+    void ConnectedSocket::Flush()
+    {
+    }
 
-	void ConnectedSocket::WriteEOF()
-	{
-		Disconnect(0);
-	}
+    void ConnectedSocket::WriteEOF()
+    {
+        Disconnect(0);
+    }
 
-	void ConnectedSocket::CompleteRead(AsyncBytes* bytes, int transferred, int error)
-	{
-		if (error != ERROR_SUCCESS && error != STATUS_PENDING)
-		{
-			if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
-				Basic::globals->HandleError("ConnectedSocket::CompleteRead", error);
+    void ConnectedSocket::CompleteRead(AsyncBytes* bytes, int transferred, int error)
+    {
+        if (error != ERROR_SUCCESS && error != STATUS_PENDING)
+        {
+            if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
+                Basic::globals->HandleError("ConnectedSocket::CompleteRead", error);
 
-			DisconnectAndNotifyProtocol();
-		}
-		else
-		{
-			Received(bytes->bytes, transferred);
+            DisconnectAndNotifyProtocol();
+        }
+        else
+        {
+            Received(bytes->bytes, transferred);
 
-			if (socket != INVALID_SOCKET)
-				StartReceive();
-		}
-	}
+            if (socket != INVALID_SOCKET)
+                StartReceive();
+        }
+    }
 }

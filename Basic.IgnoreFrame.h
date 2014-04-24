@@ -6,23 +6,23 @@
 
 namespace Basic
 {
-	class IgnoreFrame : public Frame
-	{
-	private:
-		enum State
-		{
-			receiving_state = Start_State,
-			done_state = Succeeded_State,
-		};
+    class IgnoreFrame : public Frame
+    {
+    private:
+        enum State
+        {
+            receiving_state = Start_State,
+            done_state = Succeeded_State,
+        };
 
-		uint32 expected;
-		uint32 received;
+        uint32 expected;
+        uint32 received;
 
-	public:
-		typedef Basic::Ref<IgnoreFrame> Ref;
+    public:
+        typedef Basic::Ref<IgnoreFrame> Ref;
 
-		void Initialize(uint32 expected);
+        void Initialize(uint32 expected);
 
-		virtual void IProcess::Process(IEvent* event, bool* yield);
-	};
+        virtual void IProcess::Process(IEvent* event, bool* yield);
+    };
 }

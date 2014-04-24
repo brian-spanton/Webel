@@ -6,27 +6,27 @@
 
 namespace Basic
 {
-	class TextSanitizer : public IStream<Codepoint>
-	{
-	private:
-		enum State
-		{
-			before_first_word_state,
-			in_word_state,
-			before_next_word_state,
-		};
+    class TextSanitizer : public IStream<Codepoint>
+    {
+    private:
+        enum State
+        {
+            before_first_word_state,
+            in_word_state,
+            before_next_word_state,
+        };
 
-		State state;
-		Basic::Ref<IStream<Codepoint> > destination; // REF
+        State state;
+        Basic::Ref<IStream<Codepoint> > destination; // REF
 
-		bool white_space(Codepoint c);
+        bool white_space(Codepoint c);
 
-	public:
-		typedef Basic::Ref<TextSanitizer> Ref;
+    public:
+        typedef Basic::Ref<TextSanitizer> Ref;
 
-		void Initialize(IStream<Codepoint>* destination);
+        void Initialize(IStream<Codepoint>* destination);
 
-		virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-		virtual void IStream<Codepoint>::WriteEOF();
-	};
+        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
+        virtual void IStream<Codepoint>::WriteEOF();
+    };
 }

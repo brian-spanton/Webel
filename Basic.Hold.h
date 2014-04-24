@@ -6,21 +6,21 @@
 
 namespace Basic
 {
-	class _declspec(novtable) Hold
-	{
-	private:
-		Lock& lock;
+    class _declspec(novtable) Hold
+    {
+    private:
+        Lock& lock;
 
-	public:
-		Hold(Lock& lock) :
-			lock(lock)
-		{
-			lock.Acquire();
-		}
+    public:
+        Hold(Lock& lock) :
+            lock(lock)
+        {
+            lock.Acquire();
+        }
 
-		~Hold()
-		{
-			lock.Release();
-		}
-	};
+        ~Hold()
+        {
+            lock.Release();
+        }
+    };
 }

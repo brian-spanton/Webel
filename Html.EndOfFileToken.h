@@ -6,15 +6,15 @@
 
 namespace Html
 {
-	using namespace Basic;
+    using namespace Basic;
 
-	class EndOfFileToken : public Token
-	{
-	private:
+    class EndOfFileToken : public Token
+    {
+    private:
 
-	public:
-		typedef Basic::Ref<EndOfFileToken> Ref;
+    public:
+        typedef Basic::Ref<EndOfFileToken> Ref;
 
-		EndOfFileToken();
-	};
+        EndOfFileToken();
+    };
 }
