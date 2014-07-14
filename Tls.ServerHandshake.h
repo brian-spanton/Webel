@@ -55,15 +55,15 @@ namespace Tls
         };
 
         ClientHello clientHello;
-        Inline<ClientHelloFrame> client_hello_frame;
-        Inline<EncryptedPreMasterSecretFrame> pre_master_secret_frame;
+        ClientHelloFrame client_hello_frame;
+        VectorFrame<EncryptedPreMasterSecret> pre_master_secret_frame;
 
-        virtual void PartitionKeyMaterial(std::vector<opaque>* key_material);
+        virtual void PartitionKeyMaterial(ByteString* key_material);
         bool ProcessClientKeyExchange(KeyExchangeAlgorithm key_exchange_algorithm);
 
-    public:
-        typedef Basic::Ref<ServerHandshake, IProcess> Ref;
+        virtual void IProcess::consider_event(IEvent* event);
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+    public:
+        ServerHandshake(RecordLayer* session);
     };
 }

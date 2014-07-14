@@ -11,8 +11,6 @@ namespace Html
     class StartTagToken : public TagToken
     {
     public:
-        typedef Basic::Ref<StartTagToken> Ref;
-
         StartTagToken();
 
         virtual void GetDebugString(char* debug_string, int count);

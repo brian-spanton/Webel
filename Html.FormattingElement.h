@@ -9,18 +9,16 @@ namespace Html
 {
     using namespace Basic;
 
-    class FormattingElement : public IRefCounted
+    class FormattingElement
     {
     public:
-        typedef Basic::Ref<FormattingElement> Ref;
+        std::shared_ptr<ElementNode> element;
+        std::shared_ptr<TagToken> token;
 
-        ElementNode::Ref element; // REF
-        TagToken::Ref token; // REF
-
-        void Initialize(ElementNode* element, TagToken* token);
+        void Initialize(std::shared_ptr<ElementNode> element, std::shared_ptr<TagToken> token);
         bool equals(ElementNode* element, TagToken* token);
         bool IsMarker();
     };
 
-    typedef std::vector<FormattingElement::Ref> FormattingElementList; // REF
+    typedef std::vector<std::shared_ptr<FormattingElement> > FormattingElementList;
 }

@@ -11,73 +11,73 @@ namespace Json
 {
     void Script::Initialize()
     {
-        this->element_name = (UnicodeString*)0;
-        this->attribute_name = (UnicodeString*)0;
-        this->method_name = (UnicodeString*)0;
-        this->parameter_value = (Value*)0;
+        this->element_name = 0;
+        this->attribute_name = 0;
+        this->method_name = 0;
+        this->parameter_value = 0;
     }
 
-    bool Script::Execute(Html::Node::Ref domain, Html::Node::Ref after, Html::Node::Ref* result)
+    bool Script::Execute(std::shared_ptr<Html::Node> domain, std::shared_ptr<Html::Node> after, std::shared_ptr<Html::Node>* result)
     {
-        if (this->element_name.item() != 0)
+        if (this->element_name.get() != 0)
         {
-            Html::ElementName::Ref element_name = New<Html::ElementName>();
+            std::shared_ptr<Html::ElementName> element_name = std::make_shared<Html::ElementName>();
             element_name->Initialize(Html::globals->Namespace_HTML, this->element_name);
 
-            if (this->attribute_name.item() == 0 &&
-                this->method_name.equals<true>(Json::globals->children_count_equals_method) &&
-                this->parameter_value.item() != 0 &&
+            if (this->attribute_name.get() == 0 &&
+                equals<UnicodeString, true>(this->method_name.get(), Json::globals->children_count_equals_method.get()) &&
+                this->parameter_value.get() != 0 &&
                 this->parameter_value->type == Json::Value::Type::number_value)
             {
-                Json::Number* number_parameter = (Json::Number*)this->parameter_value.item();
+                Json::Number* number_parameter = (Json::Number*)this->parameter_value.get();
 
-                Html::ElementNode::Ref element_node;
-                bool success = domain->find_element_with_child_count(after, element_name, (uint32)number_parameter->value, &element_node);
+                std::shared_ptr<Html::ElementNode> element_node;
+                bool success = domain->find_element_with_child_count(after.get(), element_name.get(), (uint32)number_parameter->value, &element_node);
                 if (success)
                 {
                     (*result) = element_node;
                     return true;
                 }
             }
-            else if (this->attribute_name.item() != 0 &&
-                this->method_name.equals<true>(Json::globals->starts_with_method) &&
-                this->parameter_value.item() != 0 &&
+            else if (this->attribute_name.get() != 0 &&
+                equals<UnicodeString, true>(this->method_name.get(), Json::globals->starts_with_method.get()) &&
+                this->parameter_value.get() != 0 &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
-                Json::String* string_parameter = (Json::String*)this->parameter_value.item();
+                Json::String* string_parameter = (Json::String*)this->parameter_value.get();
 
-                Html::ElementNode::Ref element_node;
-                bool success = domain->find_element_with_attribute_prefix(after, element_name, this->attribute_name, string_parameter->value, &element_node);
+                std::shared_ptr<Html::ElementNode> element_node;
+                bool success = domain->find_element_with_attribute_prefix(after.get(), element_name.get(), this->attribute_name, string_parameter->value, &element_node);
                 if (success)
                 {
                     (*result) = element_node;
                     return true;
                 }
             }
-            else if (this->attribute_name.item() != 0 &&
-                this->method_name.equals<true>(Json::globals->equals_method) &&
-                this->parameter_value.item() != 0 &&
+            else if (this->attribute_name.get() != 0 &&
+                equals<UnicodeString, true>(this->method_name.get(), Json::globals->equals_method.get()) &&
+                this->parameter_value.get() != 0 &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
-                Json::String* string_parameter = (Json::String*)this->parameter_value.item();
+                Json::String* string_parameter = (Json::String*)this->parameter_value.get();
 
-                Html::ElementNode::Ref element_node;
-                bool success = domain->find_element_with_attribute_value(after, element_name, this->attribute_name, string_parameter->value, &element_node);
+                std::shared_ptr<Html::ElementNode> element_node;
+                bool success = domain->find_element_with_attribute_value(after.get(), element_name.get(), this->attribute_name, string_parameter->value, &element_node);
                 if (success)
                 {
                     (*result) = element_node;
                     return true;
                 }
             }
-            else if (this->attribute_name.item() == 0 &&
-                this->method_name.equals<true>(Json::globals->text_equals_method) &&
-                this->parameter_value.item() != 0 &&
+            else if (this->attribute_name.get() == 0 &&
+                equals<UnicodeString, true>(this->method_name.get(), Json::globals->text_equals_method.get()) &&
+                this->parameter_value.get() != 0 &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
-                Json::String* string_parameter = (Json::String*)this->parameter_value.item();
+                Json::String* string_parameter = (Json::String*)this->parameter_value.get();
 
-                Html::ElementNode::Ref element_node;
-                bool success = domain->find_element_with_text_value(after, element_name, string_parameter->value, &element_node);
+                std::shared_ptr<Html::ElementNode> element_node;
+                bool success = domain->find_element_with_text_value(after.get(), element_name.get(), string_parameter->value, &element_node);
                 if (success)
                 {
                     (*result) = element_node;
@@ -90,18 +90,18 @@ namespace Json
         return false;
     }
 
-    bool Script::Execute(Html::Node::Ref domain, UnicodeString::Ref* result)
+    bool Script::Execute(std::shared_ptr<Html::Node> domain, UnicodeStringRef* result)
     {
-        if (this->element_name.item() != 0)
+        if (this->element_name.get() != 0)
         {
-            Html::ElementName::Ref element_name = New<Html::ElementName>();
+            std::shared_ptr<Html::ElementName> element_name = std::make_shared<Html::ElementName>();
             element_name->Initialize(Html::globals->Namespace_HTML, this->element_name);
 
-            if (this->attribute_name.item() != 0 &&
-                this->method_name.item() == 0)
+            if (this->attribute_name.get() != 0 &&
+                this->method_name.get() == 0)
             {
-                Html::ElementNode::Ref element_node;
-                bool success = domain->find_element(element_name, this->attribute_name, 0, &element_node);
+                std::shared_ptr<Html::ElementNode> element_node;
+                bool success = domain->find_element(element_name.get(), this->attribute_name, 0, &element_node);
                 if (success)
                 {
                     element_node->get_attribute(this->attribute_name, result);
@@ -111,22 +111,22 @@ namespace Json
         }
         else
         {
-            if (this->attribute_name.item() == 0 &&
-                this->method_name.item() != 0 &&
-                this->parameter_value.item() == 0)
+            if (this->attribute_name.get() == 0 &&
+                this->method_name.get() != 0 &&
+                this->parameter_value.get() == 0)
             {
-                if (this->method_name.equals<true>(Json::globals->deep_text_method))
+                if (equals<UnicodeString, true>(this->method_name.get(), Json::globals->deep_text_method.get()))
                 {
                     deep_text(domain, result);
                     return true;
                 }
-                else if (this->method_name.equals<true>(Json::globals->first_text_method))
+                else if (equals<UnicodeString, true>(this->method_name.get(), Json::globals->first_text_method.get()))
                 {
-                    UnicodeString::Ref text = New<UnicodeString>();
+                    UnicodeStringRef text = std::make_shared<UnicodeString>();
                     text->reserve(0x100);
 
-                    Inline<Basic::TextSanitizer> stream;
-                    stream.Initialize(text);
+                    Basic::TextSanitizer stream;
+                    stream.Initialize(text.get());
 
                     domain->first_text(&stream);
 
@@ -136,7 +136,7 @@ namespace Json
             }
         }
 
-        Html::Node::Ref element_node;
+        std::shared_ptr<Html::Node> element_node;
         bool success = Execute(domain, 0, &element_node);
         if (!success)
             return false;
@@ -146,13 +146,13 @@ namespace Json
         return true;
     }
 
-    void Script::deep_text(Html::Node::Ref domain, UnicodeString::Ref* result)
+    void Script::deep_text(std::shared_ptr<Html::Node> domain, UnicodeStringRef* result)
     {
-        UnicodeString::Ref text = New<UnicodeString>();
+        UnicodeStringRef text = std::make_shared<UnicodeString>();
         text->reserve(0x100);
 
-        Inline<Basic::TextSanitizer> stream;
-        stream.Initialize(text);
+        Basic::TextSanitizer stream;
+        stream.Initialize(text.get());
 
         domain->extract_text(&stream);
 

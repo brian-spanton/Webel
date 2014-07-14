@@ -5,17 +5,25 @@
 
 namespace Basic
 {
-    void Frame::switch_to_state(uint32 state)
+    Yield::Yield(const char* context)
+    {
+    }
+
+    Yield::Yield(const char* context, uint32 error)
+    {
+    }
+
+    void StateMachine::switch_to_state(uint32 state)
     {
         if (this->state == state)
-            throw new Exception("unexpected switch to current state");
+            throw FatalError("unexpected switch to current state");
 
-        if (!Pending())
-            throw new Exception("unexpected switch from non-pending state");
+        if (!in_progress())
+            throw FatalError("unexpected switch from completed state");
 
         this->state = state;
 
-        if (Failed())
+        if (failed())
         {
             char state_string[0x40];
             sprintf_s(state_string, "state=%X", this->state);
@@ -23,52 +31,94 @@ namespace Basic
         }
     }
 
-    void Frame::Initialize()
+    void StateMachine::reset()
     {
         this->state = Start_State;
     }
 
-    uint32 Frame::frame_state()
+    StateMachine::StateMachine() :
+        state(Start_State)
+    {
+    }
+
+    uint32 StateMachine::get_state()
     {
         return this->state;
     }
 
-    void Frame::Process(IProcess* frame, IEvent* event)
-    {
-        for (uint64 i = 0; true; i++)
-        {
-            if (i == 0x100000)
-                throw new Exception("runaway frame?");
-
-            if (!frame->Pending())
-                break;
-
-            bool yield = false;
-
-            frame->Process(event, &yield);
-
-            if (yield)
-                break;
-        }
-    }
-
-    void Frame::Process(IEvent* event)
-    {
-        Process(this, event);
-    }
-
-    bool Frame::Pending()
+    bool StateMachine::in_progress()
     {
         return (this->state < Succeeded_State);
     }
 
-    bool Frame::Succeeded()
+    bool StateMachine::succeeded()
     {
         return (this->state == Succeeded_State);
     }
 
-    bool Frame::Failed()
+    bool StateMachine::failed()
     {
         return (this->state > Succeeded_State);
+    }
+
+    bool Frame::in_progress()
+    {
+        return StateMachine::in_progress();
+    }
+
+    bool Frame::succeeded()
+    {
+        return StateMachine::succeeded();
+    }
+
+    bool Frame::failed()
+    {
+        return StateMachine::failed();
+    }
+
+    void Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
+    {
+        delegate_event(process, event);
+
+        if (process->failed())
+        {
+            this->switch_to_state(state);
+            throw Yield("process failed");
+        }
+    }
+
+    void delegate_event(IProcess* process, IEvent* event)
+    {
+        for (uint64 i = 0; i != 0x100000; i++)
+        {
+            // doing this check first ensures that processes that have already failed or succeeded don't have to
+            // handle further events...
+            // $$ could this hide some transgressions though?
+            if (!process->in_progress())
+                return;
+
+            process->consider_event(event);
+        }
+
+        throw FatalError("runaway frame?");
+    }
+
+    void delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
+    {
+        delegate_event(process, event);
+
+        if (process->failed())
+            throw FatalError("delegate_event_throw_error_on_fail process->failed()");
+    }
+
+    void produce_event(IProcess* process, IEvent* event)
+    {
+        try
+        {
+            delegate_event(process, event);
+        }
+        catch (const Yield&)
+        {
+        }
     }
 }

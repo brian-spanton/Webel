@@ -4,16 +4,13 @@
 
 #include "Basic.IStream.h"
 #include "Basic.IProcess.h"
+#include "Basic.Frame.h"
 
 namespace Html
 {
     using namespace Basic;
 
-    class TranslationMap : public std::unordered_map<Codepoint, Codepoint>, public IRefCounted
-    {
-    public:
-        typedef Basic::Ref<TranslationMap> Ref;
-    };
+    typedef std::unordered_map<Codepoint, Codepoint> TranslationMap;
 
     enum Confidence
     {
@@ -24,12 +21,10 @@ namespace Html
 
     enum TokenizerState
     {
-        data_state,
+        data_state = Frame::Start_State,
         character_reference_in_data_state,
-        character_reference_in_data_Done_state,
         RCDATA_state,
         character_reference_in_RCDATA_state,
-        character_reference_in_RCDATA_Done_state,
         RAWTEXT_state,
         script_data_state,
         PLAINTEXT_state,
@@ -67,13 +62,11 @@ namespace Html
         attribute_value_single_quoted_state,
         attribute_value_unquoted_state,
         character_reference_in_attribute_value_state,
-        character_reference_in_attribute_value_Done_state,
         after_attribute_value_quoted_state,
         self_closing_start_tag_state,
         bogus_comment_state,
         markup_declaration_open_state,
         markup_declaration_open_2_state,
-        markup_declaration_open_3_state,
         comment_start_state_state,
         comment_start_dash_state,
         comment_state,

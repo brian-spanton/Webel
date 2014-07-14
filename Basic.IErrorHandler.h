@@ -2,16 +2,15 @@
 
 #pragma once
 
-#include "Basic.IRefCounted.h"
 #include "Basic.IStream.h"
 #include "Basic.TextWriter.h"
 
 namespace Basic
 {
-    __interface IErrorHandler : public IRefCounted
+    __interface IErrorHandler
     {
         bool HandleError(const char* context, uint32 error);
-        Basic::IStream<Codepoint>* DebugStream();
+        Basic::IStream<Codepoint>* LogStream();
         Basic::TextWriter* DebugWriter();
     };
 }

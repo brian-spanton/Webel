@@ -11,24 +11,22 @@ namespace Http
 {
     using namespace Basic;
 
-    void ResponseHeadersFrame::Initialize(UnicodeString* method, Response* response)
+    ResponseHeadersFrame::ResponseHeadersFrame(UnicodeStringRef method, Response* response) :
+        method(method),
+        response(response),
+        number_stream(&this->response->code),
+        headers_frame(this->response->headers.get())
     {
-        __super::Initialize();
-        this->method = method;
-        this->response = response;
-        this->number_stream.Initialize(&this->response->code);
-        this->headers_frame.Initialize(this->response->headers);
     }
 
-    void ResponseHeadersFrame::Process(IEvent* event, bool* yield)
+    void ResponseHeadersFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::receiving_protocol_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->SP)
                 {
@@ -44,8 +42,7 @@ namespace Http
         case State::receiving_code_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->SP)
                 {
@@ -67,7 +64,6 @@ namespace Http
                     bool success = this->number_stream.WriteDigit(b);
                     if (!success)
                     {
-                        Event::UndoReadNext(event);
                         switch_to_state(State::write_to_number_stream_failed);
                     }
                 }
@@ -77,8 +73,7 @@ namespace Http
         case State::receiving_reason_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
@@ -90,7 +85,6 @@ namespace Http
                 }
                 else if (Http::globals->CTL[b])
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::receiving_reason_error);
                 }
                 else
@@ -103,8 +97,7 @@ namespace Http
         case State::expecting_LF_after_reason_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->LF)
                 {
@@ -112,62 +105,38 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_LF_after_reason_error);
                 }
             }
             break;
 
         case State::headers_frame_pending_state:
-            if (this->headers_frame.Pending())
             {
-                this->headers_frame.Process(event, yield);
-            }
-            
-            if (this->headers_frame.Failed())
-            {
-                switch_to_state(State::headers_frame_failed);
-            }
-            else if (this->headers_frame.Succeeded())
-            {
+                delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+
                 switch_to_state(State::done_state);
             }
             break;
 
         default:
-            throw new Exception("ResponseHeadersFrame::Process unexpected state");
+            throw FatalError("ResponseHeadersFrame::handle_event unexpected state");
         }
     }
 
-    void ResponseHeadersFrame::WriteResponseLineTo(IStream<byte>* stream)
+    void serialize_response_line(const Response* value, IStream<byte>* stream)
     {
-        this->response->protocol->ascii_encode(stream);
+        ascii_encode(value->protocol.get(), stream);
 
-        stream->Write(&Http::globals->SP, 1);
+        stream->write_element(Http::globals->SP);
 
-        UnicodeString::Ref code = New<UnicodeString>();
-        TextWriter writer(code);
-        writer.WriteFormat<0x10>("%d", this->response->code);
+        UnicodeString code;
+        TextWriter writer(&code);
+        writer.WriteFormat<0x10>("%d", value->code);
 
-        code->ascii_encode(stream);
+        ascii_encode(&code, stream);
 
-        stream->Write(&Http::globals->SP, 1);
+        stream->write_element(Http::globals->SP);
 
-        this->response->reason->ascii_encode(stream);
-    }
-
-    void ResponseHeadersFrame::SerializeTo(IStream<byte>* stream)
-    {
-        WriteResponseLineTo(stream);
-
-        stream->Write(Http::globals->CRLF, _countof(Http::globals->CRLF));
-
-        Inline<HeadersFrame> frame;
-        frame.Initialize(this->response->headers);
-
-        frame.SerializeTo(stream);
-
-        if (this->response->server_body.item() != 0)
-            this->response->server_body->SerializeTo(stream);
+        ascii_encode(value->reason.get(), stream);
     }
 }

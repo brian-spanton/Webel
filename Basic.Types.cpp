@@ -6,12 +6,12 @@
 
 namespace Basic
 {
-    Exception::Exception(const char* context)
+    FatalError::FatalError(const char* context)
     {
         Basic::globals->HandleError(context, 0);
     }
 
-    Exception::Exception(const char* context, uint32 error)
+    FatalError::FatalError(const char* context, uint32 error)
     {
         Basic::globals->HandleError(context, error);
     }

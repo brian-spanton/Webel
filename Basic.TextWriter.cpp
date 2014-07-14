@@ -7,15 +7,15 @@
 
 namespace Basic
 {
-    TextWriter::TextWriter()
+    TextWriter::TextWriter() :
+        decoder(Basic::globals->ascii_index)
     {
-        this->decoder.Initialize(Basic::globals->ascii_index);
     }
 
     TextWriter::TextWriter(IStream<Codepoint>* dest) :
-        dest(dest)
+        dest(dest),
+        decoder(Basic::globals->ascii_index, this->dest)
     {
-        this->decoder.Initialize(Basic::globals->ascii_index, this->dest);
     }
 
     void TextWriter::Initialize(IStream<Codepoint>* dest)
@@ -24,26 +24,26 @@ namespace Basic
         this->decoder.set_destination(this->dest);
     }
 
-    void TextWriter::Write(const char* text, uint32 count)
+    void TextWriter::write_elements(const char* text, uint32 count)
     {
-        this->decoder.Write((const byte*)text, count);
+        this->decoder.write_elements((const byte*)text, count);
     }
 
-    void TextWriter::Write(const char* text)
+    void TextWriter::write_c_str(const char* text)
     {
         size_t length = strlen(text);
-        Write(text, length);
+        write_elements(text, length);
     }
 
     void TextWriter::WriteLine(const char* text)
     {
-        Write(text);
+        write_c_str(text);
         WriteLine();
     }
 
     void TextWriter::WriteLine()
     {
-        Write("\r\n");
+        write_literal("\r\n");
     }
 
     void TextWriter::WriteThreadId()
@@ -65,7 +65,7 @@ namespace Basic
         {
 #define CASE(e) \
         case e: \
-            Write(#e); \
+            write_literal(#e); \
             break
 
             // WinError.h

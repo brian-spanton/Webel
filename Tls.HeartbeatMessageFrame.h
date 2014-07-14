@@ -4,20 +4,17 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
-#include "Tls.VectorFrames.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class HeartbeatMessageFrame : public Frame, public ISerializable
+    class HeartbeatMessageFrame : public Frame
     {
     private:
         enum State
         {
-            start_state = Start_State,
-            type_frame_pending_state,
+            type_frame_pending_state = Start_State,
             payload_length_frame_pending_state,
             payload_frame_pending_state,
             padding_frame_pending_state,
@@ -32,17 +29,28 @@ namespace Tls
         HeartbeatMessage* heartbeat_message;
         uint32 plaintext_length;
         uint32 padding_length;
-        Inline<NumberFrame<HeartbeatMessageType> > type_frame;
-        Inline<NumberFrame<uint16> > payload_length_frame;
-        Inline<MemoryRange> payload_frame;
-        Inline<MemoryRange> padding_frame;
+        NumberFrame<HeartbeatMessageType> type_frame;
+        NumberFrame<uint16> payload_length_frame;
+        MemoryRange payload_frame;
+        MemoryRange padding_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HeartbeatMessageFrame, IProcess> Ref;
+        HeartbeatMessageFrame(HeartbeatMessage* heartbeat_message);
+        
+        void set_plaintext_length(uint32 plaintext_length);
+    };
 
-        void Initialize(HeartbeatMessage* heartbeat_message, uint32 plaintext_length);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<HeartbeatMessage>
+    {
+        void operator()(const HeartbeatMessage* value, IStream<byte>* stream) const
+        {
+            serialize<HeartbeatMessageType>()(&value->type, stream);
+            serialize<uint16>()(&value->payload_length, stream);
+            value->payload.write_to_stream(stream);
+            value->padding.write_to_stream(stream);
+        }
     };
 }

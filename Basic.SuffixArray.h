@@ -5,7 +5,7 @@
 namespace Basic
 {
     template <class value_type>
-    class SuffixArray : public IRefCounted
+    class SuffixArray
     {
     private:
         struct SortEntry
@@ -16,7 +16,7 @@ namespace Basic
 
         struct ArrayEntry
         {
-            UnicodeString::Ref key; // REF
+            UnicodeStringRef key;
             uint32 key_index;
             value_type value;
 
@@ -47,7 +47,7 @@ namespace Basic
             }
         }
 
-        uint32 find(uint32 begin, uint32 end, UnicodeString::Ref key, uint32 key_index)
+        uint32 find(uint32 begin, uint32 end, UnicodeStringRef key, uint32 key_index)
         {
             Hold hold(this->lock);
 
@@ -56,9 +56,9 @@ namespace Basic
                 uint32 mid = begin + ((end - begin) / 2);
 
                 int result = compare_strings<Codepoint, false>(
-                    key->c_str() + key_index,
+                    key->address() + key_index,
                     key->size() - key_index,
-                    this->results[mid].key->c_str() + this->results[mid].key_index,
+                    this->results[mid].key->address() + this->results[mid].key_index,
                     this->results[mid].key->size() - this->results[mid].key_index);
 
                 if (result == 1)
@@ -70,7 +70,7 @@ namespace Basic
             return begin;
         }
 
-        uint32 insert(uint32 begin, uint32 end, UnicodeString::Ref key, uint32 key_index, value_type value)
+        uint32 insert(uint32 begin, uint32 end, UnicodeStringRef key, uint32 key_index, value_type value)
         {
             ArrayEntry entry;
             entry.key_index = key_index;
@@ -85,8 +85,6 @@ namespace Basic
         }
 
     public:
-        typedef Basic::Ref<SuffixArray<value_type> > Ref;
-
         Lock lock; // $ think about reader/writer or other strategies for better concurrency
         ResultArray results;
 
@@ -96,14 +94,14 @@ namespace Basic
 
             for (uint32 i = 0; i < this->results.size(); i++)
             {
-                Basic::globals->DebugStream()->Write(
-                    this->results[i].key->c_str() + this->results[i].key_index,
+                Basic::globals->LogStream()->write_elements(
+                    this->results[i].key->address() + this->results[i].key_index,
                     this->results[i].key->size() - this->results[i].key_index);
                 Basic::globals->DebugWriter()->WriteLine();
             }
         }
 
-        void Search(UnicodeString::Ref term, uint32* begin, uint32* end)
+        void Search(UnicodeStringRef term, uint32* begin, uint32* end)
         {
             Hold hold(this->lock);
 
@@ -114,9 +112,9 @@ namespace Basic
             while (before < this->results.size())
             {
                 bool result = starts_with<Codepoint, false>(
-                    this->results[before].key->c_str() + this->results[before].key_index,
+                    this->results[before].key->address() + this->results[before].key_index,
                     this->results[before].key->size() - this->results[before].key_index,
-                    term->c_str(),
+                    term->address(),
                     term->size());
 
                 if (!result)
@@ -128,7 +126,7 @@ namespace Basic
             (*end) = before;
         }
 
-        void Add(UnicodeString::Ref key, value_type value)
+        void Add(UnicodeStringRef key, value_type value)
         {
             uint32 key_count = key->size();
 

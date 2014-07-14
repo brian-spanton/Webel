@@ -11,34 +11,31 @@ namespace Basic
     class SingleByteDecoder : public IDecoder
     {
     private:
-        Ref<IStream<Codepoint> > destination; // REF
-        Ref<ISingleByteEncodingIndex> index; // REF
+        IStream<Codepoint>* destination;
+        std::shared_ptr<ISingleByteEncodingIndex> index;
 
         void Emit(Codepoint codepoint);
         void EmitDecoderError(byte b);
         void EmitDecoderError(const char* error);
 
     public:
-        typedef Basic::Ref<SingleByteDecoder, IDecoder> Ref;
-
-        void Initialize(ISingleByteEncodingIndex* index);
-        void Initialize(ISingleByteEncodingIndex* index, IStream<Codepoint>* destination);
+        SingleByteDecoder(std::shared_ptr<ISingleByteEncodingIndex> index);
+        SingleByteDecoder(std::shared_ptr<ISingleByteEncodingIndex> index, IStream<Codepoint>* destination);
 
         void IDecoder::set_destination(IStream<Codepoint>* destination);
-        void IDecoder::Write(const byte* elements, uint32 count);
-        void IDecoder::WriteEOF();
+        void IDecoder::write_elements(const byte* elements, uint32 count);
+        void IDecoder::write_element(byte element);
+        void IDecoder::write_eof();
     };
 
     class SingleByteDecoderFactory : public IDecoderFactory
     {
     private:
-        Ref<ISingleByteEncodingIndex> index; // REF
+        std::shared_ptr<ISingleByteEncodingIndex> index;
 
     public:
-        typedef Ref<SingleByteDecoderFactory, IDecoderFactory> Ref;
+        void Initialize(std::shared_ptr<ISingleByteEncodingIndex> index);
 
-        void Initialize(ISingleByteEncodingIndex* index);
-
-        virtual void IDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder);
+        virtual void IDecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder);
     };
 }

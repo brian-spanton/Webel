@@ -12,11 +12,9 @@ namespace Html
     class DocumentTypeNode : public Node
     {
     public:
-        typedef Basic::Ref<DocumentTypeNode> Ref;
-
-        UnicodeString::Ref name; // REF
-        UnicodeString::Ref publicId; // REF
-        UnicodeString::Ref systemId; // REF
+        UnicodeStringRef name;
+        UnicodeStringRef publicId;
+        UnicodeStringRef systemId;
 
         DocumentTypeNode();
     };

@@ -7,22 +7,22 @@
 #include "Tls.ServerHandshake.h"
 #include "Tls.ClientHandshake.h"
 #include "Basic.Event.h"
+#include "Tls.ServerNameFrame.h"
+#include "Tls.SignatureAndHashAlgorithmFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void RecordLayer::Initialize(IBufferedStream<byte>* peer, IProcess* application_stream, bool server, Basic::Ref<ICertificate> certificate)
+    RecordLayer::RecordLayer(std::shared_ptr<IProcess> application_stream, bool server, std::shared_ptr<ICertificate> certificate) :
+        record_frame(&record)
     {
-        __super::Initialize();
-
-        this->transport_peer = peer;
         this->application_stream = application_stream;
         this->application_connected = false;
         this->server = server;
         this->certificate = certificate;
 
-        this->record_buffer = New<ByteVector>();
+        this->record_buffer = std::make_shared<ByteString>();
         this->record_buffer->reserve(0x400);
 
         this->version_low = 0x0301;
@@ -35,69 +35,69 @@ namespace Tls
         this->send_heartbeats = true; // $$
         this->receive_heartbeats = false;
 
-        NTSTATUS error = BCryptGenRandom(0, &this->session_id[0], this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        NTSTATUS error = BCryptGenRandom(0, this->session_id.address(), this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (error != 0)
-            throw new Exception("BCryptGenRandom", error);
+            throw FatalError("BCryptGenRandom", error);
 
         if (server)
         {
-            ServerHandshake::Ref handshake_server = New<ServerHandshake>();
-            handshake_server->Initialize(this);
+            std::shared_ptr<ServerHandshake> handshake_server = std::make_shared<ServerHandshake>(this);
             this->handshake_protocol = handshake_server;
         }
         else
         {
-            ClientHandshake::Ref handshake_client = New<ClientHandshake>();
-            handshake_client->Initialize(this);
+            std::shared_ptr<ClientHandshake> handshake_client = std::make_shared<ClientHandshake>(this);
             this->handshake_protocol = handshake_client;
         }
 
-        this->alert_protocol = New<AlertProtocol>();
-        this->alert_protocol->Initialize(this);
+        this->alert_protocol = std::make_shared<AlertProtocol>(this);
 
-        this->heartbeat_protocol = New<HeartbeatProtocol>();
-        this->heartbeat_protocol->Initialize(this);
+        this->heartbeat_protocol = std::make_shared<HeartbeatProtocol>(this);
 
-        SecurityParameters::Ref security_parameters = New<SecurityParameters>();
+        std::shared_ptr<SecurityParameters> security_parameters = std::make_shared<SecurityParameters>();
 
-        this->active_read_state = New<ConnectionState>();
+        this->active_read_state = std::make_shared<ConnectionState>();
         this->active_read_state->security_parameters = security_parameters;
 
-        this->active_write_state = New<ConnectionState>();
+        this->active_write_state = std::make_shared<ConnectionState>();
         this->active_write_state->security_parameters = security_parameters;
 
-        this->pending_read_state = New<ConnectionState>();
-        this->pending_write_state = New<ConnectionState>();
+        this->pending_read_state = std::make_shared<ConnectionState>();
+        this->pending_write_state = std::make_shared<ConnectionState>();
     }
 
-    void RecordLayer::Process(IEvent* event, bool* yield)
+    void RecordLayer::set_transport(std::shared_ptr<IBufferedStream<byte> > peer)
+    {
+        this->transport_peer = peer;
+    }
+
+    void RecordLayer::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             DisconnectApplication();
-            (*yield) = true;
-            return;
+            throw Yield("event consumed");
         }
 
-        switch (frame_state())
+        switch (get_state())
         {
         case State::unconnected_state:
-            if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
             {
-                (*yield) = true;
-            }
-            else
-            {
+                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
+
                 this->current_type = ContentType::handshake;
 
                 ReadyForWriteBytesEvent handshake_event;
                 handshake_event.Initialize(&this->handshake_element_source);
-                this->handshake_protocol->Frame::Process(&handshake_event);
+                produce_event(this->handshake_protocol.get(), &handshake_event);
 
-                if (this->handshake_protocol->Failed())
+                if (this->handshake_protocol->failed())
                 {
                     switch_to_state(State::handshake_protocol_failed);
-                    return;
                 }
                 else
                 {
@@ -108,22 +108,13 @@ namespace Tls
 
         case State::receive_record_state:
             switch_to_state(State::record_frame_pending_state);
-            this->record_frame.Initialize(&this->record);
+            this->record_frame.reset();
             break;
 
         case State::record_frame_pending_state:
-            if (this->record_frame.Pending())
             {
-                this->record_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
 
-            if (this->record_frame.Failed())
-            {
-                switch_to_state(State::record_frame_failed);
-                return;
-            }
-            else if (this->record_frame.Succeeded())
-            {
                 try
                 {
                     ProcessRecord(&this->record);
@@ -139,7 +130,7 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::RecordLayer::Process unexpected state");
+            throw FatalError("Tls::RecordLayer::handle_event unexpected state");
         }
     }
 
@@ -149,16 +140,13 @@ namespace Tls
         alert.description = description;
         alert.level = level;
 
-        Inline<AlertFrame> alert_frame;
-        alert_frame.Initialize(&alert);
-
         this->current_type = ContentType::alert;
-        alert_frame.SerializeTo(this);
+        serialize<Alert>()(&alert, this);
 
         Flush();
     }
 
-    void RecordLayer::WriteEOF()
+    void RecordLayer::write_eof()
     {
         WriteAlert(AlertDescription::close_notify, AlertLevel::warning);
 
@@ -167,31 +155,34 @@ namespace Tls
 
     void RecordLayer::CloseTransport()
     {
-        this->transport_peer->WriteEOF();
+        this->transport_peer->write_eof();
         this->transport_peer = 0;
     }
 
     void RecordLayer::WriteChangeCipherSpec()
     {
-        Write(ContentType::change_cipher_spec, &ChangeCipherSpec, sizeof(ChangeCipherSpec));
+        write_record_elements(ContentType::change_cipher_spec, &ChangeCipherSpec, sizeof(ChangeCipherSpec));
 
         // make sure to actually send this record prior to changing the write states
         FlushRecordBuffer();
 
         this->active_write_state = this->pending_write_state;
-        this->pending_write_state = New<ConnectionState>();
+        this->pending_write_state = std::make_shared<ConnectionState>();
     }
 
     void RecordLayer::ConnectApplication()
     {
-        this->application_connected = true;
+        std::shared_ptr<IProcess> protocol = this->application_stream.lock();
+        if (protocol.get() == 0)
+            throw State::application_lost_error_1;
 
+        this->application_connected = true;
         this->current_type = ContentType::application_data;
         ReadyForWriteBytesEvent event;
         event.Initialize(&this->application_element_source);
-        this->application_stream->Process(&event);
+        produce_event(protocol.get(), &event);
 
-        if (this->application_stream->Failed())
+        if (protocol->failed())
             throw State::application_stream_failed;
 
         if (this->send_heartbeats)
@@ -204,35 +195,36 @@ namespace Tls
             heartbeat_message.payload_length = 16;
 
             heartbeat_message.payload.resize(16);
-            NTSTATUS error = BCryptGenRandom(0, &heartbeat_message.payload[0], heartbeat_message.payload.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+            NTSTATUS error = BCryptGenRandom(0, heartbeat_message.payload.address(), heartbeat_message.payload.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+                throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
 
             heartbeat_message.padding.resize(16);
-            error = BCryptGenRandom(0, &heartbeat_message.padding[0], heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+            error = BCryptGenRandom(0, heartbeat_message.padding.address(), heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
-
-            Inline<HeartbeatMessageFrame> heartbeat_message_frame;
-            heartbeat_message_frame.Initialize(&heartbeat_message, 0);
+                throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
 
             this->current_type = ContentType::heartbeat_content_type;
-            heartbeat_message_frame.SerializeTo(this);
+            serialize<HeartbeatMessage>()(&heartbeat_message, this);
             Flush();
         }
     }
 
     void RecordLayer::DisconnectApplication()
     {
+        std::shared_ptr<IProcess> protocol = this->application_stream.lock();
+        if (protocol.get() == 0)
+             return;
+
         ElementStreamEndingEvent application_event;
-        this->application_stream->Process(&application_event);
+        produce_event(protocol.get(), &application_event);
     }
 
     void RecordLayer::switch_to_state(uint32 state)
     {
         __super::switch_to_state(state);
 
-        if (Failed())
+        if (failed())
         {
             DisconnectApplication();
 
@@ -261,11 +253,11 @@ namespace Tls
     {
         // From http://www.ietf.org/rfc/rfc2246.txt section 6.2.1:
         //     The length (in bytes) of the following TLSPlaintext.fragment.
-        //     The length should not exceed 2^14.
+        //     The length should not exceed 2^14 (0x4000).
         // brian: since it is only _should_, and I see some records in real life come back at 0x4020, let's
         // give it double.
         if (record->length > 0x8000)
-            throw State::record_length_too_large_error;
+            throw State::receive_record_length_too_large_error;
 
         if (this->version_finalized && record->version != this->version)
             throw State::record_version_mismatch_error;
@@ -290,13 +282,13 @@ namespace Tls
                     throw State::change_cipher_spec_zero_fragment_error;
 
                 this->active_read_state = this->pending_read_state;
-                this->pending_read_state = New<ConnectionState>();
+                this->pending_read_state = std::make_shared<ConnectionState>();
 
                 this->current_type = ContentType::handshake;
                 ChangeCipherSpecEvent event;
-                this->handshake_protocol->Frame::Process(&event);
+                produce_event(this->handshake_protocol.get(), &event);
 
-                if (this->handshake_protocol->Failed())
+                if (this->handshake_protocol->failed())
                     throw State::handshake_protocol_failed;
             }
             break;
@@ -313,12 +305,12 @@ namespace Tls
                     throw State::alert_zero_fragment_error;
 
                 this->current_type = ContentType::alert;
-                this->alert_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+                this->alert_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
                 ReadyForReadBytesEvent event;
                 event.Initialize(&this->alert_element_source);
-                this->alert_protocol->Frame::Process(&event);
+                produce_event(this->alert_protocol.get(), &event);
 
-                if (this->alert_protocol->Failed())
+                if (this->alert_protocol->failed())
                     throw State::alert_protocol_failed;
             }
             break;
@@ -332,13 +324,16 @@ namespace Tls
                     throw State::heartbeat_zero_fragment_error;
 
                 this->current_type = ContentType::heartbeat_content_type;
-                this->heartbeat_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+
+                this->heartbeat_protocol->SetPlaintextLength(plaintext.length);
+
+                this->heartbeat_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
+
                 ReadyForReadBytesEvent event;
                 event.Initialize(&this->heartbeat_element_source);
-                this->heartbeat_protocol->SetPlaintextLength(plaintext.length);
-                this->heartbeat_protocol->Frame::Process(&event);
+                produce_event(this->heartbeat_protocol.get(), &event);
 
-                if (this->heartbeat_protocol->Failed())
+                if (this->heartbeat_protocol->failed())
                     throw State::heartbeat_protocol_failed;
             }
             break;
@@ -355,12 +350,13 @@ namespace Tls
                     throw State::handshake_zero_fragment_error;
 
                 this->current_type = ContentType::handshake;
-                this->handshake_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+                this->handshake_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
+
                 ReadyForReadBytesEvent event;
                 event.Initialize(&this->handshake_element_source);
-                this->handshake_protocol->Frame::Process(&event);
+                produce_event(this->handshake_protocol.get(), &event);
 
-                if (this->handshake_protocol->Failed())
+                if (this->handshake_protocol->failed())
                     throw State::handshake_protocol_failed;
             }
             break;
@@ -369,6 +365,10 @@ namespace Tls
             {
                 if (!this->application_connected)
                     throw State::unexpected_application_data_error;
+
+                std::shared_ptr<IProcess> protocol = this->application_stream.lock();
+                if (protocol.get() == 0)
+                    throw State::application_lost_error_2;
 
                 // RFC 5246 section 6.2.1
                 // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
@@ -379,12 +379,13 @@ namespace Tls
                 if (plaintext.length != 0)
                 {
                     this->current_type = ContentType::application_data;
-                    this->application_element_source.Initialize(plaintext.fragment->FirstElement(), plaintext.length);
+                    this->application_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
+
                     ReadyForReadBytesEvent event;
                     event.Initialize(&this->application_element_source);
-                    this->application_stream->Process(&event);
+                    produce_event(protocol.get(), &event);
 
-                    if (this->application_stream->Failed())
+                    if (protocol->failed())
                         throw State::application_stream_failed;
                 }
             }
@@ -395,12 +396,17 @@ namespace Tls
         }
     }
 
-    void RecordLayer::Write(const byte* elements, uint32 count)
+    void RecordLayer::write_elements(const byte* elements, uint32 count)
     {
-        Write(this->current_type, elements, count);
+        write_record_elements(this->current_type, elements, count);
     }
 
-    void RecordLayer::Write(ContentType type, const byte* elements, uint32 count)
+    void RecordLayer::write_element(byte element)
+    {
+        write_record_elements(this->current_type, &element, 1);
+    }
+
+    void RecordLayer::write_record_elements(ContentType type, const byte* elements, uint32 count)
     {
         if (type != this->buffer_type)
         {
@@ -421,7 +427,7 @@ namespace Tls
 
         while (true)
         {
-            uint32 remaining = 0x4000 - this->record_buffer->size();
+            uint32 remaining = max_record_length - this->record_buffer->size();
             uint32 useable = (count > remaining) ? remaining : count;
 
             this->record_buffer->insert(this->record_buffer->end(), elements, elements + useable);
@@ -429,7 +435,7 @@ namespace Tls
             elements += useable;
             count -= useable;
 
-            if (this->record_buffer->size() == 0x4000)
+            if (this->record_buffer->size() == max_record_length)
             {
                 FlushRecordBuffer();
             }
@@ -455,11 +461,14 @@ namespace Tls
                 throw State::send_zero_fragment_error;
         }
 
+        if (this->record_buffer->size() > max_record_length)
+            throw State::send_record_length_too_large_error;
+
         Record plaintext;
         plaintext.type = this->buffer_type;
         plaintext.version = this->version;
         plaintext.fragment = this->record_buffer;
-        plaintext.length = this->record_buffer->size();
+        plaintext.length = (uint16)this->record_buffer->size();
 
         Record compressed;
         Compress(&plaintext, &compressed);
@@ -467,10 +476,7 @@ namespace Tls
         Record encrypted;
         Encrypt(&compressed, &encrypted);
 
-        Inline<RecordFrame> recordFrame;
-        recordFrame.Initialize(&encrypted);
-
-        recordFrame.SerializeTo(&this->transport_buffer);
+        serialize<Record>()(&encrypted, &this->transport_buffer);
 
         this->record_buffer->resize(0);
     }
@@ -482,7 +488,7 @@ namespace Tls
             FlushRecordBuffer();
         }
 
-        this->transport_buffer.SerializeTo(this->transport_peer);
+        this->transport_buffer.write_to_stream(this->transport_peer.get());
         this->transport_buffer.clear();
         this->transport_peer->Flush();
     }
@@ -537,7 +543,7 @@ namespace Tls
             {
                 uint8 mac_length = this->active_write_state->security_parameters->mac_length;
 
-                std::vector<byte> payload;
+                ByteString payload;
                 payload.reserve(compressed->fragment->size() + mac_length);
 
                 payload.insert(payload.end(), compressed->fragment->begin(), compressed->fragment->end());
@@ -546,32 +552,32 @@ namespace Tls
 
                 payload.resize(mac_index + mac_length);
 
-                this->active_write_state->MAC(compressed, &payload[mac_index], mac_length);
+                this->active_write_state->MAC(compressed, payload.address() + mac_index, mac_length);
 
-                encrypted->fragment = New<ByteVector>();
+                encrypted->fragment = std::make_shared<ByteString>();
                 encrypted->fragment->resize(payload.size());
 
                 uint32 output_length;
 
                 NTSTATUS error = BCryptEncrypt(
                     this->active_write_state->key_handle,
-                    &payload[0],
+                    payload.address(),
                     payload.size(),
                     0,
                     0,
                     0,
-                    encrypted->fragment->FirstElement(),
+                    encrypted->fragment->address(),
                     encrypted->fragment->size(),
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw new Exception("BCryptEncrypt", error);
+                    throw FatalError("BCryptEncrypt", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_stream_output_overflow_error;
 
                 encrypted->fragment->resize(output_length);
-                encrypted->length = encrypted->fragment->size();
+                encrypted->length = (uint16)encrypted->fragment->size();
 
                 this->active_write_state->sequence_number++;
             }
@@ -595,10 +601,10 @@ namespace Tls
                 uint8 mac_length = this->active_write_state->security_parameters->mac_length;
                 uint8 padding_length;
 
-                std::vector<byte> payload;
+                ByteString payload;
                 payload.reserve(compressed->fragment->size() + mac_length + sizeof(padding_length) + 0x100);
 
-                ByteVector::Ref mask;
+                std::shared_ptr<ByteString> mask;
                 uint8 record_iv_length;
 
                 if (this->version <= 0x0301)
@@ -611,12 +617,12 @@ namespace Tls
                 {
                     record_iv_length = this->active_write_state->security_parameters->block_length;
 
-                    mask = New<ByteVector>();
+                    mask = std::make_shared<ByteString>();
                     mask->resize(record_iv_length);
 
-                    NTSTATUS error = BCryptGenRandom(0, mask->FirstElement(), mask->size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+                    NTSTATUS error = BCryptGenRandom(0, mask->address(), mask->size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
-                        throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+                        throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
                 }
 
                 payload.insert(payload.end(), compressed->fragment->begin(), compressed->fragment->end());
@@ -627,13 +633,13 @@ namespace Tls
 
                 this->active_write_state->MAC(compressed, &payload[mac_index], mac_length);
 
-                uint16 unpadded_length = payload.size() + sizeof(padding_length);
+                uint16 unpadded_length = (uint16)payload.size() + sizeof(padding_length);
                 uint8 overflow = unpadded_length % this->active_write_state->security_parameters->block_length;
                 padding_length = overflow == 0 ? 0 : this->active_write_state->security_parameters->block_length - overflow;
 
                 payload.insert(payload.end(), padding_length + 1, padding_length);
 
-                encrypted->fragment = New<ByteVector>();
+                encrypted->fragment = std::make_shared<ByteString>();
                 encrypted->fragment->reserve(record_iv_length + payload.size());
 
                 if (record_iv_length > 0)
@@ -647,27 +653,27 @@ namespace Tls
 
                 NTSTATUS error = BCryptEncrypt(
                     this->active_write_state->key_handle,
-                    &payload[0],
+                    payload.address(),
                     payload.size(),
                     0,
-                    mask->FirstElement(),
+                    mask->address(),
                     mask->size(),
-                    encrypted->fragment->FirstElement() + record_iv_length,
+                    encrypted->fragment->address() + record_iv_length,
                     encrypted->fragment->size() - record_iv_length,
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw new Exception("BCryptEncrypt", error);
+                    throw FatalError("BCryptEncrypt", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_block_output_overflow_error;
 
                 encrypted->fragment->resize(record_iv_length + output_length);
-                encrypted->length = encrypted->fragment->size();
+                encrypted->length = (uint16)encrypted->fragment->size();
 
                 if (this->version <= 0x0301)
                 {
-                    ByteVector::Ref cbc_residue = New<ByteVector>();
+                    std::shared_ptr<ByteString> cbc_residue = std::make_shared<ByteString>();
                     cbc_residue->insert(cbc_residue->end(), encrypted->fragment->end() - this->active_write_state->security_parameters->block_length, encrypted->fragment->end());
                     this->active_write_state->IV = cbc_residue;
                 }
@@ -729,18 +735,18 @@ namespace Tls
 
         case BulkCipherAlgorithm::rc4:
             {
-                ByteVector::Ref payload = New<ByteVector>();
+                std::shared_ptr<ByteString> payload = std::make_shared<ByteString>();
                 payload->resize(encrypted->fragment->size());
 
                 uint32 output_length;
                 NTSTATUS error = BCryptDecrypt(
                     this->active_read_state->key_handle, 
-                    encrypted->fragment->FirstElement(), 
+                    encrypted->fragment->address(), 
                     encrypted->fragment->size(), 
                     0, 
                     0, 
                     0, 
-                    payload->FirstElement(), 
+                    payload->address(), 
                     payload->size(), 
                     &output_length, 
                     0);
@@ -754,20 +760,20 @@ namespace Tls
 
                 uint8 mac_length = this->active_read_state->security_parameters->mac_length;
 
-                uint16 fragment_length = payload->size() - mac_length;
+                uint16 fragment_length = (uint16)payload->size() - mac_length;
 
-                std::vector<opaque> received_MAC;
+                ByteString received_MAC;
                 received_MAC.insert(received_MAC.end(), payload->begin() + fragment_length, payload->begin() + fragment_length + mac_length);
 
-                std::vector<opaque> expected_MAC;
+                ByteString expected_MAC;
                 expected_MAC.resize(mac_length);
 
                 payload->resize(fragment_length);
                 
                 compressed->fragment = payload;
-                compressed->length = compressed->fragment->size();
+                compressed->length = (uint16)compressed->fragment->size();
 
-                this->active_read_state->MAC(compressed, &expected_MAC[0], expected_MAC.size());
+                this->active_read_state->MAC(compressed, expected_MAC.address(), (uint8)expected_MAC.size());
 
                 for (int i = 0; i < mac_length; i++)
                 {
@@ -794,7 +800,7 @@ namespace Tls
         case BulkCipherAlgorithm::aes:
         case BulkCipherAlgorithm::_3des:
             {
-                ByteVector::Ref mask;
+                std::shared_ptr<ByteString> mask;
                 uint8 record_iv_length;
 
                 if (this->version <= 0x0301)
@@ -807,22 +813,22 @@ namespace Tls
                 {
                     record_iv_length = this->active_read_state->security_parameters->block_length;
 
-                    mask = New<ByteVector>();
+                    mask = std::make_shared<ByteString>();
                     mask->insert(mask->end(), encrypted->fragment->begin(), encrypted->fragment->begin() + record_iv_length);
                 }
 
-                ByteVector::Ref payload = New<ByteVector>();
+                std::shared_ptr<ByteString> payload = std::make_shared<ByteString>();
                 payload->resize(encrypted->fragment->size() - record_iv_length);
 
                 uint32 output_length;
                 NTSTATUS error = BCryptDecrypt(
                     this->active_read_state->key_handle, 
-                    encrypted->fragment->FirstElement() + record_iv_length, 
+                    encrypted->fragment->address() + record_iv_length,
                     encrypted->fragment->size() - record_iv_length, 
                     0, 
-                    mask->FirstElement(), 
+                    mask->address(), 
                     mask->size(), 
-                    payload->FirstElement(), 
+                    payload->address(),
                     payload->size(), 
                     &output_length, 
                     0);
@@ -837,7 +843,7 @@ namespace Tls
                 uint8 padding_length = payload->at(payload->size() - 1);
                 uint8 mac_length = this->active_read_state->security_parameters->mac_length;
                 uint16 fixed_portion = mac_length + sizeof(padding_length);
-                uint16 variable_portion = payload->size() - fixed_portion;
+                uint16 variable_portion = (uint16)payload->size() - fixed_portion;
 
                 // Implementation note: Canvel et al. [CBCTIME] have demonstrated a
                 // timing attack on CBC padding based on the time required to compute
@@ -856,7 +862,7 @@ namespace Tls
                     padding_length = 0;
                 }
 
-                uint16 padding_index = payload->size() - padding_length - sizeof(padding_length);
+                uint16 padding_index = (uint16)payload->size() - padding_length - sizeof(padding_length);
 
                 for (int i = 0; i < padding_length; i++)
                 {
@@ -871,18 +877,18 @@ namespace Tls
 
                 uint16 fragment_length = variable_portion - padding_length;
 
-                std::vector<opaque> received_MAC;
+                ByteString received_MAC;
                 received_MAC.insert(received_MAC.end(), payload->begin() + fragment_length, payload->begin() + fragment_length + mac_length);
 
-                std::vector<opaque> expected_MAC;
+                ByteString expected_MAC;
                 expected_MAC.resize(mac_length);
 
                 payload->resize(fragment_length);
                 
                 compressed->fragment = payload;
-                compressed->length = compressed->fragment->size();
+                compressed->length = (uint16)compressed->fragment->size();
 
-                this->active_read_state->MAC(compressed, &expected_MAC[0], expected_MAC.size());
+                this->active_read_state->MAC(compressed, expected_MAC.address(), (uint8)expected_MAC.size());
 
                 if (canvel_error != State::done_state)
                     throw canvel_error;
@@ -895,8 +901,8 @@ namespace Tls
 
                 if (this->version <= 0x0301)
                 {
-                    ByteVector::Ref cbc_residue = New<ByteVector>();
-                    cbc_residue->insert(cbc_residue->end(), encrypted->fragment->end() - this->active_read_state->security_parameters->block_length, encrypted->fragment->end());
+                    std::shared_ptr<ByteString> cbc_residue = std::make_shared<ByteString>();
+                    cbc_residue->append(encrypted->fragment->end() - this->active_read_state->security_parameters->block_length, encrypted->fragment->end());
                     this->active_read_state->IV = cbc_residue;
                 }
 

@@ -12,9 +12,7 @@ namespace Html
     class TextNode : public Node
     {
     public:
-        typedef Basic::Ref<TextNode> Ref;
-
-        UnicodeString::Ref data; // REF
+        UnicodeStringRef data;
 
         TextNode();
 

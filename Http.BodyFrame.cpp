@@ -4,19 +4,18 @@
 #include "Http.BodyFrame.h"
 #include "Http.Globals.h"
 #include "Basic.IgnoreFrame.h"
-#include "Basic.FrameStream.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    void BodyFrame::Initialize(NameValueCollection* headers)
+    BodyFrame::BodyFrame(std::shared_ptr<NameValueCollection> headers) :
+        headers(headers),
+        headers_frame(this->headers.get())
     {
-        __super::Initialize();
-        this->headers = headers;
     }
 
-    void BodyFrame::set_body_stream(IStream<byte>* body_stream)
+    void BodyFrame::set_body_stream(std::shared_ptr<IStream<byte> > body_stream)
     {
         this->body_stream = body_stream;
     }
@@ -25,28 +24,24 @@ namespace Http
     {
         __super::switch_to_state(state);
 
-        if (Succeeded())
-            this->body_stream->WriteEOF();
+        if (succeeded())
+        {
+            this->body_stream->write_eof();
+        }
     }
 
-    void BodyFrame::Process(IEvent* event, bool* yield)
+    void BodyFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
             {
-                if (this->body_stream.item() == 0)
+                if (this->body_stream.get() == 0)
                 {
-                    IgnoreFrame::Ref ignore_frame = New<IgnoreFrame>();
-                    ignore_frame->Initialize(0xffffffff);
-
-                    FrameStream<byte>::Ref frame_stream = New<FrameStream<byte> >();
-                    frame_stream->Initialize(ignore_frame);
-
-                    this->body_stream = frame_stream;
+                    this->body_stream = std::make_shared<IgnoreFrame<byte> >();
                 }
 
-                UnicodeString::Ref contentType;
+                UnicodeStringRef contentType;
                 bool success = this->headers->get_string(Http::globals->header_content_type, &contentType);
                 if (!success)
                 {
@@ -54,28 +49,28 @@ namespace Http
                     return;
                 }
 
-                UnicodeString::Ref contentEncoding;
+                UnicodeStringRef contentEncoding;
                 success = this->headers->get_string(Http::globals->header_content_encoding, &contentEncoding);
                 if (success)
                 {
-                    if (!contentEncoding.equals<false>(Http::globals->identity))
+                    if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
                     {
                         switch_to_state(State::unhandled_content_encoding_error);
                         return;
                     }
                 }
 
-                UnicodeString::Ref transferEncoding;
+                UnicodeStringRef transferEncoding;
                 success = this->headers->get_string(Http::globals->header_transfer_encoding, &transferEncoding);
                 if (success)
                 {
-                    if (transferEncoding.equals<false>(Http::globals->chunked))
+                    if (equals<UnicodeString, false>(transferEncoding.get(), Http::globals->chunked.get()))
                     {
-                        this->chunks_frame.Initialize(this->body_stream);
+                        this->chunks_frame = std::make_shared<BodyChunksFrame>(this->body_stream);
                         switch_to_state(State::chunks_frame_pending_state);
                         return;
                     }
-                    else if (!transferEncoding.equals<false>(Http::globals->identity))
+                    else if (!equals<UnicodeString, false>(transferEncoding.get(), Http::globals->identity.get()))
                     {
                         switch_to_state(State::unhandled_transfer_encoding_error);
                         return;
@@ -89,13 +84,14 @@ namespace Http
                     if (contentLength == 0)
                     {
                         switch_to_state(State::done_state);
+                        return;
                     }
                     else
                     {
-                        this->chunk_frame.Initialize(this->body_stream, contentLength);
+                        this->chunk_frame = std::make_shared<LengthBodyFrame>(this->body_stream, contentLength);
                         switch_to_state(State::chunk_frame_pending_state);
+                        return;
                     }
-                    return;
                 }
 
                 success = this->headers->get_base_10(Http::globals->header_content_length, &contentLength);
@@ -104,87 +100,43 @@ namespace Http
                     if (contentLength == 0)
                     {
                         switch_to_state(State::done_state);
+                        return;
                     }
                     else
                     {
-                        this->chunk_frame.Initialize(this->body_stream, contentLength);
+                        this->chunk_frame = std::make_shared<LengthBodyFrame>(this->body_stream, contentLength);
                         switch_to_state(State::chunk_frame_pending_state);
+                        return;
                     }
-                    return;
                 }
 
-                this->disconnect_frame.Initialize(this->body_stream);
+                this->disconnect_frame = std::make_shared<DisconnectBodyFrame>(this->body_stream);
                 switch_to_state(State::disconnect_frame_pending_state);
             }
             break;
 
         case State::chunks_frame_pending_state:
-            if (this->chunks_frame.Pending())
-            {
-                this->chunks_frame.Process(event, yield);
-            }
-            
-            if (this->chunks_frame.Failed())
-            {
-                switch_to_state(State::chunks_frame_failed);
-            }
-            else if (this->chunks_frame.Succeeded())
-            {
-                this->headers_frame.Initialize(this->headers);
-                switch_to_state(State::headers_frame_pending);
-            }
+            delegate_event_change_state_on_fail(this->chunks_frame.get(), event, State::chunks_frame_failed);
+            switch_to_state(State::headers_frame_pending);
             break;
 
         case State::chunk_frame_pending_state:
-            if (this->chunk_frame.Pending())
-            {
-                this->chunk_frame.Process(event, yield);
-            }
-            
-            if (this->chunk_frame.Failed())
-            {
-                switch_to_state(State::chunk_frame_failed);
-            }
-            else if (this->chunk_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(this->chunk_frame.get(), event, State::chunk_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         case State::disconnect_frame_pending_state:
-            if (this->disconnect_frame.Pending())
-            {
-                this->disconnect_frame.Process(event, yield);
-            }
-            
-            if (this->disconnect_frame.Failed())
-            {
-                switch_to_state(State::disconnect_frame_failed);
-            }
-            else if (this->disconnect_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(this->disconnect_frame.get(), event, State::disconnect_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         case State::headers_frame_pending:
-            if (this->headers_frame.Pending())
-            {
-                this->headers_frame.Process(event, yield);
-            }
-            
-            if (this->headers_frame.Failed())
-            {
-                switch_to_state(State::header_frame_failed);
-            }
-            else if (this->headers_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->headers_frame, event, State::header_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("BodyFrame::Process unexpected state");
+            throw FatalError("BodyFrame::handle_event unexpected state");
         }
     }
 }

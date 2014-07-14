@@ -17,17 +17,17 @@ namespace Service
 
     struct TaskCompleteEvent : public Basic::IEvent
     {
-        Basic::ByteString::Ref cookie; // REF
+        Basic::ByteStringRef cookie;
 
         virtual uint32 get_type();
     };
 
     struct CharactersCompleteEvent : public Basic::IEvent
     {
-        Basic::ByteString::Ref cookie; // REF
+        Basic::ByteStringRef cookie;
 
         virtual uint32 get_type();
     };
 
-    typedef Basic::SuffixArray<Json::Object::Ref> Index; // REF
+    typedef Basic::SuffixArray<std::shared_ptr<Json::Object> > Index;
 }

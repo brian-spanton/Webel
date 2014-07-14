@@ -5,23 +5,23 @@
 
 namespace Basic
 {
-    void FrameStream<byte>::Write(const byte* elements, uint32 count)
+    void FrameStream<byte>::write_elements(const byte* elements, uint32 count)
     {
         this->element_source.Initialize(elements, count);
 
         ReadyForReadBytesEvent event;
         event.Initialize(&this->element_source);
 
-        this->frame->Process(&event);
+        produce_event(this->frame, &event);
     }
 
-    void FrameStream<Codepoint>::Write(const Codepoint* elements, uint32 count)
+    void FrameStream<Codepoint>::write_elements(const Codepoint* elements, uint32 count)
     {
         this->element_source.Initialize(elements, count);
 
         ReadyForReadCodepointsEvent event;
         event.Initialize(&this->element_source);
 
-        this->frame->Process(&event);
+        produce_event(this->frame, &event);
     }
 }

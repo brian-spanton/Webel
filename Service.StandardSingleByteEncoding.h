@@ -11,12 +11,13 @@ namespace Service
 {
     using namespace Basic;
 
-    class StandardSingleByteEncoding : public Frame
+    class StandardSingleByteEncoding : public Frame, public std::enable_shared_from_this<StandardSingleByteEncoding>
     {
     private:
         enum State
         {
-            line_start_state = Start_State,
+            headers_pending_state = Start_State,
+            line_start_state,
             ignore_line_state,
             before_index_state,
             index_pending_state,
@@ -28,21 +29,23 @@ namespace Service
             line_start_error,
             index_pending_error,
             codepoint_pending_error,
+            connection_lost_error,
+            malformed_content_error,
         };
 
-        Web::Client::Ref client; // REF
-        Json::Value::Ref json_value; // REF
+        std::shared_ptr<Web::Client> client;
+        std::shared_ptr<Json::Value> json_value;
         byte pointer;
         Codepoint codepoint;
-        Inline<DecNumberStream<byte, byte> > pointer_stream;
-        Inline<HexNumberStream<byte, Codepoint> > codepoint_stream;
-        SingleByteEncodingIndex::Ref index;
+        DecNumberStream<byte, byte> pointer_stream;
+        HexNumberStream<byte, Codepoint> codepoint_stream;
+        std::shared_ptr<SingleByteEncodingIndex> index;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Ref<StandardSingleByteEncoding, IProcess> Ref;
+        StandardSingleByteEncoding(std::shared_ptr<SingleByteEncodingIndex> index);
 
-        void Initialize(Http::Uri* index_url, SingleByteEncodingIndex::Ref index);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        void start(std::shared_ptr<Uri> index_url);
     };
 }

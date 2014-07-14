@@ -28,14 +28,13 @@ namespace Http
             expecting_LF_after_chunk_error,
         };
 
-        Ref<IStream<byte> > body_stream; // REF
-        Inline<HexNumberStream<byte, uint32> > size_stream;
+        HexNumberStream<byte, uint32> size_stream;
         uint32 size;
-        Inline<LengthBodyFrame> chunk_frame;
+        LengthBodyFrame chunk_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        void Initialize(IStream<byte>* body_stream);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream);
     };
 }

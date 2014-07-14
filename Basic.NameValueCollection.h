@@ -6,12 +6,10 @@
 
 namespace Basic
 {
-    class NameValueCollection : public StringMultiMapCaseInsensitive<Basic::StringRef>, public IRefCounted
+    class NameValueCollection : public StringMultiMapCaseInsensitive<Basic::UnicodeStringRef>
     {
     public:
-        typedef Basic::Ref<NameValueCollection> Ref;
-
-        bool get_string(UnicodeString* name, UnicodeString::Ref* value)
+        bool get_string(UnicodeStringRef name, UnicodeStringRef* value)
         {
             iterator it = find(name);
             if (it == end())
@@ -22,7 +20,7 @@ namespace Basic
         }
 
         template <class number_type>
-        bool get_base_10(UnicodeString* name, number_type* value)
+        bool get_base_10(UnicodeStringRef name, number_type* value)
         {
             iterator it = find(name);
             if (it == end())
@@ -37,7 +35,7 @@ namespace Basic
             return true;
         }
 
-        void set_string(UnicodeString* name, UnicodeString* value)
+        void set_string(UnicodeStringRef name, UnicodeStringRef value)
         {
             // adds new, or updates the first matching element
 
@@ -48,11 +46,11 @@ namespace Basic
                 it->second = value;
         }
 
-        void set_base_10(UnicodeString* name, int value)
+        void set_base_10(UnicodeStringRef name, int value)
         {
-            UnicodeString::Ref value_string = New<UnicodeString>();
+            UnicodeStringRef value_string = std::make_shared<UnicodeString>();
 
-            TextWriter writer(value_string);
+            TextWriter writer(value_string.get());
             writer.WriteFormat<0x10>("%d", value);
 
             set_string(name, value_string);

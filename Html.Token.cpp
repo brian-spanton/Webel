@@ -14,7 +14,7 @@ namespace Html
     {
     }
 
-    void Token::GetDebugString(char* debug_string, int count)
+    void Token::GetDebugString(char* debug_string, int count) const
     {
         switch (this->type)
         {

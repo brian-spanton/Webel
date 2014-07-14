@@ -12,16 +12,14 @@ namespace Html
     class DocTypeToken : public Token
     {
     public:
-        typedef Basic::Ref<DocTypeToken> Ref;
-
-        UnicodeString::Ref name; // REF
-        UnicodeString::Ref public_identifier; // REF
-        UnicodeString::Ref system_identifier; // REF
+        UnicodeStringRef name;
+        UnicodeStringRef public_identifier;
+        UnicodeStringRef system_identifier;
 
         bool force_quirks;
 
         DocTypeToken();
 
-        bool HasNameOf(ElementName* element);
+        bool has_name_of(ElementName* element);
     };
 }

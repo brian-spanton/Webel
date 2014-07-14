@@ -6,8 +6,8 @@
 
 namespace Basic
 {
-    Utf8Encoder::Utf8Encoder()
-        : error_replacement_byte(0x7F) // $ is this a good default error_replacement_byte char?
+    Utf8Encoder::Utf8Encoder() :
+        error_replacement_byte(0x7F) // $ is this a good default error_replacement_byte char?
     {
     }
 
@@ -26,12 +26,20 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "Utf8Encoder::EncoderError codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw new Exception("sprintf_s");
+            throw FatalError("sprintf_s");
 
         HandleError(error);
     }
 
-    void Utf8Encoder::Write(const Codepoint* elements, uint32 count)
+    void Utf8Encoder::write_elements(const Codepoint* elements, uint32 count)
+    {
+        for (const Codepoint* element = elements; element != elements + count; element++)
+        {
+            write_element(*element);
+        }
+    }
+
+    void Utf8Encoder::write_element(Codepoint codepoint)
     {
         // From http://encoding.spec.whatwg.org/#encodings
         // An encoder algorithm takes a code point stream and emits a byte stream. It fails when a code point is passed for
@@ -45,81 +53,77 @@ namespace Basic
     
         // http://encoding.spec.whatwg.org/#utf-8-encoder
 
-        uint32 i = 0;
-
-        while (true)
+        if (codepoint == EOF)
         {
-            if (i == count)
-                break;
+            // $$ let's see what turns up
+            HandleError("unexpected eof");
 
-            Codepoint codepoint = elements[i];
+            // $$ not sure if this is right thing to do
+            this->destination->write_eof();
+            return;
+        }
 
-            if (codepoint == EOF)
-            {
-                this->destination->WriteEOF();
-                return;
-            }
+        if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+        {
+            EncoderError(codepoint);
+            Emit(this->error_replacement_byte);
+            return;
+        }
 
-            i++;
+        if (codepoint >= 0x0000 && codepoint <= 0x007F)
+        {
+            Emit((byte)codepoint);
+            return;
+        }
 
-            if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
-            {
-                EncoderError(codepoint);
-                Emit(this->error_replacement_byte);
-                continue;
-            }
+        byte count;
+        byte offset;
 
-            if (codepoint >= 0x0000 && codepoint <= 0x007F)
-            {
-                Emit((byte)codepoint);
-                continue;
-            }
+        if (codepoint >= 0x0080 && codepoint <= 0x07FF)
+        {
+            count = 1;
+            offset = 0xC0;
+        }
+        else if (codepoint >= 0x0800 && codepoint <= 0xFFFF)
+        {
+            count = 2;
+            offset = 0xE0;
+        }
+        else if (codepoint >= 0x10000 && codepoint <= 0x10FFFF)
+        {
+            count = 3;
+            offset = 0xF0;
+        }
 
-            byte count;
-            byte offset;
+        byte b = (byte)((codepoint >> (6 * count)) + offset);
+        Emit(b);
 
-            if (codepoint >= 0x0080 && codepoint <= 0x07FF)
-            {
-                count = 1;
-                offset = 0xC0;
-            }
-            else if (codepoint >= 0x0800 && codepoint <= 0xFFFF)
-            {
-                count = 2;
-                offset = 0xE0;
-            }
-            else if (codepoint >= 0x10000 && codepoint <= 0x10FFFF)
-            {
-                count = 3;
-                offset = 0xF0;
-            }
-
-            byte b = (byte)((codepoint >> (6 * count)) + offset);
+        while (count > 0)
+        {
+            Codepoint temp = codepoint >> (6 * (count - 1));
+            b = (byte)(0x80 + (temp % 64));
             Emit(b);
 
-            while (count > 0)
-            {
-                Codepoint temp = codepoint >> (6 * (count - 1));
-                b = (byte)(0x80 + (temp % 64));
-                Emit(b);
-
-                count --;
-            }
+            count --;
         }
     }
 
-    void Utf8Encoder::WriteEOF()
+    void Utf8Encoder::write_eof()
     {
-        this->destination->WriteEOF();
+        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
+        // because it might not at all be the last thing sent to the destination
+
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 
     void Utf8Encoder::Emit(byte b)
     {
-        this->destination->Write(&b, 1);
+        this->destination->write_element(b);
     }
 
-    void Utf8EncoderFactory::CreateEncoder(Basic::Ref<IEncoder>* encoder)
+    void Utf8EncoderFactory::CreateEncoder(std::shared_ptr<IEncoder>* encoder)
     {
-        (*encoder) = New<Utf8Encoder>();
+        (*encoder) = std::make_shared<Utf8Encoder>();
     }
 }

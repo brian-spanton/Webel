@@ -1,6 +1,7 @@
 // Copyright © 2013 Brian Spanton
 
 #include "stdafx.h"
+#include "Basic.Globals.h"
 #include "Tls.SecurityParameters.h"
 #include "Tls.Globals.h"
 
@@ -17,7 +18,6 @@ namespace Tls
         mac_key_length(0),
         compression_algorithm(cm_null)
     {
-        ZeroMemory(master_secret, sizeof(master_secret));
         ZeroMemory(&client_random, sizeof(client_random));
         ZeroMemory(&server_random, sizeof(server_random));
     }

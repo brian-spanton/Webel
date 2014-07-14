@@ -26,13 +26,12 @@ namespace Tls
 
         RecordLayer* session;
         HeartbeatMessage heartbeat_message;
-        Inline<HeartbeatMessageFrame> heartbeat_message_frame;
+        HeartbeatMessageFrame heartbeat_message_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HeartbeatProtocol, IProcess> Ref;
-
-        void Initialize(RecordLayer* session);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        HeartbeatProtocol(RecordLayer* session);
         void SetPlaintextLength(uint16 plaintext_length);
     };
 }

@@ -17,7 +17,7 @@ namespace Html
         this->name = element_name->name;
     }
 
-    void ElementName::Initialize(UnicodeString* name_space, UnicodeString* name)
+    void ElementName::Initialize(UnicodeStringRef name_space, UnicodeStringRef name)
     {
         this->name_space = name_space;
         this->name = name;
@@ -36,6 +36,6 @@ namespace Html
 
     bool ElementName::is_in_namespace(UnicodeString* name_space)
     {
-        return this->name_space.equals<true>(name_space);
+        return Basic::equals<UnicodeString, true>(this->name_space.get(), name_space);
     }
 }

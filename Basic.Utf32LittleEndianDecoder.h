@@ -3,32 +3,28 @@
 #pragma once
 
 #include "Basic.IDecoder.h"
-#include "Basic.Ref.h"
 
 namespace Basic
 {
     class Utf32LittleEndianDecoder : public IDecoder
     {
     private:
-        Ref<IStream<Codepoint> > destination; // REF
+        IStream<Codepoint>* destination;
         uint8 received;
         Codepoint codepoint;
 
         void Emit(Codepoint codepoint);
 
     public:
-        typedef Basic::Ref<Utf32LittleEndianDecoder> Ref;
-
         void IDecoder::set_destination(IStream<Codepoint>* destination);
-        void IDecoder::Write(const byte* elements, uint32 count);
-        void IDecoder::WriteEOF();
+        void IDecoder::write_elements(const byte* elements, uint32 count);
+        void IDecoder::write_element(byte element);
+        void IDecoder::write_eof();
     };
 
     class Utf32LittleEndianDecoderFactory : public IDecoderFactory
     {
     public:
-        typedef Ref<Utf32LittleEndianDecoderFactory> Ref;
-
-        virtual void IDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder);
+        virtual void IDecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder);
     };
 }

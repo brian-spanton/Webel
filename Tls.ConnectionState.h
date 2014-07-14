@@ -2,33 +2,30 @@
 
 #pragma once
 
-#include "Basic.IRefCounted.h"
 #include "Tls.Types.h"
 #include "Tls.SecurityParameters.h"
 #include "Basic.Cng.h"
 
 namespace Tls
 {
-    class ConnectionState : public IRefCounted
+    class ConnectionState
     {
     public:
-        typedef Basic::Ref<ConnectionState> Ref;
-
         // compression_state
         Basic::BCRYPT_KEY_HANDLE key_handle;
 
-        std::vector<opaque> MAC_key;
-        std::vector<opaque> encryption_key;
-        ByteVector::Ref IV; // REF
+        ByteString MAC_key;
+        ByteString encryption_key;
+        std::shared_ptr<ByteString> IV;
 
         uint64 sequence_number;
-        SecurityParameters::Ref security_parameters; // REF
+        std::shared_ptr<SecurityParameters> security_parameters;
 
         ConnectionState();
         virtual ~ConnectionState();
 
-        bool Initialize(SecurityParameters* params);
-        void MAC(Record* compressed, opaque* output, uint8 output_max);
+        bool Initialize(std::shared_ptr<SecurityParameters> params);
+        void MAC(Record* compressed, byte* output, uint8 output_max);
     };
 
 }

@@ -8,27 +8,21 @@ namespace Html
 {
     using namespace Basic;
 
-    class ElementName : public IRefCounted
+    class ElementName
     {
     public:
-        typedef Basic::Ref<ElementName> Ref;
-
-        UnicodeString::Ref name_space; // REF
-        UnicodeString::Ref name; // REF
+        UnicodeStringRef name_space;
+        UnicodeStringRef name;
 
         ElementName();
 
         void Initialize(ElementName* element_name);
-        void Initialize(UnicodeString* name_space, UnicodeString* name);
+        void Initialize(UnicodeStringRef name_space, UnicodeStringRef name);
 
         bool equals(ElementName* element_name);
 
         bool is_in_namespace(UnicodeString* name_space);
     };
 
-    class ElementNameList : public std::vector<ElementName::Ref>, public IRefCounted // REF
-    {
-    public:
-        typedef Basic::Ref<ElementNameList> Ref;
-    };
+    typedef std::vector<std::shared_ptr<ElementName> > ElementNameList;
 }

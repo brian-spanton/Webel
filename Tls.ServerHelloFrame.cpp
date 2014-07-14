@@ -8,117 +8,73 @@ namespace Tls
 {
     using namespace Basic;
 
-    void ServerHelloFrame::Initialize(ServerHello* serverHello, uint32 record_frame_length)
+    ServerHelloFrame::ServerHelloFrame(ServerHello* serverHello) :
+        record_frame_length(0),
+        extensions_length(0),
+        serverHello(serverHello),
+        version_frame(&this->serverHello->server_version),
+        random_frame(&this->serverHello->random),
+        session_id_frame(&this->serverHello->session_id),
+        cipher_suite_frame(&this->serverHello->cipher_suite),
+        compression_method_frame(&this->serverHello->compression_method),
+        extensions_length_frame(&this->extensions_length),
+        extension_header_frame(&this->extension_header),
+        heartbeat_extension_frame(&this->serverHello->heartbeat_extension)
     {
-        __super::Initialize();
-
-        this->serverHello = serverHello;
-        this->record_frame_length = record_frame_length;
         this->serverHello->heartbeat_extension_initialized = false;
-        this->version_frame.Initialize(&this->serverHello->server_version);
-        this->random_frame.Initialize(&this->serverHello->random);
-        this->session_id_frame.Initialize(&this->serverHello->session_id);
-        this->cipher_suite_frame.Initialize(&this->serverHello->cipher_suite);
-        this->compression_method_frame.Initialize(&this->serverHello->compression_method);
-        this->extensions_length_frame.Initialize(&this->extensions_length);
+    }
+
+    void ServerHelloFrame::set_record_frame_length(uint32 record_frame_length)
+    {
+        this->record_frame_length = record_frame_length;
     }
 
     void ServerHelloFrame::switch_to_state(IEvent* event, State state)
     {
         __super::switch_to_state(state);
 
-        if (!Pending())
+        if (!this->in_progress())
             Event::RemoveObserver<byte>(event, this->counter);
     }
 
-    void ServerHelloFrame::Process(IEvent* event, bool* yield)
+    void ServerHelloFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
-            this->counter = New<CountStream<byte> >();
+            this->counter = std::make_shared<CountStream<byte> >();
             Event::AddObserver<byte>(event, this->counter);
+
             switch_to_state(event, State::version_frame_pending_state);
             break;
 
         case State::version_frame_pending_state:
-            if (this->version_frame.Pending())
-            {
-                this->version_frame.Process(event, yield);
-            }
-
-            if (this->version_frame.Failed())
-            {
-                switch_to_state(event, State::version_frame_failed);
-            }
-            else if (this->version_frame.Succeeded())
-            {
-                switch_to_state(event, State::random_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
+            switch_to_state(event, State::random_frame_pending_state);
             break;
 
         case State::random_frame_pending_state:
-            if (this->random_frame.Pending())
-            {
-                this->random_frame.Process(event, yield);
-            }
-
-            if (this->random_frame.Failed())
-            {
-                switch_to_state(event, State::random_frame_failed);
-            }
-            else if (this->random_frame.Succeeded())
-            {
-                switch_to_state(event, State::session_id_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
+            switch_to_state(event, State::session_id_frame_pending_state);
             break;
 
-        case State::session_id_pending_state:
-            if (this->session_id_frame.Pending())
-            {
-                this->session_id_frame.Process(event, yield);
-            }
-
-            if (this->session_id_frame.Failed())
-            {
-                switch_to_state(event, State::session_id_frame_failed);
-            }
-            else if (this->session_id_frame.Succeeded())
-            {
-                switch_to_state(event, State::cipher_suite_frame_pending_state);
-            }
+        case State::session_id_frame_pending_state:
+            delegate_event_change_state_on_fail(&this->session_id_frame, event, State::session_id_frame_failed);
+            switch_to_state(event, State::cipher_suite_frame_pending_state);
             break;
 
         case State::cipher_suite_frame_pending_state:
-            if (this->cipher_suite_frame.Pending())
-            {
-                this->cipher_suite_frame.Process(event, yield);
-            }
+            delegate_event_change_state_on_fail(&this->cipher_suite_frame, event, State::cipher_suite_frame_failed);
 
-            if (this->cipher_suite_frame.Failed())
-            {
-                switch_to_state(event, State::cipher_suite_frame_failed);
-            }
-            else if (this->cipher_suite_frame.Succeeded())
-            {
-                // IANA cipher suites registry
-                // http:// www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-3
-                switch_to_state(event, State::compression_method_frame_pending_state);
-            }
+            // IANA cipher suites registry
+            // http:// www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-3
+            switch_to_state(event, State::compression_method_frame_pending_state);
             break;
 
         case State::compression_method_frame_pending_state:
-            if (this->compression_method_frame.Pending())
             {
-                this->compression_method_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->compression_method_frame, event, State::compression_method_frame_failed);
 
-            if (this->compression_method_frame.Failed())
-            {
-                switch_to_state(event, State::compression_method_frame_failed);
-            }
-            else if (this->compression_method_frame.Succeeded())
-            {
                 uint32 received = this->counter->count;
 
                 if (received > this->record_frame_length)
@@ -137,35 +93,19 @@ namespace Tls
             break;
 
         case State::extensions_length_frame_pending_state:
-            if (this->extensions_length_frame.Pending())
             {
-                this->extensions_length_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->extensions_length_frame, event, State::extensions_length_frame_failed);
 
-            if (this->extensions_length_frame.Failed())
-            {
-                switch_to_state(event, State::extensions_length_frame_failed);
-            }
-            else if (this->extensions_length_frame.Succeeded())
-            {
                 this->counter->count = 0;
-                this->extension_header_frame.Initialize(&this->extension_header);
+                this->extension_header_frame.reset();
                 switch_to_state(event, State::extension_header_frame_pending_state);
             }
             break;
 
         case State::extension_header_frame_pending_state:
-            if (this->extension_header_frame.Pending())
             {
-                this->extension_header_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->extension_header_frame, event, State::extension_header_frame_failed);
 
-            if (this->extension_header_frame.Failed())
-            {
-                switch_to_state(event, State::extension_header_frame_failed);
-            }
-            else if (this->extension_header_frame.Succeeded())
-            {
                 uint32 received = this->counter->count;
 
                 if (received > this->extensions_length)
@@ -177,12 +117,11 @@ namespace Tls
                     switch(this->extension_header.type)
                     {
                     case ExtensionType::heartbeat_extension_type:
-                        this->heartbeat_extension_frame.Initialize(&this->serverHello->heartbeat_extension);
                         switch_to_state(event, State::heartbeat_extension_frame_pending_state);
                         break;
 
                     default:
-                        this->unknown_extension_frame.Initialize(this->extension_header.length);
+                        this->unknown_extension_frame.reset(this->extension_header.length);
                         switch_to_state(event, State::unknown_extension_frame_pending_state);
                         break;
                     }
@@ -191,36 +130,14 @@ namespace Tls
             break;
 
         case State::heartbeat_extension_frame_pending_state:
-            if (this->heartbeat_extension_frame.Pending())
-            {
-                this->heartbeat_extension_frame.Process(event, yield);
-            }
-
-            if (this->heartbeat_extension_frame.Failed())
-            {
-                switch_to_state(event, State::heartbeat_extension_frame_failed);
-            }
-            else if (this->heartbeat_extension_frame.Succeeded())
-            {
-                switch_to_state(event, State::next_extension_state);
-                this->serverHello->heartbeat_extension_initialized = true;
-            }
+            delegate_event_change_state_on_fail(&this->heartbeat_extension_frame, event, State::heartbeat_extension_frame_failed);
+            switch_to_state(event, State::next_extension_state);
+            this->serverHello->heartbeat_extension_initialized = true;
             break;
 
         case State::unknown_extension_frame_pending_state:
-            if (this->unknown_extension_frame.Pending())
-            {
-                this->unknown_extension_frame.Process(event, yield);
-            }
-
-            if (this->unknown_extension_frame.Failed())
-            {
-                switch_to_state(event, State::unknown_extension_frame_failed);
-            }
-            else if (this->unknown_extension_frame.Succeeded())
-            {
-                switch_to_state(event, State::next_extension_state);
-            }
+            delegate_event_change_state_on_fail(&this->unknown_extension_frame, event, State::unknown_extension_frame_failed);
+            switch_to_state(event, State::next_extension_state);
             break;
 
         case State::next_extension_state:
@@ -233,7 +150,7 @@ namespace Tls
                 }
                 else if (received < this->extensions_length)
                 {
-                    this->extension_header_frame.Initialize(&this->extension_header);
+                    this->extension_header_frame.reset();
                     switch_to_state(event, State::extension_header_frame_pending_state);
                 }
                 else
@@ -244,16 +161,7 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("ServerHelloFrame::Process unexpected state");
+            throw FatalError("ServerHelloFrame::handle_event unexpected state");
         }
-    }
-
-    void ServerHelloFrame::SerializeTo(IStream<byte>* stream)
-    {
-        this->version_frame.SerializeTo(stream);
-        this->random_frame.SerializeTo(stream);
-        this->session_id_frame.SerializeTo(stream);
-        this->cipher_suite_frame.SerializeTo(stream);
-        this->compression_method_frame.SerializeTo(stream);
     }
 }

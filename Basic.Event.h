@@ -12,17 +12,17 @@ namespace Basic
     class Event
     {
     public:
-        template<class element_type>
-        static bool Read(IEvent* event, uint32 count, const element_type** out_address, uint32* out_count, bool* yield);
+        template<typename element_type>
+        static void Read(IEvent* event, uint32 count, const element_type** out_address, uint32* out_count);
 
-        template<class element_type>
-        static bool ReadNext(IEvent* event, element_type* element, bool* yield);
+        template<typename element_type>
+        static void ReadNext(IEvent* event, element_type* element);
 
-        template<class element_type>
-        static void AddObserver(IEvent* event, IStream<element_type>* stream);
+        template<typename element_type>
+        static void AddObserver(IEvent* event, std::shared_ptr<IStream<element_type> > stream);
 
-        template<class element_type>
-        static void RemoveObserver(IEvent* event, IStream<element_type>* stream);
+        template<typename element_type>
+        static void RemoveObserver(IEvent* event, std::shared_ptr<IStream<element_type> > stream);
     
         static void UndoReadNext(IEvent* event);
     };

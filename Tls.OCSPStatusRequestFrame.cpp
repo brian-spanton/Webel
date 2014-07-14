@@ -2,58 +2,34 @@
 
 #include "stdafx.h"
 #include "Tls.OCSPStatusRequestFrame.h"
-#include "Tls.ResponderIDListFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void OCSPStatusRequestFrame::Initialize(OCSPStatusRequest* ocsp_status_request)
+    OCSPStatusRequestFrame::OCSPStatusRequestFrame(OCSPStatusRequest* ocsp_status_request) :
+        ocsp_status_request(ocsp_status_request),
+        list_frame(&this->ocsp_status_request->responder_id_list),
+        extensions_frame(&this->ocsp_status_request->request_extensions)
     {
-        __super::Initialize();
-        this->ocsp_status_request = ocsp_status_request;
-        this->list_frame.Initialize(&this->ocsp_status_request->responder_id_list);
-        this->extensions_frame.Initialize(&this->ocsp_status_request->request_extensions);
     }
 
-    void OCSPStatusRequestFrame::Process(IEvent* event, bool* yield)
+    void OCSPStatusRequestFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::list_frame_pending_state:
-            if (this->list_frame.Pending())
-            {
-                this->list_frame.Process(event, yield);
-            }
-
-            if (this->list_frame.Failed())
-            {
-                switch_to_state(State::list_frame_failed);
-            }
-            else if (this->list_frame.Succeeded())
-            {
-                switch_to_state(State::extensions_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->list_frame, event, State::list_frame_failed);
+            switch_to_state(State::extensions_frame_pending_state);
             break;
 
         case State::extensions_frame_pending_state:
-            if (this->extensions_frame.Pending())
-            {
-                this->extensions_frame.Process(event, yield);
-            }
-
-            if (this->extensions_frame.Failed())
-            {
-                switch_to_state(State::extensions_frame_failed);
-            }
-            else if (this->extensions_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->extensions_frame, event, State::extensions_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("OCSPStatusRequestFrame::Process unexpected state");
+            throw FatalError("OCSPStatusRequestFrame::handle_event unexpected state");
         }
     }
 }

@@ -10,18 +10,20 @@ namespace Basic
 {
     void Uri::Initialize()
     {
-        this->scheme = New<UnicodeString>();
-        this->scheme_data = New<UnicodeString>();
-        this->username = New<UnicodeString>();
-        this->port = New<UnicodeString>();
+        this->scheme = std::make_shared<UnicodeString>();
+        this->scheme->reserve(0x10);
+
+        this->scheme_data = std::make_shared<UnicodeString>();
+        this->username = std::make_shared<UnicodeString>();
+        this->port = std::make_shared<UnicodeString>();
         this->relative_flag = false;
      }
 
-    void Uri::Initialize(UnicodeString::Ref input)
+    void Uri::Initialize(UnicodeString* input)
     {
-        bool success = Parse(input, (Uri*)0, (UnicodeString*)0, State::scheme_start_state, false);
+        bool success = Parse(input, 0, UnicodeStringRef(), State::scheme_start_state, false);
         if (!success)
-            throw new Exception("Uri::Initialize Parse failed");
+            throw FatalError("Uri::Initialize Parse failed");
     }
 
     void Uri::parse_error(Codepoint c)
@@ -29,23 +31,27 @@ namespace Basic
         HandleError("Uri::parse_error");
     }
 
-    bool Uri::Parse(UnicodeString::Ref input, Uri::Ref base)
+    bool Uri::Parse(UnicodeString* input, Uri* base)
     {
-        return Parse(input, base, (UnicodeString*)0, State::scheme_start_state, false);
+        return Parse(input, base, UnicodeStringRef(), State::scheme_start_state, false);
     }
 
-    bool Uri::Parse(UnicodeString::Ref input, Uri::Ref base, UnicodeString::Ref encoding_override, State state_override, bool state_override_is_given)
+    bool Uri::Parse(UnicodeString* input, Uri* base, UnicodeStringRef encoding_override, State state_override, bool state_override_is_given)
     {
+        // based on http://url.spec.whatwg.org/#parsing
+
         State state;
         if (state_override_is_given)
             state = state_override;
         else
             state = State::scheme_start_state;
 
-        if (encoding_override.item() == 0)
+        if (encoding_override.get() == 0)
             encoding_override = Basic::globals->utf_8_label;
 
-        UnicodeString::Ref buffer = New<UnicodeString>();
+        UnicodeStringRef buffer = std::make_shared<UnicodeString>();
+        buffer->reserve(0x40);
+
         bool at_flag = false;
         bool brackets_flag = false;
 
@@ -100,7 +106,8 @@ namespace Basic
                     else if (c == ':')
                     {
                         this->scheme = buffer;
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
+                        buffer->reserve(0x40);
 
                         if (state_override_is_given)
                             return true;
@@ -108,13 +115,13 @@ namespace Basic
                         if (is_relative_scheme(this->scheme))
                             this->relative_flag = true;
 
-                        if (this->scheme.equals<true>(Basic::globals->file_scheme))
+                        if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                         {
                             state = State::relative_state;
                         }
                         else if (this->relative_flag
-                            && base.item() != 0
-                            && base->scheme.equals<true>(this->scheme))
+                            && base != 0
+                            && equals<UnicodeString, true>(base->scheme.get(), this->scheme.get()))
                         {
                             state = State::relative_or_authority_state;
                         }
@@ -129,7 +136,9 @@ namespace Basic
                     }
                     else if (!state_override_is_given)
                     {
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
+                        buffer->reserve(0x40);
+
                         state = State::no_scheme_state;
                         pointer = -1;
                     }
@@ -149,12 +158,15 @@ namespace Basic
                 {
                     if (c == '?')
                     {
-                        this->query = New<UnicodeString>();
+                        this->query = std::make_shared<UnicodeString>();
+                        this->query->reserve(0x100);
+
                         state = State::query_state;
                     }
                     else if (c == '#')
                     {
-                        this->fragment = New<UnicodeString>();
+                        this->fragment = std::make_shared<UnicodeString>();
+                        this->fragment->reserve(0x40);
                         state = State::fragment_state;
                     }
                     else
@@ -177,7 +189,7 @@ namespace Basic
 
             case State::no_scheme_state:
                 {
-                    if (base.item() == 0 || !is_relative_scheme(base->scheme))
+                    if (base == 0 || !is_relative_scheme(base->scheme))
                     {
                         parse_error(c);
                         return false;
@@ -210,7 +222,7 @@ namespace Basic
                 {
                     this->relative_flag = true;
 
-                    if (!this->scheme.equals<true>(Basic::globals->file_scheme))
+                    if (!equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                         this->scheme = base->scheme;
 
                     switch(c)
@@ -235,7 +247,7 @@ namespace Basic
                         this->host = base->host;
                         this->port = base->port;
                         this->path = base->path;
-                        this->query = New<UnicodeString>();
+                        this->query = std::make_shared<UnicodeString>();
                         state = State::query_state;
                         break;
 
@@ -244,13 +256,13 @@ namespace Basic
                         this->port = base->port;
                         this->path = base->path;
                         this->query = base->query;
-                        this->fragment = New<UnicodeString>();
+                        this->fragment = std::make_shared<UnicodeString>();
                         state = State::fragment_state;
                         break;
 
                     default:
                         {
-                            if (this->scheme.equals<true>(Basic::globals->file_scheme) == false || !is_ascii_alpha(c)
+                            if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()) == false || !is_ascii_alpha(c)
                                 || !(remaining_0 == ':' || remaining_0 == '|') || remaining_size != 1
                                 || !(remaining_1 == '/' || remaining_1 == '\\' || remaining_1 == '?' || remaining_1 == '#'))
                             {
@@ -282,14 +294,14 @@ namespace Basic
                         if (c == '\\')
                             parse_error(c);
 
-                        if (this->scheme.equals<true>(Basic::globals->file_scheme))
+                        if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                             state = State::file_host_state;
                         else
                             state = State::authority_ignore_slashes_state;
                     }
                     else
                     {
-                        if (!this->scheme.equals<true>(Basic::globals->file_scheme))
+                        if (!equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                         {
                             this->host = base->host;
                             this->port = base->port;
@@ -377,13 +389,13 @@ namespace Basic
                                 parse_error(codepoint);
                             }
 
-                            if (codepoint == ':' && this->password.item() == 0)
+                            if (codepoint == ':' && this->password.get() == 0)
                             {
-                                this->password = New<UnicodeString>();
+                                this->password = std::make_shared<UnicodeString>();
                                 continue;
                             }
 
-                            if (this->password.item() != 0)
+                            if (this->password.get() != 0)
                             {
                                 utf_8_percent_encode(codepoint, Basic::globals->default_encode_anti_set, this->password);
                             }
@@ -393,12 +405,12 @@ namespace Basic
                             }
                         }
 
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
                     }
                     else if (c == EOF || c == '/' || c == '\\' || c == '?' || c == '#')
                     {
                         pointer -= (buffer->size() + 1);
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
                         state = State::host_state;
                     }
                     else
@@ -425,13 +437,13 @@ namespace Basic
                         }
                         else
                         {
-                            UnicodeString::Ref host = New<UnicodeString>();
+                            UnicodeStringRef host = std::make_shared<UnicodeString>();
                             bool success = host_parse(buffer, host);
                             if (!success)
                                 return false;
 
                             this->host = host;
-                            buffer = New<UnicodeString>();
+                            buffer = std::make_shared<UnicodeString>();
                             state = State::relative_path_start_state;
                         }
                     }
@@ -451,13 +463,13 @@ namespace Basic
                 {
                     if (c == ':' && brackets_flag == false)
                     {
-                        UnicodeString::Ref host = New<UnicodeString>();
+                        UnicodeStringRef host = std::make_shared<UnicodeString>();
                         bool success = host_parse(buffer, host);
                         if (!success)
                             return false;
 
                         this->host = host;
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
                         state = State::port_state;
 
                         if (state_override_is_given && state_override == State::hostname_state)
@@ -467,13 +479,13 @@ namespace Basic
                     {
                         pointer -= 1;
 
-                        UnicodeString::Ref host = New<UnicodeString>();
+                        UnicodeStringRef host = std::make_shared<UnicodeString>();
                         bool success = host_parse(buffer, host);
                         if (!success)
                             return false;
 
                         this->host = host;
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
                         state = State::relative_path_start_state;
 
                         if (state_override_is_given)
@@ -509,8 +521,8 @@ namespace Basic
                         Basic::Globals::PortMap::iterator mapping = Basic::globals->scheme_to_port_map.find(this->scheme);
                         if (mapping != Basic::globals->scheme_to_port_map.end())
                         {
-                            if (buffer.equals<true>(mapping->second))
-                                buffer = New<UnicodeString>();
+                            if (equals<UnicodeString, true>(buffer.get(), mapping->second.get()))
+                                buffer = std::make_shared<UnicodeString>();
                         }
 
                         this->port = buffer;
@@ -518,7 +530,7 @@ namespace Basic
                         if (state_override_is_given)
                             return true;
 
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
                         state = State::relative_path_start_state;
                         pointer -= 1;
                     }
@@ -554,30 +566,30 @@ namespace Basic
                         if (c == '\\')
                             parse_error(c);
 
-                        if (buffer.equals<false>(Basic::globals->percent_two_e))
+                        if (equals<UnicodeString, false>(buffer.get(), Basic::globals->percent_two_e.get()))
                             buffer = Basic::globals->dot;
-                        else if (buffer.equals<false>(Basic::globals->dot_percent_two_e))
+                        else if (equals<UnicodeString, false>(buffer.get(), Basic::globals->dot_percent_two_e.get()))
                             buffer = Basic::globals->dot_dot;
-                        else if (buffer.equals<false>(Basic::globals->percent_two_e_dot))
+                        else if (equals<UnicodeString, false>(buffer.get(), Basic::globals->percent_two_e_dot.get()))
                             buffer = Basic::globals->dot_dot;
-                        else if (buffer.equals<false>(Basic::globals->dot_dot))
+                        else if (equals<UnicodeString, false>(buffer.get(), Basic::globals->dot_dot.get()))
                             buffer = Basic::globals->dot_dot;
 
-                        if (buffer.equals<true>(Basic::globals->dot_dot))
+                        if (equals<UnicodeString, true>(buffer.get(), Basic::globals->dot_dot.get()))
                         {
                             if (this->path.size() > 0)
                                 this->path.pop_back();
 
                             if (c != '/' && c != '\\')
-                                this->path.push_back(New<UnicodeString>());
+                                this->path.push_back(std::make_shared<UnicodeString>());
                         }
-                        else if (buffer.equals<true>(Basic::globals->dot) && c != '/' && c != '\\')
+                        else if (equals<UnicodeString, true>(buffer.get(), Basic::globals->dot.get()) && c != '/' && c != '\\')
                         {
-                            this->path.push_back(New<UnicodeString>());
+                            this->path.push_back(std::make_shared<UnicodeString>());
                         }
-                        else if (!buffer.equals<true>(Basic::globals->dot))
+                        else if (!equals<UnicodeString, true>(buffer.get(), Basic::globals->dot.get()))
                         {
-                            if (this->scheme.equals<true>(Basic::globals->file_scheme)
+                            if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get())
                                 && this->path.size() == 0
                                 && buffer->size() == 2 && is_ascii_alpha(buffer->at(0)) && buffer->at(1) == '|')
                             {
@@ -588,17 +600,17 @@ namespace Basic
                             this->path.push_back(buffer);
                         }
 
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
 
                         if (c == '?')
                         {
-                            this->query = New<UnicodeString>();
+                            this->query = std::make_shared<UnicodeString>();
                             state = State::query_state;
                         }
 
                         if (c == '#')
                         {
-                            this->fragment = New<UnicodeString>();
+                            this->fragment = std::make_shared<UnicodeString>();
                             state = State::fragment_state;
                         }
                     }
@@ -628,25 +640,25 @@ namespace Basic
 
                         // 2. Set buffer to the result of running encoding override's encoder on buffer. Whenever the encoder
                         //    algorithm emits an encoder error, emit a 0x3F byte instead and do not terminate the algorithm. 
-                        Inline<ByteString> buffer_bytes;
+                        std::shared_ptr<ByteString> buffer_bytes = std::make_shared<ByteString>();
 
-                        Basic::Ref<IEncoder> encoder;
+                        std::shared_ptr<IEncoder> encoder;
                         Basic::globals->GetEncoder(encoding_override, &encoder);
 
-                        encoder->set_destination(&buffer_bytes);
+                        encoder->set_destination(buffer_bytes.get());
                         encoder->set_error_replacement_byte(0x3F);
-                        encoder->Write(buffer->c_str(), buffer->size());
+                        encoder->write_elements(buffer->address(), buffer->size());
 
                         // 3. For each byte in buffer run these subsubsteps: 
-                        for (uint32 i = 0; i < buffer_bytes.size(); i++)
+                        for (uint32 i = 0; i < buffer_bytes->size(); i++)
                         {
-                            byte b = buffer_bytes.at(i);
+                            byte b = buffer_bytes->at(i);
 
                             // 1. If byte is less than 0x21, greater than 0x7E, or is one of 0x22, 0x23, 0x3C, 0x3E, and 0x60,
                             //    append byte, percent encoded, to url's query. 
                             if (b < 0x21 || b > 0x7E || b == 0x22 || b == 0x23 || b == 0x3C || b == 0x3E || b == 0x60)
                             {
-                                percent_encode(b, this->query);
+                                percent_encode(b, this->query.get());
                             }
 
                             // 2. Otherwise, append a code point whose value is byte to url's query. 
@@ -657,12 +669,12 @@ namespace Basic
                         }
 
                         // 4. Set buffer to the empty string. 
-                        buffer = New<UnicodeString>();
+                        buffer = std::make_shared<UnicodeString>();
 
                         // 5. If c is "#", set url's fragment to the empty string, and state to fragment state. 
                         if (c == '#')
                         {
-                            this->fragment = New<UnicodeString>();
+                            this->fragment = std::make_shared<UnicodeString>();
                             state = State::fragment_state;
                         }
                     }
@@ -707,7 +719,7 @@ namespace Basic
                 break;
 
             default:
-                throw new Exception("Http::UriStream::Process unexpected state");
+                throw FatalError("Http::UriStream::handle_event unexpected state");
             }
         }
 
@@ -837,12 +849,12 @@ namespace Basic
         return false;
     }
 
-    bool Uri::is_http_scheme(UnicodeString::Ref scheme)
+    bool Uri::is_http_scheme(UnicodeStringRef scheme)
     {
-        if (scheme.equals<false>(Basic::globals->http_scheme))
+        if (equals<UnicodeString, false>(scheme.get(), Basic::globals->http_scheme.get()))
             return true;
         
-        if (scheme.equals<false>(Basic::globals->https_scheme))
+        if (equals<UnicodeString, false>(scheme.get(), Basic::globals->https_scheme.get()))
             return true;
 
         return false;
@@ -850,7 +862,7 @@ namespace Basic
 
     uint16 Uri::get_port()
     {
-        if (this->port.is_null_or_empty() == false)
+        if (is_null_or_empty(this->port.get()) == false)
         {
             return this->port->as_base_10<uint16>(0);
         }
@@ -864,7 +876,7 @@ namespace Basic
         return 0;
     }
 
-    bool Uri::is_relative_scheme(UnicodeString::Ref scheme)
+    bool Uri::is_relative_scheme(UnicodeStringRef scheme)
     {
         Basic::Globals::PortMap::iterator mapping = Basic::globals->scheme_to_port_map.find(scheme);
         if (mapping != Basic::globals->scheme_to_port_map.end())
@@ -873,9 +885,9 @@ namespace Basic
         return false;
     }
 
-    bool Uri::is_secure_scheme(UnicodeString::Ref scheme)
+    bool Uri::is_secure_scheme(UnicodeStringRef scheme)
     {
-        if (scheme.equals<false>(Basic::globals->https_scheme))
+        if (equals<UnicodeString, false>(scheme.get(), Basic::globals->https_scheme.get()))
             return true;
 
         return false;
@@ -895,7 +907,7 @@ namespace Basic
 
             if (c == '%' && (string->size() - pointer) >= 3)
             {
-                Inline<UnicodeString> remaining;
+                UnicodeString remaining;
                 remaining.insert(remaining.end(), string->begin() + pointer + 1, string->begin() + pointer + 3);
 
                 bool all_digits;
@@ -903,134 +915,124 @@ namespace Basic
 
                 if (all_digits)
                 {
-                    bytes->Write(&decoded, 1);
+                    bytes->write_element(decoded);
                     pointer += 2;
                     continue;
                 }
             }
 
-            byte b = (byte)c;
-            bytes->Write(&b, 1);
+            bytes->write_element((byte)c);
         }
     }
 
-    void Uri::utf_8_percent_encode(Codepoint codepoint, const bool (&anti_set)[0x100], IStream<Codepoint>* result)
+    void Uri::utf_8_percent_encode(Codepoint codepoint, const bool (&anti_set)[0x100], std::shared_ptr<IStream<Codepoint> > result)
     {
         if (codepoint < _countof(anti_set) && anti_set[codepoint])
         {
-            result->Write(&codepoint, 1);
+            result->write_element(codepoint);
             return;
         }
 
         // 2. Let bytes be the result of running utf-8 encode on code point. 
-        Inline<ByteString> bytes;
+        std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
 
-        Inline<Utf8Encoder> encoder;
-        encoder.set_destination(&bytes);
-        encoder.Write(&codepoint, 1);
+        Utf8Encoder encoder;
+        encoder.set_destination(bytes.get());
+        encoder.write_element(codepoint);
 
         // 3. Percent encode each byte in bytes, and then return them concatenated, in the same order.
-        for (uint32 i = 0; i < bytes.size(); i++)
+        for (uint32 i = 0; i < bytes->size(); i++)
         {
-            percent_encode(bytes.at(i), result);
+            percent_encode(bytes->at(i), result.get());
         }
     }
 
-    bool Uri::host_parse(UnicodeString::Ref input, IStream<Codepoint>* result)
+    bool Uri::host_parse(UnicodeStringRef input, std::shared_ptr<IStream<Codepoint> > result)
     {
         if (input->size() == 0)
             return false;
 
-        Inline<ByteString> percent_decoded;
-        percent_decode(input, &percent_decoded);
+        ByteString percent_decoded;
+        percent_decode(input.get(), &percent_decoded);
 
-        Inline<Utf8Decoder> decoder;
-        decoder.set_destination(result);
-        decoder.Write(percent_decoded.c_str(), percent_decoded.size());
+        Utf8Decoder decoder;
+        decoder.set_destination(result.get());
+        decoder.write_elements(percent_decoded.address(), percent_decoded.size());
 
         return true;
     }
 
-    void Uri::SerializeTo(IStream<Codepoint>* output, bool exclude_fragment, bool path_only)
+    void Uri::write_to_stream(IStream<Codepoint>* output, bool exclude_fragment, bool path_only)
     {
-        Codepoint c;
+        // based on http://url.spec.whatwg.org/#writing
 
         if (!path_only)
         {
-            this->scheme->write_to(output);
+            this->scheme->write_to_stream(output);
 
-            c = ':';
-            output->Write(&c, 1);
+            output->write_element(':');
         }
         
         if (this->relative_flag)
         {
             if (!path_only)
             {
-                c = '/';
-                output->Write(&c, 1);
-                output->Write(&c, 1);
+                output->write_element('/');
+                output->write_element('/');
 
-                if (!this->username.is_null_or_empty() || this->password.item() != 0)
+                if (!is_null_or_empty(this->username.get()) || this->password.get() != 0)
                 {
-                    this->username->write_to(output);
+                    this->username->write_to_stream(output);
 
-                    if (this->password != 0)
+                    if (this->password.get() != 0)
                     {
-                        c = ':';
-                        output->Write(&c, 1);
+                        output->write_element(':');
 
-                        this->password->write_to(output);
+                        this->password->write_to_stream(output);
                     }
 
-                    c = '@';
-                    this->username->write_to(output);
+                    output->write_element('@');
                 }
 
-                this->host->write_to(output);
+                this->host->write_to_stream(output);
 
-                if (!this->port.is_null_or_empty())
+                if (!is_null_or_empty(this->port.get()))
                 {
-                    c = ':';
-                    output->Write(&c, 1);
+                    output->write_element(':');
 
-                    this->port->write_to(output);
+                    this->port->write_to_stream(output);
                 }
             }
 
-            c = '/';
-            output->Write(&c, 1);
+            output->write_element('/');
 
             for (uint32 i = 0; i < this->path.size(); i++)
             {
                 if (i > 0)
                 {
-                    c = '/';
-                    output->Write(&c, 1);
+                    output->write_element('/');
                 }
 
-                this->path.at(i)->write_to(output);
+                this->path.at(i)->write_to_stream(output);
             }
         }
         else
         {
-            this->scheme_data->write_to(output);
+            this->scheme_data->write_to_stream(output);
         }
 
-        if (!this->query.is_null_or_empty())
+        if (!is_null_or_empty(this->query.get()))
         {
-            c = '?';
-            output->Write(&c, 1);
+            output->write_element('?');
 
-            this->query->write_to(output);
+            this->query->write_to_stream(output);
         }
 
-        if (exclude_fragment == false && !this->fragment.is_null_or_empty())
+        if (exclude_fragment == false && !is_null_or_empty(this->fragment.get()))
         {
-            c = '#';
-            output->Write(&c, 1);
+            output->write_element('#');
 
-            this->fragment->write_to(output);
+            this->fragment->write_to_stream(output);
         }
     }
 }

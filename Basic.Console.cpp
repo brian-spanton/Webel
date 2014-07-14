@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "Basic.Console.h"
 #include "Basic.TextWriter.h"
-#include "Basic.AsyncBytes.h"
 #include "Basic.Hold.h"
 #include "Basic.Globals.h"
 #include "Basic.Event.h"
@@ -25,12 +24,12 @@ namespace Basic
             CloseHandle(output);
     }
 
-    void Console::Initialize(IProcess* protocol, HANDLE* createdThread)
+    void Console::Initialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread)
     {
         TryInitialize(protocol, createdThread);
     }
 
-    bool Console::TryInitialize(IProcess* protocol, HANDLE* createdThread)
+    bool Console::TryInitialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread)
     {
         (*createdThread) = 0;
 
@@ -54,11 +53,11 @@ namespace Basic
 
         ReadyForWriteCodepointsEvent event;
         event.Initialize(&this->protocol_element_source);
-        this->protocol->Process(&event);
+        produce_event(this->protocol.get(), &event);
 
         HANDLE thread = ::CreateThread(0, 0, Thread, this, 0, 0);
         if (thread == 0)
-            throw new Exception("CreateThread", GetLastError());
+            throw FatalError("CreateThread", GetLastError());
 
         (*createdThread) = thread;
         return true;
@@ -101,25 +100,27 @@ namespace Basic
 
                         case '\r':
                             {
-                                Write(Basic::globals->CRLF->c_str(), Basic::globals->CRLF->size());
+                                write_elements(Basic::globals->CRLF->address(), Basic::globals->CRLF->size());
 
                                 Hold hold(this->lock);
                                 this->protocol_element_source.Initialize(&b, 1);
+
                                 ReadyForReadCodepointsEvent event;
                                 event.Initialize(&this->protocol_element_source);
-                                this->protocol->Process(&event);
+                                produce_event(this->protocol.get(), &event);
                             }
                             break;
 
                         default:
                             {
-                                Write(&b, 1);
+                                write_element(b);
 
                                 Hold hold(this->lock);
                                 this->protocol_element_source.Initialize(&b, 1);
+
                                 ReadyForReadCodepointsEvent event;
                                 event.Initialize(&this->protocol_element_source);
-                                this->protocol->Process(&event);
+                                produce_event(this->protocol.get(), &event);
                             }
                             break;
                         }
@@ -131,7 +132,7 @@ namespace Basic
         return true;
     }
 
-    void Console::Write(const Codepoint* elements, uint32 count)
+    void Console::write_elements(const Codepoint* elements, uint32 count)
     {
         // if we don't have a console, don't log it.
         if (output == INVALID_HANDLE_VALUE)
@@ -140,6 +141,7 @@ namespace Basic
         std::wstring wide_string;
         wide_string.reserve(count);
 
+        // $ flawed conversion from utf-32 to utf-16
         for (uint32 i = 0; i < count; i++)
         {
             wide_string.push_back((wchar_t)elements[i]);
@@ -147,14 +149,12 @@ namespace Basic
 
         BOOL success = WriteConsoleW(output, wide_string.c_str(), wide_string.size(), 0, 0);
         if (success == FALSE)
-            throw new Exception("WriteConsoleW", GetLastError());
+            throw FatalError("WriteConsoleW", GetLastError());
     }
 
-    void Console::Flush()
+    void Console::write_eof()
     {
-    }
-
-    void Console::WriteEOF()
-    {
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 }

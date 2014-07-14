@@ -10,20 +10,20 @@
 
 namespace Web
 {
-    void Form::Initialize(ElementNode* element)
+    void Form::Initialize(std::shared_ptr<ElementNode> element)
     {
         this->form_element = element;
 
-        find_associated_submittable_elements(element->html_document, &this->controls);
+        find_associated_submittable_elements(element->html_document.lock(), &this->controls);
     }
 
-    void Form::find_associated_submittable_elements(Node* node, Html::ElementList* controls)
+    void Form::find_associated_submittable_elements(std::shared_ptr<Node> node, Html::ElementList* controls)
     {
         if (node->type == Html::NodeType::ELEMENT_NODE)
         {
-            Html::ElementNode* element = (Html::ElementNode*)node;
+            std::shared_ptr<Html::ElementNode> element = std::static_pointer_cast<Html::ElementNode>(node);
 
-            if (element->form_owner == this->form_element && element->IsSubmittable())
+            if (element->form_owner.lock().get() == this->form_element.get() && element->IsSubmittable())
             {
                 controls->push_back(element);
             }
@@ -50,11 +50,11 @@ namespace Web
         for (uint32 i = 0; i < controls->size(); i++)
         {
             //3. Loop: For each element field in controls, in tree order, run the following substeps:
-            Html::ElementNode::Ref field = controls->at(i);
+            std::shared_ptr<Html::ElementNode> field = controls->at(i);
 
             //1. If any of the following conditions are met, then skip these substeps for this element:
             //◾The field element has a datalist element ancestor.
-            if (field->has_ancestor(Html::globals->datalist_element_name))
+            if (field->has_ancestor(Html::globals->datalist_element_name.get()))
                 continue;
 
             //◾The field element is disabled.
@@ -62,30 +62,30 @@ namespace Web
                 continue;
 
             //◾The field element is a button but it is not submitter.
-            if (field->has_element_name(Html::globals->button_element_name))
+            if (field->has_element_name(Html::globals->button_element_name.get()))
                 continue;
 
             //◾The field element is an input element whose type attribute is in the Checkbox state and whose checkedness is false.
-            if (field->has_element_name(Html::globals->input_element_name)
+            if (field->has_element_name(Html::globals->input_element_name.get())
                 && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->checkbox_type)
                 && field->checkedness() == false)
                 continue;
 
             //◾The field element is an input element whose type attribute is in the Radio Button state and whose checkedness is false.
-            if (field->has_element_name(Html::globals->input_element_name)
+            if (field->has_element_name(Html::globals->input_element_name.get())
                 && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->radio_type)
                 && field->checkedness() == false)
                 continue;
 
             //◾The field element is not an input element whose type attribute is in the Image Button state, and either the
             //field element does not have a name attribute specified, or its name attribute's value is the empty string.
-            if (!(field->has_element_name(Html::globals->input_element_name) && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->image_type))
+            if (!(field->has_element_name(Html::globals->input_element_name.get()) && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->image_type))
                 && field->attribute_missing_or_empty(Html::globals->name_attribute_name))
                 continue;
 
             //◾The field element is an object element that is not using a plugin.
             // $ "objects" are entirely nyi
-            if (field->has_element_name(Html::globals->object_element_name))
+            if (field->has_element_name(Html::globals->object_element_name.get()))
                 continue;
 
             FormDataSetEntry item;
@@ -96,7 +96,7 @@ namespace Web
             field->get_attribute(Html::globals->type_attribute_name, &item.type);
 
             //3. If the field element is an input element whose type attribute is in the Image Button state, then run these further nested substeps:
-            if (field->has_element_name(Html::globals->input_element_name)
+            if (field->has_element_name(Html::globals->input_element_name.get())
                 && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->image_type))
             {
                 //    1. If the field element has a name attribute specified and its value is not the empty string, let name be that
@@ -120,14 +120,14 @@ namespace Web
             //5. If the field element is a select element, then for each option element in the select element's list of options whose
             //   selectedness is true and that is not disabled, append an entry to the form data set with the name as the name, the
             //   value of the option element as the value, and type as the type.
-            if (field->has_element_name(Html::globals->select_element_name))
+            if (field->has_element_name(Html::globals->select_element_name.get()))
             {
                 // $ NYI
             }
 
             //6. Otherwise, if the field element is an input element whose type attribute is in the Checkbox state or the Radio Button
             //   state, then run these further nested substeps:
-            else if (field->has_element_name(Html::globals->input_element_name)
+            else if (field->has_element_name(Html::globals->input_element_name.get())
                 && (field->attribute_equals(Html::globals->type_attribute_name, Html::globals->checkbox_type) || field->attribute_equals(Html::globals->type_attribute_name, Html::globals->radio_type)))
             {
                 //1. If the field element has a value attribute specified, then let value be the value of that attribute; otherwise,
@@ -150,7 +150,7 @@ namespace Web
             //   the file (consisting of the name, the type, and the body) as the value, and type as the type. If there are
             //   no selected files, then append an entry to the form data set with the name as the name, the empty string as
             //   the value, and application/octet-stream as the type.
-            else if (field->has_element_name(Html::globals->input_element_name)
+            else if (field->has_element_name(Html::globals->input_element_name.get())
                 && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->file_type))
             {
                 // $ NYI
@@ -159,7 +159,7 @@ namespace Web
             //8. Otherwise, if the field element is an object element: try to obtain a form submission value from the plugin,
             //   and if that is successful, append an entry to the form data set with name as the name, the returned form 
             //   submission value as the value, and the string "object" as the type.
-            else if (field->has_element_name(Html::globals->input_element_name)
+            else if (field->has_element_name(Html::globals->input_element_name.get())
                 && field->attribute_equals(Html::globals->type_attribute_name, Html::globals->object_type))
             {
                 // $ NYI
@@ -176,7 +176,7 @@ namespace Web
             //10. If the element has a dirname attribute, and that attribute's value is not the empty string, then run these substeps:
             if (field->has_attribute(Html::globals->dirname_attribute_name))
             {
-                UnicodeString::Ref dirname_value;
+                UnicodeStringRef dirname_value;
                 field->get_attribute(Html::globals->dirname_attribute_name, &dirname_value);
                 if (dirname_value->size() > 0)
                 {
@@ -207,9 +207,9 @@ namespace Web
         //5. Return the form data set.
     }
 
-    void Form::encode_value(UnicodeString::Ref charset, UnicodeString::Ref value, UnicodeString::Ref* result)
+    void Form::encode_value(UnicodeStringRef charset, UnicodeStringRef value, UnicodeStringRef* result)
     {
-        Basic::Ref<Basic::IEncoder> encoder;
+        std::shared_ptr<Basic::IEncoder> encoder;
         Basic::globals->GetEncoder(charset, &encoder);
 
         //3. For each character in the entry's name and value that cannot be expressed using the selected character
@@ -220,21 +220,21 @@ namespace Web
 
         //4. Encode the entry's name and value using the encoder for the selected character encoding. The entry's name
         //   and value are now byte strings.
-        ByteString::Ref encoded_value = New<ByteString>();
-        encoder->set_destination(encoded_value);
-        value->write_to(encoder);
+        ByteString encoded_value;
+        encoder->set_destination(&encoded_value);
+        value->write_to_stream(encoder.get());
 
         //5. For each byte in the entry's name and value, apply the appropriate subsubsteps from the following list:
-        for (uint32 byte_index = 0; byte_index != encoded_value->size(); byte_index++)
+        for (uint32 byte_index = 0; byte_index != encoded_value.size(); byte_index++)
         {
-            byte b = encoded_value->at(byte_index);
+            byte b = encoded_value.at(byte_index);
 
             //↪If the byte is 0x20 (U+0020 SPACE if interpreted as ASCII)
             //Replace the byte with a single 0x2B byte (U+002B PLUS SIGN character (+) if interpreted as ASCII).
             if (b == 0x20)
             {
                 b = 0x2B;
-                encoded_value->replace(byte_index, 1, &b, 1);
+                encoded_value.replace(byte_index, 1, &b, 1);
             }
 
             //↪If the byte is in the range 0x2A, 0x2D, 0x2E, 0x30 to 0x39, 0x41 to 0x5A, 0x5F, 0x61 to 0x7A
@@ -248,27 +248,29 @@ namespace Web
             {
                 //1. Let s be a string consisting of a U+0025 PERCENT SIGN character (%) followed by uppercase ASCII hex digits representing 
                 //   the hexadecimal value of the byte in question (zero-padded if necessary).
-                Inline<UnicodeString> s;
+                UnicodeString s;
                 TextWriter writer(&s);
                 writer.WriteFormat<0x10>("%%%02X", b);
 
                 //2. Encode the string s as US-ASCII, so that it is now a byte string.
-                Inline<ByteString> encoded_s;
-                s.ascii_encode(&encoded_s);
+                ByteString encoded_s;
+                ascii_encode(&s, &encoded_s);
 
                 //3. Replace the byte in question in the name or value being processed by the bytes in s, preserving their relative order.
-                encoded_value->replace(byte_index, 1, encoded_s);
+                encoded_value.replace(byte_index, 1, encoded_s);
             }
         }
 
         //6. Interpret the entry's name and value as Unicode strings encoded in US-ASCII. (All of the bytes in the string will be in the range 0x00 to 0x7F; the high bit will be zero throughout.) The entry's name and value are now Unicode strings again.
-        (*result) = New<UnicodeString>();
-        (*result)->ascii_decode(encoded_value);
+        UnicodeStringRef string_value = std::make_shared<UnicodeString>();
+        ascii_decode(&encoded_value, string_value.get());
+
+        (*result) = string_value;
     }
 
-    void Form::strictly_split_a_string(UnicodeString::Ref input, Codepoint delimiter, StringList* tokens)
+    void Form::strictly_split_a_string(UnicodeStringRef input, Codepoint delimiter, std::vector<UnicodeStringRef>* tokens)
     {
-        UnicodeString::Ref token = New<UnicodeString>();
+        UnicodeStringRef token = std::make_shared<UnicodeString>();
 
         for (int position = 0; position != input->size(); position++)
         {
@@ -277,7 +279,7 @@ namespace Web
             if (codepoint == delimiter)
             {
                 tokens->push_back(token);
-                token = New<UnicodeString>();
+                token = std::make_shared<UnicodeString>();
             }
             else
             {
@@ -289,7 +291,7 @@ namespace Web
             tokens->push_back(token);
     }
 
-    void Form::decode_value(UnicodeString::Ref value, IStream<Codepoint>* result)
+    void Form::decode_value(UnicodeString* value, IStream<Codepoint>* result)
     {
         for (uint32 codepoint_index = 0; codepoint_index != value->size(); codepoint_index++)
         {
@@ -304,7 +306,7 @@ namespace Web
                 && Uri::is_ascii_hex_digit(value->at(codepoint_index + 1))
                 && Uri::is_ascii_hex_digit(value->at(codepoint_index + 2)))
             {
-                Inline<UnicodeString> code;
+                UnicodeString code;
                 code.insert(code.end(), value->begin() + codepoint_index + 1, value->begin() + codepoint_index + 3);
 
                 codepoint = code.as_base_16<Codepoint>(0);
@@ -312,20 +314,20 @@ namespace Web
                 codepoint_index += 2;
             }
 
-            result->Write(&codepoint, 1);
+            result->write_element(codepoint);
         }
     }
 
-    void Form::url_decode(UnicodeString::Ref payload, UnicodeString::Ref encoding, bool isindex, StringMap* pairs)
+    void Form::url_decode(UnicodeStringRef payload, UnicodeStringRef encoding, bool isindex, StringMap* pairs)
     {
         pairs->clear();
 
-        StringList strings;
+        std::vector<UnicodeStringRef> strings;
         strictly_split_a_string(payload, 0x0026, &strings);
 
         if (strings.size() > 0)
         {
-            UnicodeString::Ref first_string = strings.at(0);
+            UnicodeStringRef first_string = strings.at(0);
             bool encoding_override = false;
 
             int equals_index = first_string->find(0x003D);
@@ -336,71 +338,71 @@ namespace Web
 
             for (int string_index = 0; string_index != strings.size(); string_index++)
             {
-                UnicodeString::Ref string = strings.at(string_index);
+                UnicodeStringRef string = strings.at(string_index);
 
-                UnicodeString::Ref name = New<UnicodeString>();
-                UnicodeString::Ref value = New<UnicodeString>();
+                UnicodeStringRef name = std::make_shared<UnicodeString>();
+                UnicodeStringRef value = std::make_shared<UnicodeString>();
 
                 equals_index = string->find(0x003D);
                 if (equals_index != UnicodeString::npos)
                 {
-                    UnicodeString::Ref encoded = New<UnicodeString>();
-                    encoded->insert(encoded->end(), string->begin(), string->begin() + equals_index);
-                    decode_value(encoded, name);
+                    UnicodeString encoded;
+                    encoded.insert(encoded.end(), string->begin(), string->begin() + equals_index);
+                    decode_value(&encoded, name.get());
 
-                    encoded->clear();
-                    encoded->insert(encoded->end(), string->begin() + equals_index + 1, string->end());
-                    decode_value(encoded, value);
+                    encoded.clear();
+                    encoded.insert(encoded.end(), string->begin() + equals_index + 1, string->end());
+                    decode_value(&encoded, value.get());
                 }
                 else
                 {
-                    decode_value(string, name);
+                    decode_value(string.get(), name.get());
                 }
 
-                if (encoding_override == false && name.equals<true>(Html::globals->_charset__name))
+                if (encoding_override == false && equals<UnicodeString, true>(name.get(), Html::globals->_charset__name.get()))
                 {
                     encoding = value;
                 }
 
-                ByteString::Ref name_bytes = New<ByteString>();
-                name->ascii_encode(name_bytes);
+                ByteString name_bytes;
+                ascii_encode(name.get(), &name_bytes);
 
-                ByteString::Ref value_bytes = New<ByteString>();
-                value->ascii_encode(value_bytes);
+                ByteString value_bytes;
+                ascii_encode(value.get(), &value_bytes);
 
-                if (encoding.is_null_or_empty())
+                if (is_null_or_empty(encoding.get()))
                     encoding = Basic::globals->us_ascii_label;
                     
-                Basic::Ref<IDecoder> decoder;
+                std::shared_ptr<IDecoder> decoder;
                 Basic::globals->GetDecoder(encoding, &decoder);
 
                 name->clear();
-                decoder->set_destination(name);
-                decoder->Write(name_bytes->c_str(), name_bytes->size());
+                decoder->set_destination(name.get());
+                decoder->write_elements(name_bytes.address(), name_bytes.size());
 
                 value->clear();
-                decoder->set_destination(value);
-                decoder->Write(value_bytes->c_str(), value_bytes->size());
+                decoder->set_destination(value.get());
+                decoder->write_elements(value_bytes.address(), value_bytes.size());
 
                 pairs->insert(StringMap::value_type(name, value));
             }
         }
     }
 
-    void Form::url_encode(FormDataSet* form_data_set, ByteString::Ref* result)
+    void Form::url_encode(FormDataSet* form_data_set, ByteStringRef* result)
     {
         //1. Let result be the empty string.
-        UnicodeString::Ref unicode_result;
-        unicode_result = New<UnicodeString>();
+        UnicodeStringRef unicode_result;
+        unicode_result = std::make_shared<UnicodeString>();
 
-        UnicodeString::Ref charset;
+        UnicodeStringRef charset;
 
-        UnicodeString::Ref accept_charset;
+        UnicodeStringRef accept_charset;
         this->form_element->get_attribute(Html::globals->accept_charset_attribute_name, &accept_charset);
 
         ////2. If the form element has an accept-charset attribute, let the selected character encoding be the result
         ////   of picking an encoding for the form.
-        //if (accept_charset.item() != 0)
+        //if (accept_charset.get() != 0)
         //{
         //    pick_an_encoding_for_the_form(form, &charset);
         //}
@@ -426,31 +428,31 @@ namespace Web
             FormDataSetEntry& entry = form_data_set->at(entry_index);
 
             //1. If the entry's name is "_charset_" and its type is "hidden", replace its value with charset.
-            if (entry.name.equals<true>(Html::globals->_charset__name)
-                && entry.type.equals<true>(Html::globals->hidden_type))
+            if (equals<UnicodeString, true>(entry.name.get(), Html::globals->_charset__name.get())
+                && equals<UnicodeString, true>(entry.type.get(), Html::globals->hidden_type.get()))
             {
                 entry.value = charset;
             }
 
             //2. If the entry's type is "file", replace its value with the file's name only.
-            if (entry.type.equals<true>(Html::globals->file_type))
+            if (equals<UnicodeString, true>(entry.type.get(), Html::globals->file_type.get()))
             {
                 // $ NYI
             }
 
             encode_value(charset, entry.name, &entry.name);
 
-            if (entry.value.item() != 0)
+            if (entry.value.get() != 0)
                 encode_value(charset, entry.value, &entry.value);
 
             //7. If the entry's name is "isindex", its type is "text", and this is the first entry in the form data set,
             //   then append the value to result and skip the rest of the substeps for this entry, moving on to the next 
             //   entry, if any, or the next step in the overall algorithm otherwise.
-            if (entry.name.equals<true>(Html::globals->isindex_name)
-                && entry.type.equals<true>(Html::globals->text_type)
+            if (equals<UnicodeString, true>(entry.name.get(), Html::globals->isindex_name.get())
+                && equals<UnicodeString, true>(entry.type.get(), Html::globals->text_type.get())
                 && entry_index == 0)
             {
-                unicode_result->append(*entry.value.item());
+                unicode_result->append(*entry.value.get());
                 continue;
             }
 
@@ -461,29 +463,31 @@ namespace Web
             }
 
             //9. Append the entry's name to result.
-            unicode_result->append(*entry.name.item());
+            unicode_result->append(*entry.name.get());
 
             //10. Append a single U+003D EQUALS SIGN character (=) to result.
             unicode_result->push_back(0x003D);
 
-            if (entry.value.item() != 0)
+            if (entry.value.get() != 0)
             {
                 //11. Append the entry's value to result.
-                unicode_result->append(*entry.value.item());
+                unicode_result->append(*entry.value.get());
             }
         }
 
         //5. Encode result as US-ASCII and return the resulting byte stream.
-        (*result) = New<ByteString>();
-        unicode_result->ascii_encode(*result);
+        std::shared_ptr<ByteString> bytes_result = std::make_shared<ByteString>();
+        ascii_encode(unicode_result.get(), bytes_result.get());
+
+        (*result) = bytes_result;
     }
 
-    bool Form::Submit(Web::Client* client, IProcess* client_completion, ByteString* client_cookie)
+    bool Form::Submit(Web::Client* client, std::shared_ptr<IProcess> client_completion, ByteStringRef client_cookie)
     {
         FormDataSet form_data_set;
         construct_form_data_set(&this->controls, &form_data_set);
 
-        Http::Request::Ref request;
+        std::shared_ptr<Http::Request> request;
         bool success = construct_request(&form_data_set, &request);
         if (!success)
             return false;
@@ -492,10 +496,10 @@ namespace Web
         return true;
     }
 
-    bool Form::construct_request(FormDataSet* form_data_set, Http::Request::Ref* request_result)
+    bool Form::construct_request(FormDataSet* form_data_set, std::shared_ptr<Http::Request>* request_result)
     {
         // 1. Let form document be the form's Document.
-        Html::Document::Ref form_document = this->form_element->html_document;
+        std::shared_ptr<Html::Document> form_document = this->form_element->html_document.lock();
 
         // 2. If form document has no associated browsing context or its active sandboxing flag set has its
         //    sandboxed forms browsing context flag set, then abort these steps without doing anything.
@@ -520,23 +524,23 @@ namespace Web
         // 6. Let form data set be the result of constructing the form data set for form in the context of submitter.
 
         // 7. Let action be the submitter element's action.
-        UnicodeString::Ref action;
+        UnicodeStringRef action;
         this->form_element->get_attribute(Html::globals->action_attribute_name, &action);
 
-        Uri::Ref url;
+        std::shared_ptr<Uri> url;
 
         //8. If action is the empty string, let action be the document's address of the form document.
-        if (action.is_null_or_empty())
+        if (is_null_or_empty(action.get()))
         {
             url = form_document->url;
         }
         else
         {
             //9. Resolve the URL action, relative to the submitter element. If this fails, abort these steps.
-            url = New<Uri>();
+            url = std::make_shared<Uri>();
             url->Initialize();
 
-            bool success = url->Parse(action, form_document->url);
+            bool success = url->Parse(action.get(), form_document->url.get());
             if (!success)
                 return false;
         }
@@ -547,15 +551,15 @@ namespace Web
         // brian: these come from Uri class
 
         //13. Let enctype be the submitter element's enctype.
-        UnicodeString::Ref enctype;
+        UnicodeStringRef enctype;
         this->form_element->get_attribute(Html::globals->enctype_attribute_name, &enctype);
 
         //14. Let method be the submitter element's method.
-        UnicodeString::Ref method;
+        UnicodeStringRef method;
         this->form_element->get_attribute(Html::globals->method_attribute_name, &method);
 
         //15. Let target be the submitter element's target.
-        UnicodeString::Ref target;
+        UnicodeStringRef target;
         this->form_element->get_attribute(Html::globals->target_attribute_name, &target);
 
         //16. If the user indicated a specific browsing context to use when submitting the form, then let target
@@ -572,40 +576,40 @@ namespace Web
         // $ dialog is not supported
 
         // $ one particular site's form seems to expect this behavior (or script is implementing it)
-        if (method.is_null_or_empty())
+        if (is_null_or_empty(method.get()))
             method = Http::globals->get_method;
 
         bool handled = false;
 
         if (url->is_http_scheme())
         {
-            if (method.equals<false>(Http::globals->get_method))
+            if (equals<UnicodeString, false>(method.get(), Http::globals->get_method.get()))
             {
                 handled = true;
 
-                ByteString::Ref encoded;
+                ByteStringRef encoded;
                 url_encode(form_data_set, &encoded);
 
-                url->query = New<UnicodeString>();
-                url->query->ascii_decode(encoded);
+                url->query = std::make_shared<UnicodeString>();
+                ascii_decode(encoded.get(), url->query.get());
 
-                Http::Request::Ref request = New<Http::Request>();
+                std::shared_ptr<Http::Request> request = std::make_shared<Http::Request>();
                 request->Initialize();
                 request->resource = url;
                 request->method = Http::globals->get_method;
 
                 (*request_result) = request;
             }
-            else if (method.equals<false>(Http::globals->post_method))
+            else if (equals<UnicodeString, false>(method.get(), Http::globals->post_method.get()))
             {
-                if (enctype.item() == 0 || enctype.equals<false>(Http::globals->application_x_www_form_urlencoded_media_type))
+                if (enctype.get() == 0 || equals<UnicodeString, false>(enctype.get(), Http::globals->application_x_www_form_urlencoded_media_type.get()))
                 {
                     handled = true;
 
-                    ByteString::Ref encoded;
+                    ByteStringRef encoded;
                     url_encode(form_data_set, &encoded);
 
-                    Http::Request::Ref request = New<Http::Request>();
+                    std::shared_ptr<Http::Request> request = std::make_shared<Http::Request>();
                     request->Initialize();
                     request->resource = url;
                     request->method = Http::globals->post_method;
@@ -619,30 +623,30 @@ namespace Web
 
         if (!handled)
         {
-            throw new Exception("unhandled form submission type");
+            throw FatalError("unhandled form submission type");
         }
 
         return true;
     }
 
-    void Form::set_control_value(Html::ElementNode* control, UnicodeString::Ref value)
+    void Form::set_control_value(Html::ElementNode* control, UnicodeStringRef value)
     {
         control->set_attribute(Html::globals->value_attribute_name, value);
     }
 
-    void Form::set_control_name(Html::ElementNode* control, UnicodeString::Ref value)
+    void Form::set_control_name(Html::ElementNode* control, UnicodeStringRef value)
     {
         control->set_attribute(Html::globals->name_attribute_name, value);
     }
 
-    bool Form::find_control(UnicodeString::Ref pattern, Html::ElementNode::Ref* result)
+    bool Form::find_control(UnicodeStringRef pattern, std::shared_ptr<Html::ElementNode>* result)
     {
         for (uint16 i = 0; i != this->controls.size(); i++)
         {
-            UnicodeString::Ref name;
+            UnicodeStringRef name;
             this->controls[i]->get_attribute(Html::globals->name_attribute_name, &name);
 
-            if (name.equals<false>(pattern))
+            if (equals<UnicodeString, false>(name.get(), pattern.get()))
             {
                 (*result) = this->controls[i];
                 return true;

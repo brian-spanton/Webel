@@ -4,7 +4,6 @@
 #include "Json.Text.h"
 #include "Json.Globals.h"
 #include "Json.Types.h"
-#include "Json.Tokenizer.h"
 #include "Json.Parser.h"
 #include "Json.ObjectFrame.h"
 #include "Json.ArrayFrame.h"
@@ -14,54 +13,44 @@ namespace Json
 {
     using namespace Basic;
 
-    void Text::Initialize(Html::Node::Ref domain)
+    Text::Text(std::shared_ptr<Html::Node> domain) :
+        domain(domain)
     {
-        __super::Initialize();
-
-        this->domain = domain;
     }
 
-    void Text::Process(IEvent* event, bool* yield)
+    void Text::write_element(std::shared_ptr<Token> token)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::expecting_root_state:
             {
-                Token::Ref token;
-                if (!ReadyForReadTokenPointerEvent::ReadNext(event, &token, yield))
-                    return;
-
                 switch(token->type)
                 {
                 case Token::Type::begin_script_token:
-                    {
-                        this->script_frame.Initialize(this->domain, &this->script);
-                        switch_to_state(State::script_frame_pending_state);
-                    }
+                    this->script = std::make_shared<Script>();
+                    this->script_frame = std::make_shared<ScriptFrame>(this->domain, this->script.get());
+                    switch_to_state(State::script_frame_pending_state);
                     break;
 
                 case Token::Type::begin_array_token:
                     {
-                        Array::Ref value = New<Array>();
-                        this->value = value;
-
-                        this->array_frame.Initialize(this->domain, value);
+                        std::shared_ptr<Array> array_value = std::make_shared<Array>();
+                        this->array_frame = std::make_shared<ArrayFrame>(this->domain, array_value.get());
+                        this->value = array_value;
                         switch_to_state(State::array_frame_pending_state);
                     }
                     break;
 
                 case Token::Type::begin_object_token:
                     {
-                        Object::Ref value = New<Object>();
-                        this->value = value;
-
-                        this->object_frame.Initialize(this->domain, value);
+                        std::shared_ptr<Object> object_value = std::make_shared<Object>();
+                        this->object_frame = std::make_shared<ObjectFrame>(this->domain, object_value.get());
+                        this->value = object_value;
                         switch_to_state(State::object_frame_pending_state);
                     }
                     break;
 
                 default:
-                    ReadyForReadTokenPointerEvent::UndoReadNext(event);
                     switch_to_state(State::expecting_root_error);
                     break;
                 }
@@ -69,20 +58,21 @@ namespace Json
             break;
 
         case State::script_frame_pending_state:
-            if (this->script_frame.Pending())
             {
-                this->script_frame.Process(event, yield);
-            }
-            
-            if (this->script_frame.Failed())
-            {
-                switch_to_state(State::script_frame_failed);
-            }
-            else if (this->script_frame.Succeeded())
-            {
-                Html::Node::Ref element;
+                this->script_frame->write_element(token);
 
-                bool success = this->script.Execute(this->domain, 0, &element);
+                if (this->script_frame->in_progress())
+                    return;
+
+                if (this->script_frame->failed())
+                {
+                    switch_to_state(State::script_frame_failed);
+                    return;
+                }
+
+                std::shared_ptr<Html::Node> element;
+
+                bool success = this->script->Execute(this->domain, 0, &element);
                 if (success)
                 {
                     this->domain = element;
@@ -93,39 +83,41 @@ namespace Json
             break;
 
         case State::array_frame_pending_state:
-            if (this->array_frame.Pending())
             {
-                this->array_frame.Process(event, yield);
-            }
-            
-            if (this->array_frame.Failed())
-            {
-                switch_to_state(State::array_frame_failed);
-            }
-            else if (this->array_frame.Succeeded())
-            {
+                this->array_frame->write_element(token);
+
+                if (this->array_frame->in_progress())
+                    return;
+
+                if (this->array_frame->failed())
+                {
+                    switch_to_state(State::array_frame_failed);
+                    return;
+                }
+
                 switch_to_state(State::done_state);
             }
             break;
 
         case State::object_frame_pending_state:
-            if (this->object_frame.Pending())
             {
-                this->object_frame.Process(event, yield);
-            }
-            
-            if (this->object_frame.Failed())
-            {
-                switch_to_state(State::object_frame_failed);
-            }
-            else if (this->object_frame.Succeeded())
-            {
+                this->object_frame->write_element(token);
+
+                if (this->object_frame->in_progress())
+                    return;
+
+                if (this->object_frame->failed())
+                {
+                    switch_to_state(State::object_frame_failed);
+                    return;
+                }
+
                 switch_to_state(State::done_state);
             }
             break;
 
         default:
-            throw new Exception("Json::Text::Process unexpected state");
+            throw FatalError("Json::Text::handle_event unexpected state");
         }
     }
 }

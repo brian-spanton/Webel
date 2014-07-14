@@ -2,11 +2,9 @@
 
 #pragma once
 
-#include "Basic.ISerializable.h"
-
 namespace Basic
 {
-    class Uri : public IRefCounted
+    class Uri
     {
     private:
         void parse_error(Codepoint c);
@@ -17,13 +15,13 @@ namespace Basic
         static bool is_ascii_digit(Codepoint c);
         static bool is_ascii_hex_digit(Codepoint c);
         static bool is_url_codepoint(Codepoint c);
-        static bool is_relative_scheme(UnicodeString::Ref scheme);
-        static bool is_secure_scheme(UnicodeString::Ref scheme);
-        static bool is_http_scheme(UnicodeString::Ref scheme);
+        static bool is_relative_scheme(UnicodeStringRef scheme);
+        static bool is_secure_scheme(UnicodeStringRef scheme);
+        static bool is_http_scheme(UnicodeStringRef scheme);
         static void percent_encode(byte b, IStream<Codepoint>* result);
         static void percent_decode(UnicodeString* string, IStream<byte>* bytes);
-        static void utf_8_percent_encode(Codepoint codepoint, const bool (&anti_set)[0x100], IStream<Codepoint>* result);
-        static bool host_parse(UnicodeString::Ref input, IStream<Codepoint>* result);
+        static void utf_8_percent_encode(Codepoint codepoint, const bool (&anti_set)[0x100], std::shared_ptr<IStream<Codepoint> > result);
+        static bool host_parse(UnicodeStringRef input, std::shared_ptr<IStream<Codepoint> > result);
 
         enum State
         {
@@ -48,34 +46,32 @@ namespace Basic
             fragment_state,
         };
 
-        typedef Basic::Ref<Uri> Ref;
-
-        UnicodeString::Ref scheme; // REF
-        UnicodeString::Ref scheme_data; // REF
-        UnicodeString::Ref username; // REF
-        UnicodeString::Ref password; // REF
-        UnicodeString::Ref host; // REF
-        UnicodeString::Ref port; // REF
+        UnicodeStringRef scheme;
+        UnicodeStringRef scheme_data;
+        UnicodeStringRef username;
+        UnicodeStringRef password;
+        UnicodeStringRef host;
+        UnicodeStringRef port;
         Path path;
-        UnicodeString::Ref query; // REF
-        UnicodeString::Ref fragment; // REF
+        UnicodeStringRef query;
+        UnicodeStringRef fragment;
         bool relative_flag;
 
         void Initialize();
-        void Initialize(UnicodeString::Ref input);
+        void Initialize(UnicodeString* input);
 
         template <int Count>
         void Initialize(const char (&input)[Count])
         {
-            UnicodeString::Ref unicode_input;
-            unicode_input.Initialize(input);
+            UnicodeStringRef unicode_input;
+            initialize_unicode(&unicode_input, input);
 
-            Initialize(unicode_input);
+            Initialize(unicode_input.get());
         }
 
-        bool Parse(UnicodeString::Ref input, Uri::Ref base);
-        bool Parse(UnicodeString::Ref input, Uri::Ref base, UnicodeString::Ref encoding_override, State state_override, bool state_override_given);
-        void SerializeTo(IStream<Codepoint>* output, bool exclude_fragment, bool path_only);
+        bool Parse(UnicodeString* input, Uri* base);
+        bool Parse(UnicodeString* input, Uri* base, UnicodeStringRef encoding_override, State state_override, bool state_override_given);
+        void write_to_stream(IStream<Codepoint>* output, bool exclude_fragment, bool path_only);
         bool is_secure_scheme();
         bool is_http_scheme();
         uint16 get_port();

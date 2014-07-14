@@ -13,15 +13,13 @@ namespace Html
     class TagToken : public Token
     {
     public:
-        typedef Basic::Ref<TagToken> Ref;
-
-        UnicodeString::Ref name; // REF
+        UnicodeStringRef name;
         bool self_closing;
         bool acknowledged;
-        StringMap::Ref attributes; // REF
+        StringMap attributes;
 
         TagToken(Type type);
 
-        bool HasNameOf(ElementName* element);
+        bool has_name_of(ElementName* element);
     };
 }

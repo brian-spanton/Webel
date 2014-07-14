@@ -13,24 +13,14 @@ namespace Html
 {
     using namespace Basic;
 
-    void Parser::Initialize(Uri::Ref url, UnicodeString::Ref charset)
+    void Parser::Initialize(std::shared_ptr<Uri> url, UnicodeStringRef charset)
     {
-        this->tree = New<TreeConstruction>();
-        this->tree->Initialize(this, url);
+        this->tree = std::make_shared<TreeConstruction>(this, url);
+        this->tokenizer = std::make_shared<Tokenizer>(this, this->tree);
+        this->preprocessor = std::make_shared<InputStreamPreprocessor>(this, this->tokenizer);
+        this->decoder = std::make_shared<ByteStreamDecoder>(this, charset, this->preprocessor);
 
-        this->tokenizer = New<Tokenizer>();
-        this->tokenizer->Initialize(this, this->tree);
-
-        FrameStream<Codepoint>::Ref tokenizer_stream = New<FrameStream<Codepoint> >();
-        tokenizer_stream->Initialize(this->tokenizer);
-
-        this->preprocessor = New<InputStreamPreprocessor>();
-        this->preprocessor->Initialize(this, tokenizer_stream);
-
-        this->decoder = New<ByteStreamDecoder>();
-        this->decoder->Initialize(this, charset, this->preprocessor);
-
-        __super::Initialize(this->decoder);
+        __super::Initialize(this->decoder.get());
     }
 
     bool Parser::ParseError(const char* error)

@@ -6,12 +6,10 @@
 
 namespace Basic
 {
-    template <class element_type>
+    template <typename element_type>
     class CountStream : public IStream<element_type>
     {
     public:
-        typedef Basic::Ref<CountStream<element_type> > Ref;
-
         uint32 count;
 
         CountStream() : 
@@ -19,13 +17,20 @@ namespace Basic
         {
         }
 
-        virtual void IStream<element_type>::Write(const element_type* elements, uint32 count)
+        virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 count)
         {
             this->count += count;
         }
 
-        virtual void IStream<element_type>::WriteEOF()
+        virtual void IStream<element_type>::write_element(element_type element)
         {
+            this->count += 1;
+        }
+
+        virtual void IStream<element_type>::write_eof()
+        {
+            // $$ let's see what turns up
+            HandleError("unexpected eof");
         }
     };
 }

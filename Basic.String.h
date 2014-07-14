@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Basic.Ref.h"
-#include "Basic.ISerializable.h"
+#include "Basic.IStream.h"
+#include "Basic.IStreamWriter.h"
 
 namespace Basic
 {
-    template <class character_type>
-    inline character_type lower_case(character_type character)
+    template <typename element_type>
+    inline element_type lower_case(element_type character)
     {
         if (character >= 'A' && character <= 'Z')
             character = character - 'A' + 'a';
@@ -16,8 +16,8 @@ namespace Basic
         return character;
     }
 
-    template <class character_type>
-    inline bool base_10(character_type character, byte* value)
+    template <typename element_type>
+    inline bool base_10(element_type character, byte* value)
     {
         if (character >= '0' && character <= '9')
             (*value) = (byte)(character - '0');
@@ -27,8 +27,8 @@ namespace Basic
         return true;
     }
 
-    template <class character_type>
-    inline bool base_16(character_type character, byte* value)
+    template <typename element_type>
+    inline bool base_16(element_type character, byte* value)
     {
         if (character >= '0' && character <= '9')
             (*value) = (byte)(character - '0');
@@ -42,8 +42,8 @@ namespace Basic
         return true;
     }
 
-    template <class character_type, bool case_sensitive>
-    int compare_strings(const character_type* value1, uint32 value1_length, const character_type* value2, uint32 value2_length)
+    template <typename element_type, bool case_sensitive>
+    int compare_strings(const element_type* value1, uint32 value1_length, const element_type* value2, uint32 value2_length)
     {
         for (uint32 index = 0; true; index++)
         {
@@ -56,8 +56,8 @@ namespace Basic
             if (index == value2_length)
                 return 1;
 
-            character_type value1_character = case_sensitive ? value1[index] : lower_case(value1[index]);
-            character_type value2_character = case_sensitive ? value2[index] : lower_case(value2[index]);
+            element_type value1_character = case_sensitive ? value1[index] : lower_case(value1[index]);
+            element_type value2_character = case_sensitive ? value2[index] : lower_case(value2[index]);
 
             if (value1_character < value2_character)
                 return -1;
@@ -67,16 +67,16 @@ namespace Basic
         }
     }
 
-    template <class character_type, bool case_sensitive>
-    bool starts_with(const character_type* value1, uint32 value1_length, const character_type* value2, uint32 value2_length)
+    template <typename element_type, bool case_sensitive>
+    bool starts_with(const element_type* value1, uint32 value1_length, const element_type* value2, uint32 value2_length)
     {
         if (value1_length < value2_length)
             return false;
 
         for (uint32 index = 0; index != value2_length; index++)
         {
-            character_type value1_character = case_sensitive ? value1[index] : lower_case(value1[index]);
-            character_type value2_character = case_sensitive ? value2[index] : lower_case(value2[index]);
+            element_type value1_character = case_sensitive ? value1[index] : lower_case(value1[index]);
+            element_type value2_character = case_sensitive ? value2[index] : lower_case(value2[index]);
 
             if (value1_character != value2_character)
                 return false;
@@ -85,108 +85,20 @@ namespace Basic
         return true;
     }
 
-    class UnicodeString;
-
-    class StringRef : public Basic::Ref<UnicodeString>
+    template <typename element_type>
+    class String : public std::basic_string<element_type>, public IStream<element_type>, public IStreamWriter<element_type>, public IVector<element_type>
     {
     public:
-        StringRef();
-        StringRef(const char* name);
-        StringRef(UnicodeString* instance);
-        StringRef(const StringRef& ref);
-
-        bool operator == (const StringRef& value) const
-        {
-            return equals<true>(value.instance);
-        }
-
-        bool operator != (const StringRef& value) const
-        {
-            return !equals<true>(value.instance);
-        }
-
-        bool operator < (const StringRef& value) const;
-
-        bool operator == (UnicodeString* value) const
-        {
-            return equals<true>(value);
-        }
-
-        bool operator != (UnicodeString* value) const
-        {
-            return !equals<true>(value);
-        }
-
-        void operator = (UnicodeString* value)
-        {
-            __super::operator = (value);
-        }
-
-        void operator = (const StringRef& value)
-        {
-            __super::operator = (value.instance);
-        }
-
         template <bool case_sensitive>
-        bool equals(UnicodeString* value) const
-        {
-            if (instance == value)
-                return true;
-
-            if (instance == 0)
-                return false;
-
-            if (instance->equals<case_sensitive>(value))
-                return true;
-
-            return false;
-        }
-
-        template <bool case_sensitive>
-        bool less_than(UnicodeString* value) const
-        {
-            if (instance == value)
-                return true;
-
-            if (instance == 0)
-                return false;
-
-            if (instance->less_than<case_sensitive>(value))
-                return true;
-
-            return false;
-        }
-
-        template <int Count>
-        void Initialize(const char (&value)[Count])
-        {
-            if (value[Count - 1] == 0)
-                Initialize(value, Count - 1);
-            else
-                Initialize(value, Count);
-        }
-
-        void Initialize(const char* value, int count);
-
-        bool is_null_or_empty();
-    };
-
-    template <class character_type>
-    class String : public std::basic_string<character_type>, public IStream<character_type>
-    {
-    public:
-        typedef Basic::Ref<String<character_type> > Ref;
-
-        template <bool case_sensitive>
-        int compared_to(const std::basic_string<character_type>* value) const
+        int compared_to(const std::basic_string<element_type>* value) const
         {
             return compared_to<case_sensitive>(value->c_str(), value->size());
         }
 
         template <bool case_sensitive>
-        int compared_to(const character_type* value, int value_length) const
+        int compared_to(const element_type* value, int value_length) const
         {
-            return compare_strings<character_type, case_sensitive>(this->c_str(), this->size(), value, value_length);
+            return compare_strings<element_type, case_sensitive>(this->address(), this->size(), value, value_length);
         }
 
         template <class number_type>
@@ -200,7 +112,7 @@ namespace Basic
 
                 byte digit_value;
 
-                bool success = base_10<character_type>(this->at(index), &digit_value);
+                bool success = base_10<element_type>(this->at(index), &digit_value);
                 if (!success)
                 {
                     if (all_digits != 0)
@@ -229,7 +141,7 @@ namespace Basic
 
                 byte digit_value;
 
-                bool success = base_16<character_type>(this->at(index), &digit_value);
+                bool success = base_16<element_type>(this->at(index), &digit_value);
                 if (!success)
                 {
                     if (all_digits != 0)
@@ -248,7 +160,7 @@ namespace Basic
         }
 
         template <bool case_sensitive>
-        bool equals(const std::basic_string<character_type>* value) const
+        bool equals(const std::basic_string<element_type>* value) const
         {
             if (value == 0)
                 return false;
@@ -261,7 +173,7 @@ namespace Basic
         }
 
         template <bool case_sensitive>
-        bool less_than(const std::basic_string<character_type>* value) const
+        bool less_than(const std::basic_string<element_type>* value) const
         {
             int result = compared_to<case_sensitive>(value);
             if (result != -1)
@@ -270,51 +182,145 @@ namespace Basic
             return true;
         }
 
-        void write_to(IStream<character_type>* stream)
+        template <bool case_sensitive>
+        bool starts_with(const std::basic_string<element_type>* value) const
         {
-            stream->Write(this->c_str(), this->size());
+            return Basic::starts_with<element_type, case_sensitive>(this->address(), this->size(), value->c_str(), value->size());
         }
 
-        virtual void IStream<character_type>::Write(const character_type* elements, uint32 count)
+        virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 count)
         {
             append(elements, elements + count);
         }
 
-        virtual void IStream<character_type>::WriteEOF()
+        virtual void IStream<element_type>::write_element(element_type element)
+        {
+            push_back(element);
+        }
+
+        virtual void IStream<element_type>::write_eof()
         {
         }
 
-        template <bool case_sensitive>
-        bool starts_with(const std::basic_string<character_type>* value) const
+        virtual void IStreamWriter<element_type>::write_to_stream(IStream<element_type>* stream) const
         {
-            return Basic::starts_with<character_type, case_sensitive>(this->c_str(), this->size(), value->c_str(), value->size());
+            stream->write_elements(this->address(), this->size());
+        }
+
+        element_type* address() const
+        {
+            return (element_type*)c_str();
+        }
+
+        uint32 size() const
+        {
+            return std::basic_string<element_type>::size();
         }
     };
 
-    class ByteString : public String<byte>, public ISerializable
+    typedef String<byte> ByteString;
+    typedef std::shared_ptr<ByteString> ByteStringRef;
+
+    typedef String<Codepoint> UnicodeString;
+    typedef std::shared_ptr<UnicodeString> UnicodeStringRef;
+   
+    void ascii_encode(UnicodeString* value, IStream<byte>* bytes);
+    void ascii_decode(ByteString* bytes, UnicodeString* value);
+    void utf_8_encode(UnicodeString* value, IStream<byte>* bytes);
+    void utf_8_decode(ByteString* bytes, UnicodeString* value);
+
+    template <typename string_type, bool case_sensitive>
+    bool equals(string_type* left_value, string_type* right_value)
     {
-    public:
-        typedef Basic::Ref<ByteString, ISerializable> Ref;
+        if (left_value == right_value)
+            return true;
 
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
-    };
+        if (left_value == 0)
+            return false;
 
-    class UnicodeString : public String<Codepoint>
+        if (left_value->equals<case_sensitive>(right_value))
+            return true;
+
+        return false;
+    }
+
+    void initialize_unicode(std::shared_ptr<UnicodeString>* variable, const char* value, int count);
+
+    template <int Count>
+    void initialize_unicode(std::shared_ptr<UnicodeString>* variable, const char (&value)[Count])
     {
-    public:
-        typedef StringRef Ref;
+        if (value[Count - 1] == 0)
+            initialize_unicode(variable, value, Count - 1);
+        else
+            initialize_unicode(variable, value, Count);
+    }
 
-        void ascii_encode(IStream<byte>* bytes);
-        void ascii_decode(ByteString* bytes);
-        void utf_8_encode(IStream<byte>* bytes);
-        void utf_8_decode(ByteString* bytes);
-    };
+    void initialize_ascii(std::shared_ptr<ByteString>* variable, const char* value, int count);
 
-    struct CaseInsensitiveHash : public std::unary_function<StringRef, size_t>
+    template <int Count>
+    void initialize_ascii(std::shared_ptr<ByteString>* variable, const char (&value)[Count])
     {
-        size_t operator()(const StringRef& value) const
+        if (value[Count - 1] == 0)
+            initialize_ascii(variable, value, Count - 1);
+        else
+            initialize_ascii(variable, value, Count);
+    }
+
+    void initialize_ascii(ByteString* variable, const char* value, int count);
+
+    template <int Count>
+    void initialize_ascii(ByteString* variable, const char (&value)[Count])
+    {
+        if (value[Count - 1] == 0)
+            initialize_ascii(variable, value, Count - 1);
+        else
+            initialize_ascii(variable, value, Count);
+    }
+
+    template <class string_type>
+    bool is_null_or_empty(string_type* string_ref)
+    {
+        if (string_ref == 0)
+            return true;
+
+        if (string_ref->size() == 0)
+            return true;
+
+        return false;
+    }
+}
+
+bool operator == (const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value);
+bool operator != (const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value);
+
+namespace std
+{
+    template <>
+    struct hash<Basic::UnicodeStringRef> : public unary_function<Basic::UnicodeStringRef, size_t>
+    {
+        size_t operator()(const Basic::UnicodeStringRef& value) const
         {
-            std::basic_string<Codepoint> lower_case_string;
+            return _Hash_seq((const unsigned char *)value->address(), value->size() * sizeof(Codepoint));
+        }
+    };
+
+    template <>
+    struct equal_to<Basic::UnicodeStringRef> : public binary_function<Basic::UnicodeStringRef, Basic::UnicodeStringRef, bool>
+    {
+        bool operator()(const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value) const
+        {
+            return Basic::equals<Basic::UnicodeString, true>(left_value.get(), right_value.get());
+        }
+    };
+}
+
+namespace Basic
+{
+    struct CaseInsensitiveHash : public std::unary_function<UnicodeStringRef, size_t>
+    {
+        size_t operator()(const UnicodeStringRef& value) const
+        {
+            String<Codepoint> lower_case_string;
             lower_case_string.reserve(value->size());
 
             for (std::basic_string<Codepoint>::iterator it = value->begin(); it != value->end(); it++)
@@ -323,62 +329,37 @@ namespace Basic
                 lower_case_string.push_back(lower_case_character);
             }
 
-            return std::_Hash_seq((const unsigned char *)lower_case_string.c_str(), lower_case_string.size() * sizeof(Codepoint));
+            return std::_Hash_seq((const unsigned char *)lower_case_string.address(), lower_case_string.size() * sizeof(Codepoint));
         }
     };
 
-    struct CaseInsensitiveEqualTo : public std::binary_function<StringRef, StringRef, bool>
+    struct CaseInsensitiveEqualTo : public std::binary_function<UnicodeStringRef, UnicodeStringRef, bool>
     {
-        bool operator()(const StringRef& left, const StringRef& right) const
+        bool operator()(const UnicodeStringRef& left, const UnicodeStringRef& right) const
         {
-            return left.equals<false>(right);
-        }
-    };
-
-    struct CaseInsensitiveLessThan : public std::binary_function<StringRef, StringRef, bool>
-    {
-        bool operator()(const StringRef& left, const StringRef& right) const
-        {
-            return left.less_than<false>(right);
+            return equals<UnicodeString, false>(left.get(), right.get());
         }
     };
 
     template <class value_type>
-    class StringMapCaseInsensitive : public std::unordered_map<StringRef, value_type, CaseInsensitiveHash, CaseInsensitiveEqualTo>
+    class StringMapCaseInsensitive : public std::unordered_map<UnicodeStringRef, value_type, CaseInsensitiveHash, CaseInsensitiveEqualTo>
     {
     };
 
     template <class value_type>
-    class StringMultiMapCaseInsensitive : public std::unordered_multimap<StringRef, value_type, CaseInsensitiveHash, CaseInsensitiveEqualTo>
+    class StringMultiMapCaseInsensitive : public std::unordered_multimap<UnicodeStringRef, value_type, CaseInsensitiveHash, CaseInsensitiveEqualTo>
     {
     };
-}
 
-namespace std
-{
-    template <>
-    struct hash<Basic::StringRef> : public unary_function<Basic::StringRef, size_t>
-    {
-        size_t operator()(const Basic::StringRef& value) const
-        {
-            return _Hash_seq((const unsigned char *)value->c_str(), value->size() * sizeof(Codepoint));
-        }
-    };
-}
-
-namespace Basic
-{
     template <class value_type>
-    class StringMapCaseSensitive : public std::unordered_map<StringRef, value_type>
+    class StringMapCaseSensitive : public std::unordered_map<UnicodeStringRef, value_type>
     {
     };
 
-    class StringMap : public StringMapCaseSensitive<UnicodeString::Ref>, public IRefCounted
+    class StringMap : public StringMapCaseSensitive<UnicodeStringRef>
     {
     public:
-        typedef Basic::Ref<StringMap> Ref;
-
-        void set_string(UnicodeString* name, UnicodeString* value)
+        void set_string(const UnicodeStringRef& name, const UnicodeStringRef& value)
         {
             iterator it = find(name);
             if (it == end())
@@ -387,6 +368,4 @@ namespace Basic
                 it->second = value;
         }
     };
-
-    typedef std::vector<UnicodeString::Ref> StringList; // REF
 }

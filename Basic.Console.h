@@ -9,28 +9,27 @@
 
 namespace Basic
 {
-    class Console : public IBufferedStream<Codepoint>
+    class Console : public ArrayStream<Codepoint>
     {
     private:
         Lock lock;
         HANDLE output;
         HANDLE input;
         DWORD originalMode;
-        Ref<IProcess> protocol; // REF
-        Inline<ElementSource<Codepoint> > protocol_element_source;
+        std::shared_ptr<IProcess> protocol;
+        ElementSource<Codepoint> protocol_element_source;
 
         static DWORD WINAPI Thread(void* param);
-        bool TryInitialize(IProcess* protocol, HANDLE* createdThread);
+        bool TryInitialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread);
 
     public:
         Console();
         virtual ~Console();
 
-        void Initialize(IProcess* protocol, HANDLE* createdThread);
+        void Initialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread);
         bool Thread();
 
-        virtual void IBufferedStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-        virtual void IBufferedStream<Codepoint>::Flush();
-        virtual void IBufferedStream<Codepoint>::WriteEOF();
+        virtual void IStream<Codepoint>::write_elements(const Codepoint* elements, uint32 count);
+        virtual void IStream<Codepoint>::write_eof();
     };
 }

@@ -18,11 +18,11 @@ namespace Http
             done_state = Succeeded_State,
         };
 
-        Ref<IStream<byte> > body_stream; // REF
+        std::shared_ptr<IStream<byte> > body_stream;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        void Initialize(IStream<byte>* body_stream);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        DisconnectBodyFrame(std::shared_ptr<IStream<byte> > body_stream);
     };
 }

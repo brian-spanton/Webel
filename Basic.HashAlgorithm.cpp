@@ -22,11 +22,11 @@ namespace Basic
 
         NTSTATUS error = BCryptOpenAlgorithmProvider(&this->hash_algorithm, algorithm, 0, flags);
         if (error != 0)
-            throw new Exception("BCryptOpenAlgorithmProvider", error);
+            throw FatalError("BCryptOpenAlgorithmProvider", error);
 
         DWORD value_length;
         error = BCryptGetProperty(this->hash_algorithm, BCRYPT_HASH_LENGTH, (byte*)&this->hash_output_length, sizeof(this->hash_output_length), &value_length, 0);
         if (error != 0)
-            throw new Exception("BCryptGetProperty", error);
+            throw FatalError("BCryptGetProperty", error);
     }
 }

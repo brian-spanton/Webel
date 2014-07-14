@@ -4,7 +4,6 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.ResponderIDListFrame.h"
 
 namespace Tls
 {
@@ -23,13 +22,12 @@ namespace Tls
         };
 
         OCSPStatusRequest* ocsp_status_request;
-        Inline<ResponderIDListFrame> list_frame;
-        Inline<ExtensionsFrame> extensions_frame;
+        VectorFrame<ResponderIDList> list_frame;
+        VectorFrame<Extensions> extensions_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<OCSPStatusRequestFrame, IProcess> Ref;
-
-        void Initialize(OCSPStatusRequest* ocsp_status_request);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        OCSPStatusRequestFrame(OCSPStatusRequest* ocsp_status_request);
     };
 }

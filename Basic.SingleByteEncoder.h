@@ -11,37 +11,34 @@ namespace Basic
     class SingleByteEncoder : public IEncoder
     {
     private:
-        Ref<IStream<byte> > destination; // REF
-        Ref<ISingleByteEncodingIndex> index; // REF
+        IStream<byte>* destination;
+        std::shared_ptr<ISingleByteEncodingIndex> index;
         byte error_replacement_byte;
 
         void Emit(byte b);
         void EncoderError(Codepoint codepoint);
 
     public:
-        typedef Basic::Ref<SingleByteEncoder> Ref;
-
         SingleByteEncoder();
 
-        void Initialize(ISingleByteEncodingIndex* index);
-        void Initialize(ISingleByteEncodingIndex* index, IStream<byte>* destination);
+        void Initialize(std::shared_ptr<ISingleByteEncodingIndex> index);
+        void Initialize(std::shared_ptr<ISingleByteEncodingIndex> index, IStream<byte>* destination);
 
         void IEncoder::set_destination(IStream<byte>* destination);
         void IEncoder::set_error_replacement_byte(byte b);
-        void IEncoder::Write(const Codepoint* elements, uint32 count);
-        void IEncoder::WriteEOF();
+        void IEncoder::write_elements(const Codepoint* elements, uint32 count);
+        void IEncoder::write_element(Codepoint element);
+        void IEncoder::write_eof();
     };
 
     class SingleByteEncoderFactory : public IEncoderFactory
     {
     private:
-        Ref<ISingleByteEncodingIndex> index; // REF
+        std::shared_ptr<ISingleByteEncodingIndex> index;
 
     public:
-        typedef Ref<SingleByteEncoderFactory, IEncoderFactory> Ref;
+        void Initialize(std::shared_ptr<ISingleByteEncodingIndex> index);
 
-        void Initialize(ISingleByteEncodingIndex* index);
-
-        virtual void IEncoderFactory::CreateEncoder(Basic::Ref<IEncoder>* encoder);
+        virtual void IEncoderFactory::CreateEncoder(std::shared_ptr<IEncoder>* encoder);
     };
 }

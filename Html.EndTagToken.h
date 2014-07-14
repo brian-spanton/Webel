@@ -11,8 +11,6 @@ namespace Html
     class EndTagToken : public TagToken
     {
     public:
-        typedef Basic::Ref<EndTagToken> Ref;
-
         EndTagToken();
 
         virtual void GetDebugString(char* debug_string, int count);

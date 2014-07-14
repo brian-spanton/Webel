@@ -2,42 +2,33 @@
 
 #include "stdafx.h"
 #include "Http.RequestFrame.h"
-#include "Http.HeadersFrame.h"
 #include "Http.Globals.h"
 #include "Basic.Event.h"
 #include "Basic.CountStream.h"
 #include "Basic.Globals.h"
-#include "Basic.SingleByteEncodingIndex.h"
-#include "Basic.SingleByteEncoder.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    void RequestFrame::Initialize(Request* request)
+    RequestFrame::RequestFrame(Request* request) :
+        request(request),
+        resource_string(std::make_shared<UnicodeString>()),
+        resource_decoder(Basic::globals->ascii_index, resource_string.get()),
+        headers_frame(this->request->headers.get()),
+        body_frame(this->request->headers)
     {
-        __super::Initialize();
-        this->request = request;
-
-        this->resource_string = New<UnicodeString>();
         this->resource_string->reserve(0x100);
-
-        this->resource_decoder.Initialize(Basic::globals->ascii_index, this->resource_string);
-
-        this->headers_frame.Initialize(this->request->headers);
     }
 
-    void RequestFrame::Process(IEvent* event, bool* yield)
+    void RequestFrame::consider_event(IEvent* event)
     {
-        (*yield) = false; // $ i've been defaulting to true elsewhere
-
-        switch (frame_state())
+        switch (get_state())
         {
         case State::receiving_method_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->SP)
                 {
@@ -49,7 +40,6 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::receiving_method_error);
                 }
             }
@@ -58,22 +48,21 @@ namespace Http
         case State::receiving_resource_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->SP)
                 {
-                    this->resource_decoder.WriteEOF();
+                    this->resource_decoder.write_eof();
 
-                    Inline<Uri> base;
+                    Uri base;
                     base.scheme = Basic::globals->http_scheme;
 
-                    this->request->resource->Parse(this->resource_string, &base);
+                    this->request->resource->Parse(this->resource_string.get(), &base);
                     switch_to_state(State::receiving_protocol_state);
                 }
                 else
                 {
-                    this->resource_decoder.Write(&b, 1);
+                    this->resource_decoder.write_element(b);
                 }
             }
             break;
@@ -81,8 +70,7 @@ namespace Http
         case State::receiving_protocol_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
@@ -98,8 +86,7 @@ namespace Http
         case State::expecting_LF_after_protocol_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->LF)
                 {
@@ -107,27 +94,16 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_LF_after_protocol_error);
                 }
             }
             break;
 
         case State::headers_frame_pending_state:
-            if (this->headers_frame.Pending())
             {
-                this->headers_frame.Process(event, yield);
-            }
-            
-            if (this->headers_frame.Failed())
-            {
-                switch_to_state(State::headers_frame_failed);
-            }
-            else if (this->headers_frame.Succeeded())
-            {
-                this->body_frame.Initialize(this->request->headers);
+                delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
 
-                CountStream<byte>::Ref count_stream = New<CountStream<byte> >();
+                std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
                 this->body_frame.set_body_stream(count_stream);
 
                 switch_to_state(State::body_frame_pending_state);
@@ -135,51 +111,31 @@ namespace Http
             break;
 
         case State::body_frame_pending_state:
-            if (this->body_frame.Pending())
             {
-                this->body_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->body_frame, event, State::body_frame_failed);
 
-            if (this->body_frame.Failed())
-            {
-                switch_to_state(State::body_frame_failed);
-            }
-            else if (this->body_frame.Succeeded())
-            {
                 switch_to_state(State::done_state);
             }
             break;
 
         default:
-            throw new Exception("Http::RequestFrame::Process unexpected state");
+            throw FatalError("Http::RequestFrame::handle_event unexpected state");
         }
     }
 
-    void RequestFrame::WriteRequestLineTo(IStream<byte>* stream)
+    void serialize_request_line(const Request* value, IStream<byte>* stream)
     {
-        this->request->method->ascii_encode(stream);
+        ascii_encode(value->method.get(), stream);
 
-        stream->Write(&Http::globals->SP, 1);
+        stream->write_element(Http::globals->SP);
 
-        Inline<SingleByteEncoder> encoder;
+        SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        this->request->resource->SerializeTo(&encoder, true, true);
+        value->resource->write_to_stream(&encoder, true, true);
 
-        stream->Write(&Http::globals->SP, 1);
+        stream->write_element(Http::globals->SP);
 
-        this->request->protocol->ascii_encode(stream);
-    }
-
-    void RequestFrame::SerializeTo(IStream<byte>* stream)
-    {
-        WriteRequestLineTo(stream);
-
-        stream->Write(Http::globals->CRLF, _countof(Http::globals->CRLF));
-
-        this->headers_frame.SerializeTo(stream);
-
-        if (this->request->client_body.item() != 0)
-            this->request->client_body->SerializeTo(stream);
+        ascii_encode(value->protocol.get(), stream);
     }
 }

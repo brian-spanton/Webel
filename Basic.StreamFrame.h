@@ -7,7 +7,7 @@
 
 namespace Basic
 {
-    template <class T>
+    template <typename element_type>
     class StreamFrame : public Frame
     {
     private:
@@ -19,12 +19,10 @@ namespace Basic
 
         int expected;
         int received;
-        Ref<IStream<T> > destination; // REF
+        std::shared_ptr<IStream<element_type> > destination;
 
     public:
-        typedef Basic::Ref<StreamFrame> Ref;
-
-        void Initialize(IStream<T>* destination, int expected)
+        void Initialize(std::shared_ptr<IStream<element_type> > destination, int expected)
         {
             __super::Initialize();
             this->destination = destination;
@@ -32,35 +30,31 @@ namespace Basic
             this->received = 0;
         }
 
-        virtual void IProcess::Process(IEvent* event, bool* yield)
+        virtual void IProcess::consider_event(IEvent* event)
         {
-            switch (frame_state())
+            switch (get_state())
             {
             case State::receiving_state:
                 {
-                    const T* elements;
+                    const element_type* elements;
                     uint32 useable;
 
-                    if (!Event::Read(event, this->expected - this->received, &elements, &useable, yield))
-                        return;
+                    Event::Read(event, this->expected - this->received, &elements, &useable);
 
-                    destination->Write(elements, useable);
+                    destination->write_elements(elements, useable);
 
                     this->received += useable;
 
                     if (this->received == this->expected)
                     {
                         switch_to_state(State::done_state);
-                    }
-                    else
-                    {
-                        (*yield) = true;
+                        return;
                     }
                 }
                 break;
 
             default:
-                throw new Exception("Basic::StreamFrame::Process unexpected state");
+                throw FatalError("Basic::StreamFrame::handle_event unexpected state");
             }
         }
     };

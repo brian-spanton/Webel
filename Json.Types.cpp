@@ -2,8 +2,8 @@
 
 #include "stdafx.h"
 #include "Json.Types.h"
-#include "Basic.FrameStream.h"
 #include "Json.Globals.h"
+#include "Basic.Frame.h"
 
 namespace Json
 {
@@ -32,67 +32,17 @@ namespace Json
 #undef CASE
 
         default:
-            throw new Exception("Token::GetDebugString unhandled token type");
+            throw FatalError("Token::GetDebugString unhandled token type");
         }
     }
 
-    uint32 ReadyForReadTokenPointerEvent::get_type()
-    {
-        return Json::EventType::ready_for_read_token_pointer_event;
-    }
-
-    void ReadyForReadTokenPointerEvent::Initialize(IElementSource<Token::Ref>* element_source)
-    {
-        this->element_source = element_source;
-    }
-
-    bool ReadyForReadTokenPointerEvent::ReadNext(IEvent* event, Token::Ref* element, bool* yield)
-    {
-        if (event->get_type() == Json::EventType::ready_for_read_token_pointer_event)
-        {
-            ReadyForReadTokenPointerEvent* read_event = (ReadyForReadTokenPointerEvent*)event;
-            return read_event->element_source->ReadNext(element, yield);
-        }
-
-        (*yield) = true;
-        return false;
-    }
-
-    void ReadyForReadTokenPointerEvent::UndoReadNext(IEvent* event)
-    {
-        if (event->get_type() == Json::EventType::ready_for_read_token_pointer_event)
-        {
-            ReadyForReadTokenPointerEvent* read_event = (ReadyForReadTokenPointerEvent*)event;
-            return read_event->element_source->UndoReadNext();
-        }
-
-        throw new Exception("ReadyForReadTokenPointerEvent::UndoReadNext unexpected undo during non-read event");
-    }
-
-    void TokenVector::Write(const Token::Ref* elements, uint32 count)
-    {
-        this->insert(this->end(), elements, elements + count);
-    }
-
-    void TokenVector::WriteEOF()
-    {
-    }
-
-    void TokenVector::write_to(IStream<Token::Ref>* dest)
-    {
-        if (this->size() > 0)
-        {
-            dest->Write(&this->front(), this->size());
-        }
-    }
-
-    void Array::write_to(Basic::IStream<Codepoint>* stream)
+    void Array::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
         TextWriter writer(stream);
 
         bool has_complex = false;
 
-        for (ValueList::iterator it = this->elements.begin(); it != this->elements.end(); it++)
+        for (ValueList::const_iterator it = this->elements.cbegin(); it != this->elements.cend(); it++)
         {
             if ((*it)->type == Value::Type::array_value
                 || (*it)->type == Value::Type::object_value)
@@ -101,57 +51,57 @@ namespace Json
             }
         }
 
-        stream->Write(&Json::globals->begin_array, 1);
+        stream->write_element(Json::globals->begin_array);
 
         if (this->elements.size() > 0)
         {
             if (!has_complex)
             {
-                writer.Write(" ");
+                writer.write_literal(" ");
 
-                for (ValueList::iterator it = this->elements.begin(); it != this->elements.end(); it++)
+                for (ValueList::const_iterator it = this->elements.cbegin(); it != this->elements.cend(); it++)
                 {
                     if (it != this->elements.begin())
                     {
-                        stream->Write(&Json::globals->value_separator, 1);
-                        writer.Write(" ");
+                        stream->write_element(Json::globals->value_separator);
+                        writer.write_literal(" ");
                     }
 
-                    (*it)->write_to(stream);
+                    (*it)->write_to_stream(stream);
                 }
 
-                writer.Write(" ");
+                writer.write_literal(" ");
             }
             else
             {
                 // $ stream->Indent();
                 writer.WriteLine();
 
-                for (ValueList::iterator it = this->elements.begin(); it != this->elements.end(); it++)
+                for (ValueList::const_iterator it = this->elements.cbegin(); it != this->elements.cend(); it++)
                 {
                     if (it != this->elements.begin())
                     {
-                        stream->Write(&Json::globals->value_separator, 1);
+                        stream->write_element(Json::globals->value_separator);
                         writer.WriteLine();
                     }
 
-                    (*it)->write_to(stream);
+                    (*it)->write_to_stream(stream);
                 }
 
                 // $ stream->Unindent();
             }
         }
 
-        stream->Write(&Json::globals->end_array, 1);
+        stream->write_element(Json::globals->end_array);
     }
 
-    void Object::write_to(Basic::IStream<Codepoint>* stream)
+    void Object::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
         TextWriter writer(stream);
 
         bool has_complex = false;
 
-        for (MemberList::iterator it = this->members.begin(); it != this->members.end(); it++)
+        for (MemberList::const_iterator it = this->members.cbegin(); it != this->members.cend(); it++)
         {
             if (it->second->type == Value::Type::array_value
                 || it->second->type == Value::Type::object_value)
@@ -160,59 +110,59 @@ namespace Json
             }
         }
 
-        stream->Write(&Json::globals->begin_object, 1);
+        stream->write_element(Json::globals->begin_object);
 
         if (this->members.size() > 0)
         {
             if (!has_complex)
             {
-                writer.Write(" ");
+                writer.write_literal(" ");
 
-                for (MemberList::iterator it = this->members.begin(); it != this->members.end(); it++)
+                for (MemberList::const_iterator it = this->members.cbegin(); it != this->members.cend(); it++)
                 {
                     if (it != this->members.begin())
                     {
-                        stream->Write(&Json::globals->value_separator, 1);
-                        writer.Write(" ");
+                        stream->write_element(Json::globals->value_separator);
+                        writer.write_literal(" ");
                     }
 
                     Json::String::write_value(it->first, stream);
-                    writer.Write(" ");
-                    stream->Write(&Json::globals->name_separator, 1);
-                    writer.Write(" ");
-                    it->second->write_to(stream);
+                    writer.write_literal(" ");
+                    stream->write_element(Json::globals->name_separator);
+                    writer.write_literal(" ");
+                    it->second->write_to_stream(stream);
                 }
 
-                writer.Write(" ");
+                writer.write_literal(" ");
             }
             else
             {
                 // $ stream->Indent();
                 writer.WriteLine();
 
-                for (MemberList::iterator it = this->members.begin(); it != this->members.end(); it++)
+                for (MemberList::const_iterator it = this->members.cbegin(); it != this->members.cend(); it++)
                 {
                     if (it != this->members.begin())
                     {
-                        stream->Write(&Json::globals->value_separator, 1);
+                        stream->write_element(Json::globals->value_separator);
                         writer.WriteLine();
                     }
 
                     Json::String::write_value(it->first, stream);
-                    writer.Write(" ");
-                    stream->Write(&Json::globals->name_separator, 1);
-                    writer.Write(" ");
-                    it->second->write_to(stream);
+                    writer.write_literal(" "); // $$ isn't there a more efficient way to write a space?  change TextWriter to a set of global functions?
+                    stream->write_element(Json::globals->name_separator);
+                    writer.write_literal(" ");
+                    it->second->write_to_stream(stream);
                 }
 
                 // $ stream->Unindent();
             }
         }
 
-        stream->Write(&Json::globals->end_object, 1);
+        stream->write_element(Json::globals->end_object);
     }
 
-    void Number::write_to(Basic::IStream<Codepoint>* stream)
+    void Number::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
         TextWriter writer(stream);
 
@@ -220,41 +170,27 @@ namespace Json
         writer.WriteFormat<64>("%d", (uint64)this->value);
     }
 
-    void String::write_to(Basic::IStream<Codepoint>* stream)
+    void String::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
         write_value(this->value, stream);
     }
 
-    void String::write_value(Basic::UnicodeString::Ref value, Basic::IStream<Codepoint>* stream)
+    void String::write_value(Basic::UnicodeStringRef value, Basic::IStream<Codepoint>* stream)
     {
-        Codepoint quote = '\"';
-        stream->Write(&quote, 1);
-        // $ escape special chars (for instance " )
-        value->write_to(stream);
-        stream->Write(&quote, 1);
+        stream->write_element('\"');
+        // $$ escape special chars (for instance " )
+        value->write_to_stream(stream);
+        stream->write_element('\"');
     }
 
-    void Bool::write_to(Basic::IStream<Codepoint>* stream)
+    void Bool::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
-        UnicodeString::Ref string = this->value ? Json::globals->json_true : Json::globals->json_false;
-        string->write_to(stream);
+        UnicodeStringRef string = this->value ? Json::globals->json_true : Json::globals->json_false;
+        string->write_to_stream(stream);
     }
 
-    void Null::write_to(Basic::IStream<Codepoint>* stream)
+    void Null::write_to_stream(Basic::IStream<Codepoint>* stream) const
     {
-        Json::globals->json_null->write_to(stream);
-    }
-}
-
-namespace Basic
-{
-    void FrameStream<Json::Token::Ref>::Write(const Json::Token::Ref* elements, uint32 count)
-    {
-        this->element_source.Initialize(elements, count);
-
-        Json::ReadyForReadTokenPointerEvent event;
-        event.Initialize(&this->element_source);
-
-        this->frame->Process(&event);
+        Json::globals->json_null->write_to_stream(stream);
     }
 }

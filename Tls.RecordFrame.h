@@ -3,16 +3,14 @@
 #pragma once
 
 #include "Basic.IProcess.h"
-#include "Basic.ISerializable.h"
 #include "Basic.MemoryRange.h"
-#include "Tls.NumberFrame.h"
 #include "Tls.Types.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class RecordFrame : public Frame, public ISerializable
+    class RecordFrame : public Frame
     {
     private:
         enum State
@@ -29,18 +27,28 @@ namespace Tls
         };
 
         Record* record;
-        Inline<NumberFrame<ContentType> > type_frame;
-        Inline<NumberFrame<ProtocolVersion> > version_frame;
-        Inline<NumberFrame<uint16> > length_frame;
-        Inline<MemoryRange> fragment_frame;
+        NumberFrame<ContentType> type_frame;
+        NumberFrame<ProtocolVersion> version_frame;
+        NumberFrame<uint16> length_frame;
+        MemoryRange fragment_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<RecordFrame, IProcess> Ref;
+        RecordFrame(Record* record);
 
-        void Initialize(Record* record);
+        void reset();
+    };
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<Record>
+    {
+        void operator()(const Record* value, IStream<byte>* stream) const
+        {
+            serialize<ContentType>()(&value->type, stream);
+            serialize<ProtocolVersion>()(&value->version, stream);
+            serialize<uint16>()(&value->length, stream);
+            value->fragment->write_to_stream(stream);
+        }
     };
 }

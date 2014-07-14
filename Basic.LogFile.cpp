@@ -9,14 +9,14 @@ namespace Basic
     byte LogFile::encoding[] = { 0xef, 0xbb, 0xbf };
 
     LogFile::LogFile() :
-        file(INVALID_HANDLE_VALUE)
+        file(INVALID_HANDLE_VALUE),
+        bookmark(0)
     {
     }
 
     LogFile::~LogFile()
     {
-        if (this->file != INVALID_HANDLE_VALUE)
-            FlushFileBuffers(this->file);
+        close_file();
     }
 
     void LogFile::Initialize(const char* name)
@@ -30,61 +30,116 @@ namespace Basic
             FILE_FLAG_OVERLAPPED | FILE_FLAG_WRITE_THROUGH,
             0);
         if (this->file == INVALID_HANDLE_VALUE)
-            throw new Exception("CreateFileA", GetLastError());
+            throw FatalError("CreateFileA", GetLastError());
 
         Basic::globals->BindToCompletionQueue(this);
 
         LARGE_INTEGER size;
         BOOL success = GetFileSizeEx(this->file, &size);
         if (success == FALSE)
-            throw new Exception("GetFileSizeEx", GetLastError());
+            throw FatalError("GetFileSizeEx", GetLastError());
 
         if (size.QuadPart == 0)
         {
-            AsyncBytes::Ref bytes = New<AsyncBytes>("6");
-            bytes->Initialize(0x10);
-            bytes->Write(encoding, sizeof(encoding));
-            bytes->PrepareForSend("LogFile::Initialize WriteFile", this);
+            std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
+            bytes->write_elements(encoding, sizeof(encoding));
 
-            success = WriteFile(this->file, bytes->bytes, bytes->count, 0, bytes);
+            std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
+
+            success = WriteFile(this->file, bytes->address(), bytes->size(), 0, job.get());
             if (success == FALSE)
             {
                 DWORD error = GetLastError();
                 if (error != ERROR_IO_PENDING)
-                    throw new Exception("LogFile::Initialize WriteFile", error);
+                {
+                    job->Internal = error;
+                    Basic::globals->QueueJob(job);
+                }
             }
         }
     }
 
-    void LogFile::Write(AsyncBytes* bytes)
+    void LogFile::write_entry(UnicodeString* entry)
     {
-        if (this->file == INVALID_HANDLE_VALUE)
-            return;
+        std::shared_ptr<ByteString> bytes;
 
-        bytes->Offset = 0xffffffff;
-        bytes->OffsetHigh = 0xffffffff;
-        bytes->PrepareForSend("LogFile::Write WriteFile", this);
-
-        BOOL success = WriteFile(this->file, bytes->bytes, bytes->count, 0, bytes);
-        if (success == FALSE)
         {
-            DWORD error = GetLastError();
-            if (error != ERROR_IO_PENDING)
+            Hold hold(tail_lock);
+
+            // first thing get the ByteString to reuse from the circular array
+            bytes = this->tail[this->bookmark];
+            if (bytes.get() == 0)
             {
-                bytes->Internal = error;
-                Basic::globals->PostCompletion(this, bytes);
+                // first time we've used this slot, so allocate the ByteString
+                bytes = std::make_shared<ByteString>();
+                this->tail[this->bookmark] = bytes;
+            }
+
+            // advance the circular array bookmark
+            this->bookmark = (this->bookmark + 1) % _countof(this->tail);
+        }
+
+        // ascii encode and write to the local consoles
+        ascii_encode(entry, bytes.get());
+        OutputDebugStringA((char*)bytes->address());
+        printf((char*)bytes->address());
+
+        if (this->file != INVALID_HANDLE_VALUE)
+        {
+            // the log file is utf-8 encoded, pre-allocate space so the encoding 
+            // doesn't make a lot of incrementally increasing allocations
+            bytes->clear();
+            bytes->reserve(entry->size() * 5 / 4);
+            utf_8_encode(entry, bytes.get());
+
+            std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
+            job->Offset = 0xffffffff;
+            job->OffsetHigh = 0xffffffff;
+
+            BOOL success = WriteFile(this->file, bytes->address(), bytes->size(), 0, job.get());
+            if (success == FALSE)
+            {
+                DWORD error = GetLastError();
+                if (error != ERROR_IO_PENDING)
+                {
+                    job->Internal = error;
+                    Basic::globals->QueueJob(job);
+                }
             }
         }
     }
 
-    void LogFile::CompleteAsync(OVERLAPPED_ENTRY& entry)
+    void LogFile::close_file()
     {
-        AsyncBytes* bytesPointer = AsyncBytes::FromOverlapped(entry.lpOverlapped);
-        AsyncBytes::Ref bytes = bytesPointer;
-        bytesPointer->IoCompleted();
+        FlushFileBuffers(this->file);
+        CloseHandle(this->file);
+        this->file = INVALID_HANDLE_VALUE;
+    }
 
-        int error = static_cast<int>(entry.lpOverlapped->Internal);
+    void LogFile::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
+    {
         if (error != ERROR_SUCCESS)
+        {
+            close_file();
+
             Basic::globals->HandleError("LogFile::CompleteAsync", error);
+        }
+    }
+
+    void LogFile::WriteTo(IStream<Codepoint>* stream)
+    {
+        Hold hold(this->tail_lock);
+
+        for (uint32 i = 0; i < _countof(this->tail); i++)
+        {
+            uint32 next = (this->bookmark + i) % _countof(this->tail);
+
+            UnicodeString entry;
+
+            ByteString* bytes = this->tail[next].get();
+            utf_8_decode(bytes, &entry);
+
+            entry.write_to_stream(stream);
+        }
     }
 }

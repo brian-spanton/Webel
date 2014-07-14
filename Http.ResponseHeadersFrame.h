@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Basic.IProcess.h"
-#include "Basic.ISerializable.h"
 #include "Basic.DecNumberStream.h"
 #include "Http.Types.h"
 #include "Http.HeadersFrame.h"
@@ -12,7 +11,7 @@ namespace Http
 {
     using namespace Basic;
 
-    class ResponseHeadersFrame : public Frame, public ISerializable
+    class ResponseHeadersFrame : public Frame
     {
     private:
         enum State
@@ -31,16 +30,32 @@ namespace Http
         };
 
         Response* response;
-        UnicodeString::Ref method; // REF
-        Inline<DecNumberStream<byte, uint16> > number_stream;
-        Inline<HeadersFrame> headers_frame;
+        UnicodeStringRef method;
+        DecNumberStream<byte, uint16> number_stream;
+        HeadersFrame headers_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ResponseHeadersFrame, IProcess> Ref;
-
-        void Initialize(UnicodeString* method, Response* response);
+        ResponseHeadersFrame(UnicodeStringRef method, Response* response);
         void WriteResponseLineTo(IStream<byte>* stream);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    };
+
+    void serialize_response_line(const Response* value, IStream<byte>* stream);
+
+    template <>
+    struct __declspec(novtable) serialize<Response>
+    {
+        void operator()(const Response* value, IStream<byte>* stream) const
+        {
+            serialize_response_line(value, stream);
+
+            stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
+
+            serialize<NameValueCollection>()(value->headers.get(), stream);
+
+            if (value->server_body.get() != 0)
+                value->server_body->write_to_stream(stream);
+        }
     };
 }

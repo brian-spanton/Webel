@@ -6,15 +6,16 @@
 
 namespace Basic
 {
-    void SingleByteDecoder::Initialize(ISingleByteEncodingIndex* index)
+    SingleByteDecoder::SingleByteDecoder(std::shared_ptr<ISingleByteEncodingIndex> index) :
+        index(index),
+        destination(0)
     {
-        this->index = index;
     }
 
-    void SingleByteDecoder::Initialize(ISingleByteEncodingIndex* index, IStream<Codepoint>* destination)
+    SingleByteDecoder::SingleByteDecoder(std::shared_ptr<ISingleByteEncodingIndex> index, IStream<Codepoint>* destination) :
+        index(index),
+        destination(destination)
     {
-        this->index = index;
-        this->destination = destination;
     }
 
     void SingleByteDecoder::set_destination(IStream<Codepoint>* destination)
@@ -27,7 +28,7 @@ namespace Basic
         char full_error[0x100];
         int result = sprintf_s(full_error, "decoder error(%s)", error);
         if (result == -1)
-            throw new Exception("SingleByteDecoder::EmitDecoderError");
+            throw FatalError("SingleByteDecoder::EmitDecoderError");
 
         HandleError(full_error);
 
@@ -39,12 +40,20 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "byte=0x%02X", b);
         if (result == -1)
-            throw new Exception("SingleByteDecoder::EmitDecoderError");
+            throw FatalError("SingleByteDecoder::EmitDecoderError");
 
         EmitDecoderError(error);
     }
 
-    void SingleByteDecoder::Write(const byte* elements, uint32 count)
+    void SingleByteDecoder::write_elements(const byte* elements, uint32 count)
+    {
+        for (const byte* element = elements; element != elements + count; element++)
+        {
+            write_element(*element);
+        }
+    }
+
+    void SingleByteDecoder::write_element(byte b)
     {
         // From http://encoding.spec.whatwg.org/#encodings
         // A decoder algorithm takes a byte stream and emits a code point stream. The byte pointer is initially zero,
@@ -58,55 +67,45 @@ namespace Basic
     
         // http://encoding.spec.whatwg.org/#legacy-single-byte-encodings
 
-        uint32 i = 0;
-
-        while (true)
+        if (b >= 0 && b <= 0x7F)
         {
-            if (i == count)
-                break;
-
-            byte b = elements[i];
-
-            i++;
-
-            if (b >= 0 && b <= 0x7F)
-            {
-                Emit(b);
-                continue;
-            }
-
-            Codepoint codepoint = this->index->pointer_to_codepoint(b - 0x80);
-
-            if (codepoint == 0)
-            {
-                EmitDecoderError(b);
-                continue;
-            }
-
-            Emit(codepoint);
-            continue;
+            Emit(b);
+            return;
         }
+
+        Codepoint codepoint = this->index->pointer_to_codepoint(b - 0x80);
+
+        if (codepoint == 0)
+        {
+            EmitDecoderError(b);
+            return;
+        }
+
+        Emit(codepoint);
     }
 
-    void SingleByteDecoder::WriteEOF()
+    void SingleByteDecoder::write_eof()
     {
-        Emit(EOF);
+        // I think eof is for the end of the encoded bytes, and should not propagate to the destination
+        // because it might not at all be the last thing sent to the destination
+
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 
     void SingleByteDecoder::Emit(Codepoint codepoint)
     {
-        this->destination->Write(&codepoint, 1);
+        this->destination->write_element(codepoint);
     }
 
-    void SingleByteDecoderFactory::Initialize(ISingleByteEncodingIndex* index)
+    void SingleByteDecoderFactory::Initialize(std::shared_ptr<ISingleByteEncodingIndex> index)
     {
         this->index = index;
     }
 
-    void SingleByteDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder)
+    void SingleByteDecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder)
     {
-        SingleByteDecoder::Ref single_byte_decoder = New<SingleByteDecoder>();
-        single_byte_decoder->Initialize(this->index);
+        std::shared_ptr<SingleByteDecoder> single_byte_decoder = std::make_shared<SingleByteDecoder>(this->index);
 
         (*decoder) = single_byte_decoder;
     }

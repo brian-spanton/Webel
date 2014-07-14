@@ -6,11 +6,18 @@
 
 namespace Basic
 {
-    const DWORD Socket::addressLength = sizeof(sockaddr_in) + 16;
+    SocketJobContext::SocketJobContext(Type type)
+    {
+        this->type = type;
+    }
 
     Socket::Socket() :
-        socket(INVALID_SOCKET)
+        socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
     {
+        if (this->socket == INVALID_SOCKET)
+            throw Basic::FatalError("socket", WSAGetLastError());
+
+        Basic::globals->BindToCompletionQueue(this);
     }
 
     Socket::~Socket()
@@ -19,53 +26,46 @@ namespace Basic
             closesocket(socket);
     }
 
-    void Socket::Initialize()
-    {
-        this->socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (this->socket == INVALID_SOCKET)
-            throw new Basic::Exception("socket", WSAGetLastError());
-
-        Basic::globals->BindToCompletionQueue(this);
-    }
-
-    void Socket::CompleteAsync(OVERLAPPED_ENTRY& entry)
+    void Socket::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
         Hold hold(this->lock);
 
-        int transferred = entry.dwNumberOfBytesTransferred;
-        int error = ERROR_SUCCESS;
+        std::shared_ptr<SocketJobContext> socket_context = std::static_pointer_cast<SocketJobContext>(context);
 
-        if (entry.lpOverlapped != 0)
+        switch(socket_context->type)
         {
-            AsyncBytes::Ref bytes = AsyncBytes::FromOverlapped(entry.lpOverlapped);
-            error = static_cast<int>(entry.lpOverlapped->Internal);
+        case SocketJobContext::ready_for_send_type:
+            CompleteReadyForSend();
+            break;
 
-            bytes->IoCompleted();
+        case SocketJobContext::send_type:
+            CompleteSend(socket_context->bytes, count, error);
+            break;
 
-            if (bytes->receive)
-            {
-                CompleteRead(bytes, transferred, error);
-            }
-            else
-            {
-                CompleteWrite(bytes, transferred, error);
-            }
-        }
-        else
-        {
-            CompleteOther(transferred, error);
+        case SocketJobContext::receive_type:
+            socket_context->bytes->resize(count);
+            CompleteReceive(socket_context->bytes, error);
+            break;
+
+        case SocketJobContext::accept_type:
+            CompleteAccept(socket_context->server_socket.get(), socket_context->bytes, count, error);
+            break;
         }
     }
 
-    void Socket::CompleteRead(AsyncBytes* bytes, int transferred, int error)
+    void Socket::CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error)
     {
     }
 
-    void Socket::CompleteWrite(AsyncBytes* bytes, int transferred, int error)
+    void Socket::CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error)
     {
     }
 
-    void Socket::CompleteOther(int transferred, int error)
+    void Socket::CompleteReadyForSend()
+    {
+    }
+
+    void Socket::CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error)
     {
     }
 }

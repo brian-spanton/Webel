@@ -12,7 +12,7 @@ namespace Html
 
     class Parser;
 
-    class InputStreamPreprocessor : public IStream<Codepoint>
+    class InputStreamPreprocessor : public UnitStream<Codepoint>
     {
     private:
         enum State
@@ -23,17 +23,14 @@ namespace Html
         };
 
         State state;
-        Basic::Ref<IStream<Codepoint> > output; // REF
+        std::shared_ptr<IStream<Codepoint> > output;
         Parser* parser;
 
         bool IsValid(Codepoint c);
 
     public:
-        typedef Basic::Ref<InputStreamPreprocessor, IStream<Codepoint> > Ref;
+        InputStreamPreprocessor(Parser* parser, std::shared_ptr<IStream<Codepoint> > output);
 
-        void Initialize(Parser* parser, IStream<Codepoint>* output);
-
-        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-        virtual void IStream<Codepoint>::WriteEOF();
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
     };
 }

@@ -14,72 +14,64 @@ namespace Html
 {
     using namespace Basic;
 
-    void InputStreamPreprocessor::Initialize(Parser* parser, IStream<Codepoint>* output)
+    InputStreamPreprocessor::InputStreamPreprocessor(Parser* parser, std::shared_ptr<IStream<Codepoint> > output) :
+        state(State::bom_state),
+        parser(parser),
+        output(output)
     {
-        this->parser = parser;
-        this->state = State::bom_state;
-        this->output = output;
     }
 
-    void InputStreamPreprocessor::Write(const Codepoint* elements, uint32 count)
+    void InputStreamPreprocessor::write_element(Codepoint c)
     {
-        for (uint32 i = 0; i < count; i++)
+        switch (this->state)
         {
-            Codepoint c = elements[i];
-
-            switch (this->state)
+        case State::bom_state:
             {
-            case State::bom_state:
+                this->state = State::normal_state;
+
+                if (c != 0xFEFF)
+                {
+                    write_element(c);
+                    return;
+                }
+            }
+            break;
+
+        case State::normal_state:
+            {
+                if (!IsValid(c))
+                    this->parser->ParseError("invalid char in input stream");
+
+                if (c == 0x000D)
+                    c = 0x000A;
+
+                if (c == 0x000A)
+                    this->state = State::ignore_lf_state;
+
+                this->output->write_element(c);
+            }
+            break;
+
+        case State::ignore_lf_state:
+            {
+                if (!IsValid(c))
+                    this->parser->ParseError("invalid char in input stream");
+
+                if (c == 0x000D)
+                    c = 0x000A;
+
+                if (c != 0x000A)
                 {
                     this->state = State::normal_state;
 
-                    if (c != 0xFEFF)
-                    {
-                        Write(&c, 1);
-                    }
+                    this->output->write_element(c);
                 }
-                break;
-
-            case State::normal_state:
-                {
-                    if (!IsValid(c))
-                        this->parser->ParseError("invalid char in input stream");
-
-                    if (c == 0x000D)
-                        c = 0x000A;
-
-                    if (c == 0x000A)
-                        this->state = State::ignore_lf_state;
-
-                    this->output->Write(&c, 1);
-                }
-                break;
-
-            case State::ignore_lf_state:
-                {
-                    if (!IsValid(c))
-                        this->parser->ParseError("invalid char in input stream");
-
-                    if (c == 0x000D)
-                        c = 0x000A;
-
-                    if (c != 0x000A)
-                    {
-                        this->state = State::normal_state;
-
-                        this->output->Write(&c, 1);
-                    }
-                }
-                break;
-
-            default:
-                throw new Exception("Html::InputStreamPreprocessor::Write enexpected state", 0);
             }
-        }
-    }
+            break;
 
-    void InputStreamPreprocessor::WriteEOF()
-    {
+        default:
+            throw FatalError("Html::InputStreamPreprocessor::write_element enexpected state", 0);
+        }
     }
 
     bool InputStreamPreprocessor::IsValid(Codepoint c)

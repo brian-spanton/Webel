@@ -7,6 +7,7 @@
 #include "Basic.MemoryRange.h"
 #include "Basic.Frame.h"
 #include "Basic.IDecoder.h"
+#include "Json.Tokenizer.h"
 
 namespace Json
 {
@@ -28,19 +29,17 @@ namespace Json
             could_not_find_decoder_error,
         };
 
-        UnicodeString::Ref encoding; // REF
-        UnicodeString::Ref charset; // REF
-        Basic::Ref<IStream<Codepoint> > output; // REF
+        UnicodeStringRef encoding;
+        UnicodeStringRef charset;
+        Tokenizer* output;
         byte bom[4];
-        ByteString::Ref unconsume; // REF
-        Basic::Ref<IDecoder> decoder; // REF
-        Inline<MemoryRange> bom_frame;
+        ByteStringRef not_consumed;
+        std::shared_ptr<IDecoder> decoder;
+        MemoryRange bom_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ByteStreamDecoder, IProcess> Ref;
-
-        void Initialize(UnicodeString::Ref charset, IStream<Codepoint>* output);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output);
     };
 }

@@ -7,7 +7,7 @@
 #include "Http.MediaType.h"
 #include "Basic.Frame.h"
 #include "Basic.Lock.h"
-#include "Basic.ICompletion.h"
+#include "Basic.ICompleter.h"
 #include "Basic.IBufferedStream.h"
 
 namespace Web
@@ -15,7 +15,7 @@ namespace Web
     using namespace Basic;
     using namespace Http;
 
-    class Client : public Frame
+    class Client : public Frame, public ICompleter, public std::enable_shared_from_this<Client>
     {
     public:
         enum State
@@ -30,40 +30,38 @@ namespace Web
         };
 
     private:
-        Basic::Ref<IBufferedStream<byte> > peer; // REF
-        Basic::Ref<IProcess> client_completion; // REF
-        ByteString::Ref client_cookie; // REF
-        Inline<ResponseHeadersFrame> response_headers_frame;
-        Inline<BodyFrame> response_body_frame;
-        MediaType::Ref media_type; // REF
+        std::shared_ptr<IBufferedStream<byte> > peer;
+        std::shared_ptr<IProcess> client_completion;
+        ByteStringRef client_cookie;
+        std::shared_ptr<ResponseHeadersFrame> response_headers_frame;
+        std::shared_ptr<BodyFrame> response_body_frame;
+        std::shared_ptr<MediaType> media_type;
         uint8 retries;
         uint8 redirects;
-        Request::Ref planned_request; // REF
+        std::shared_ptr<Request> planned_request;
         Lock lock;
 
         void switch_to_state(State state);
-        void Error(const char* error);
-        void Redirect(Uri* url);
-        void Retry(Request* request);
+        void handle_error(const char* error);
+        void Redirect(std::shared_ptr<Uri> url);
+        void Retry(std::shared_ptr<Request> request);
         void QueuePlanned();
+        void QueueJob();
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<Client, IProcess> Ref;
-
         TransactionList history;
         CookieList http_cookies;
 
-        void Initialize();
+        void Get(std::shared_ptr<Request> request, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        void Get(std::shared_ptr<Uri> url, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        void Get(Request* request, Basic::Ref<IProcess> completion, ByteString::Ref cookie);
-        void Get(Uri* url, Basic::Ref<IProcess> completion, ByteString::Ref cookie);
+        virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 
-        virtual void IProcess::Process(IEvent* event);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-
-        bool get_content_type(MediaType::Ref* media_type);
-        bool get_content_type_charset(UnicodeString::Ref* media_type);
-        void set_body_stream(IStream<byte>* body_stream);
-        void get_url(Uri::Ref* url);
+        bool get_content_type(std::shared_ptr<MediaType>* media_type);
+        bool get_content_type_charset(UnicodeStringRef* media_type);
+        void set_body_stream(std::shared_ptr<IStream<byte> > body_stream);
+        void get_url(std::shared_ptr<Uri>* url);
     };
 }

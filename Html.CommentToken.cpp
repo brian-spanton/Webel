@@ -10,6 +10,6 @@ namespace Html
     CommentToken::CommentToken() :
         Token(Token::Type::comment_token)
     {
-        this->data = New<UnicodeString>();
+        this->data = std::make_shared<UnicodeString>();
     }
 }

@@ -7,7 +7,7 @@
 namespace Basic
 {
     template <class T>
-    __interface IBufferedStream : public IStream<T>
+    __interface IBufferedStream : public IStream<T> // $$ nuke this class and let owners do buffering if they want to?
     {
         void Flush();
     };

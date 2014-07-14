@@ -32,19 +32,20 @@ namespace Http
             header_frame_failed,
         };
 
-        NameValueCollection::Ref headers; // REF
-        Ref<IStream<byte> > body_stream; // REF
-        Inline<BodyChunksFrame> chunks_frame;
-        Inline<LengthBodyFrame> chunk_frame;
-        Inline<DisconnectBodyFrame> disconnect_frame;
-        Inline<HeadersFrame> headers_frame;
+        std::shared_ptr<NameValueCollection> headers;
+        std::shared_ptr<IStream<byte> > body_stream;
+        std::shared_ptr<BodyChunksFrame> chunks_frame;
+        std::shared_ptr<LengthBodyFrame> chunk_frame;
+        std::shared_ptr<DisconnectBodyFrame> disconnect_frame;
+        HeadersFrame headers_frame;
 
         void switch_to_state(State state);
 
-    public:
-        void Initialize(NameValueCollection* headers);
+        virtual void IProcess::consider_event(IEvent* event);
 
-        void set_body_stream(IStream<byte>* body_stream);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+    public:
+        BodyFrame(std::shared_ptr<NameValueCollection> headers);
+
+        void set_body_stream(std::shared_ptr<IStream<byte> > body_stream);
     };
 }

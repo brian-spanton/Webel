@@ -7,12 +7,12 @@
 namespace Basic
 {
     template <class T>
-    __interface IElementSource : public IRefCounted
+    __interface IElementSource
     {
-        bool Read(uint32 count, const T** out_address, uint32* out_count, bool* yield);
-        bool ReadNext(T* element, bool* yield);
+        void Read(uint32 count, const T** out_address, uint32* out_count);
+        void ReadNext(T* element);
         void UndoReadNext();
-        void AddObserver(IStream<T>* stream);
-        void RemoveObserver(IStream<T>* stream);
+        void AddObserver(std::shared_ptr<IStream<T> > stream);
+        void RemoveObserver(std::shared_ptr<IStream<T> > stream);
     };
 }

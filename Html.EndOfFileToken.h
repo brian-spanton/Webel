@@ -10,11 +10,7 @@ namespace Html
 
     class EndOfFileToken : public Token
     {
-    private:
-
     public:
-        typedef Basic::Ref<EndOfFileToken> Ref;
-
         EndOfFileToken();
     };
 }

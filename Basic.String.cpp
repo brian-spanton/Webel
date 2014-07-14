@@ -11,82 +11,68 @@
 
 namespace Basic
 {
-    StringRef::StringRef() :
-        Basic::Ref<UnicodeString>()
+    void initialize_unicode(std::shared_ptr<UnicodeString>* variable, const char* value, int count)
     {
+        (*variable) = std::make_shared<UnicodeString>();
+        (*variable)->reserve(count);
+
+        SingleByteDecoder decoder(Basic::globals->ascii_index, variable->get());
+        decoder.write_elements((const byte*)value, count);
     }
 
-    StringRef::StringRef(UnicodeString* instance) :
-        Basic::Ref<UnicodeString>(instance)
+    void initialize_ascii(std::shared_ptr<ByteString>* variable, const char* value, int count)
     {
+        (*variable) = std::make_shared<ByteString>();
+        (*variable)->reserve(count);
+
+        (*variable)->write_elements((const byte*)value, count);
     }
 
-    StringRef::StringRef(const StringRef& ref) :
-        Basic::Ref<UnicodeString>(ref)
+    void initialize_ascii(ByteString* variable, const char* value, int count)
     {
+        variable->write_elements((const byte*)value, count);
     }
 
-    void StringRef::Initialize(const char* value, int count)
+    void ascii_encode(UnicodeString* value, IStream<byte>* stream)
     {
-        (*this) = New<UnicodeString>();
-
-        Inline<SingleByteDecoder> decoder;
-        decoder.Initialize(Basic::globals->ascii_index, this->item());
-        decoder.Write((const byte*)value, count);
+        SingleByteEncoder encoder;
+        encoder.Initialize(Basic::globals->ascii_index, stream);
+        encoder.write_elements(value->address(), value->size());
     }
 
-    bool StringRef::is_null_or_empty()
+    void ascii_decode(ByteString* bytes, UnicodeString* value)
     {
-        if (instance == 0)
-            return true;
+        value->clear();
+        value->reserve(bytes->size());
 
-        if (instance->size() == 0)
-            return true;
-
-        return false;
+        SingleByteDecoder decoder(Basic::globals->ascii_index, value);
+        decoder.write_elements(bytes->address(), bytes->size());
     }
 
-    bool StringRef::operator < (const StringRef& value) const
+    void utf_8_encode(UnicodeString* value, IStream<byte>* stream)
     {
-        return instance->compared_to<true>(value.instance) == -1;
+        Utf8Encoder encoder;
+        encoder.set_destination(stream);
+        encoder.write_elements(value->address(), value->size());
     }
 
-    void ByteString::SerializeTo(IStream<byte>* stream)
+    void utf_8_decode(ByteString* bytes, UnicodeString* value)
     {
-        stream->Write(c_str(), size());
+        value->clear();
+        value->reserve(bytes->size());
+
+        Utf8Decoder decoder;
+        decoder.set_destination(value);
+        decoder.write_elements(bytes->address(), bytes->size());
     }
+}
 
-    void UnicodeString::ascii_encode(IStream<byte>* bytes)
-    {
-        Inline<SingleByteEncoder> encoder;
-        encoder.Initialize(Basic::globals->ascii_index, bytes);
-        encoder.Write(c_str(), size());
-    }
+bool operator == (const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value)
+{
+    return Basic::equals<Basic::UnicodeString, true>(left_value.get(), right_value.get());
+}
 
-    void UnicodeString::ascii_decode(ByteString* bytes)
-    {
-        clear();
-        reserve(bytes->size());
-
-        Inline<SingleByteDecoder> decoder;
-        decoder.Initialize(Basic::globals->ascii_index, this);
-        decoder.Write(bytes->c_str(), bytes->size());
-    }
-
-    void UnicodeString::utf_8_encode(IStream<byte>* bytes)
-    {
-        Inline<Utf8Encoder> encoder;
-        encoder.set_destination(bytes);
-        encoder.Write(c_str(), size());
-    }
-
-    void UnicodeString::utf_8_decode(ByteString* bytes)
-    {
-        clear();
-        reserve(bytes->size());
-
-        Inline<Utf8Decoder> decoder;
-        decoder.set_destination(this);
-        decoder.Write(bytes->c_str(), bytes->size());
-    }
+bool operator != (const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value)
+{
+    return !Basic::equals<Basic::UnicodeString, true>(left_value.get(), right_value.get());
 }

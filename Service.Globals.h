@@ -3,13 +3,13 @@
 #pragma once
 
 #include <Windows.h>
-#include "Basic.ICompletion.h"
-#include "Basic.DebugStream.h"
+#include "Basic.ICompleter.h"
+#include "Basic.LogStream.h"
 #include "Basic.ListenSocket.h"
 #include "Basic.Cng.h"
-#include "Tls.CertificatesFrame.h"
 #include "Basic.Frame.h"
 #include "Basic.Uri.h"
+#include "Basic.Console.h"
 #include "Service.AdminProtocol.h"
 #include "Service.Types.h"
 #include "Basic.ICompletionQueue.h"
@@ -19,7 +19,7 @@ namespace Service
 {
     using namespace Basic;
 
-    class Globals : public Frame, public ICompletion, public IRefHolder, public IErrorHandler, public ICompletionQueue, public Tls::ICertificate
+    class Globals : public Frame, public ICompleter, public IErrorHandler, public ICompletionQueue, public Tls::ICertificate, public std::enable_shared_from_this<Globals>
     {
     private:
         enum State
@@ -43,55 +43,55 @@ namespace Service
         Tls::Certificates certificates;
 
         static DWORD WINAPI Thread(void* param);
-        bool CompleteRead(AsyncBytes* bytes, int transferred, int error);
-        bool ParseCert(AsyncBytes* bytes, int transferred, int error);
+        bool ParseCert(ByteString* bytes, uint32 count, uint32 error);
         bool ReadCertificate();
         bool CreateSelfSignCert();
         bool ExtractPrivateKey();
 
-    public:
-        typedef Basic::StringMapCaseInsensitive<Basic::ListenSocket::Ref> Listeners; // REF
-        typedef std::vector<Basic::UnicodeString::Ref> CommandList; // REF
+        virtual void IProcess::consider_event(IEvent* event);
 
-        Basic::Ref<Basic::Console> console; // REF
-        Basic::DebugLog::Ref debugLog; // REF
+    public:
+        typedef Basic::StringMapCaseInsensitive<std::shared_ptr<Basic::ListenSocket> > Listeners;
+        typedef std::vector<Basic::UnicodeStringRef> CommandList;
+
+        std::shared_ptr<Basic::Console> console;
+        std::shared_ptr<Basic::LogFile> debugLog;
 
         std::string service_name;
         std::string self_sign_domain;
         std::string certificate_file_name;
         std::wstring certificate_file_password;
 
-        Basic::UnicodeString::Ref command_stop; // REF
-        Basic::UnicodeString::Ref command_log; // REF
-        Basic::UnicodeString::Ref command_get; // REF
-        Basic::UnicodeString::Ref command_follow_link; // REF
-        Basic::UnicodeString::Ref command_select_form; // REF
-        Basic::UnicodeString::Ref command_set_control_value; // REF
-        Basic::UnicodeString::Ref command_submit; // REF
-        Basic::UnicodeString::Ref command_render_links; // REF
-        Basic::UnicodeString::Ref command_render_forms; // REF
-        Basic::UnicodeString::Ref command_render_nodes; // REF
-        Basic::UnicodeString::Ref command_search; // REF
+        Basic::UnicodeStringRef command_stop;
+        Basic::UnicodeStringRef command_log;
+        Basic::UnicodeStringRef command_get;
+        Basic::UnicodeStringRef command_follow_link;
+        Basic::UnicodeStringRef command_select_form;
+        Basic::UnicodeStringRef command_set_control_value;
+        Basic::UnicodeStringRef command_submit;
+        Basic::UnicodeStringRef command_render_links;
+        Basic::UnicodeStringRef command_render_forms;
+        Basic::UnicodeStringRef command_render_nodes;
+        Basic::UnicodeStringRef command_search;
 
         CommandList command_list;
 
-        Basic::UnicodeString::Ref root_admin; // REF
-        Basic::UnicodeString::Ref root_echo; // REF
-        Basic::UnicodeString::Ref root_question; // REF
+        Basic::UnicodeStringRef root_admin;
+        Basic::UnicodeStringRef root_echo;
+        Basic::UnicodeStringRef root_question;
 
-        AdminProtocol::Ref adminProtocol; // REF
+        std::shared_ptr<AdminProtocol> adminProtocol;
 
-        UnicodeString::Ref title_property; // REF
-        UnicodeString::Ref as_of_property; // REF
-        UnicodeString::Ref source_property; // REF
+        UnicodeStringRef title_property;
+        UnicodeStringRef as_of_property;
+        UnicodeStringRef source_property;
 
-        Index::Ref index; // REF
+        std::shared_ptr<Index> index;
 
         Globals();
         ~Globals();
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
+        virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 
         bool Initialize();
         void WaitForStopSignal();
@@ -100,8 +100,8 @@ namespace Service
         bool Thread();
         bool SetThreadCount(uint32 count);
 
-        void Store(UnicodeString::Ref source, Json::Value::Ref value);
-        void Search(UnicodeString::Ref query, Json::Array::Ref* results);
+        void Store(UnicodeStringRef source, std::shared_ptr<Json::Value> value);
+        void Search(UnicodeStringRef query, std::shared_ptr<Json::Array>* results);
 
         template <int value_count>        
         void GetFilePath(const char* name, char (&value)[value_count])
@@ -110,7 +110,7 @@ namespace Service
 
             DWORD exe_path_count = GetModuleFileNameA(0, exe_path, sizeof(exe_path));
             if (exe_path_count == sizeof(exe_path))
-                throw new Exception("GetModuleFileNameA", GetLastError());
+                throw FatalError("GetModuleFileNameA", GetLastError());
 
             char drive[MAX_PATH + 0x100];
             char directory[MAX_PATH + 0x100];
@@ -123,17 +123,16 @@ namespace Service
         }
 
         virtual bool IErrorHandler::HandleError(const char* context, uint32 error);
-        virtual Basic::IStream<Codepoint>* IErrorHandler::DebugStream();
+        virtual Basic::IStream<Codepoint>* IErrorHandler::LogStream();
         virtual Basic::TextWriter* IErrorHandler::DebugWriter();
 
-        virtual void ICompletionQueue::BindToCompletionQueue(Socket::Ref socket);
-        virtual void ICompletionQueue::BindToCompletionQueue(LogFile::Ref socket);
-        virtual void ICompletionQueue::PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
-        virtual void ICompletionQueue::QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie);
+        virtual void ICompletionQueue::BindToCompletionQueue(Socket* socket);
+        virtual void ICompletionQueue::BindToCompletionQueue(LogFile* log_file);
+        virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);
 
         virtual bool ICertificate::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);
         virtual Tls::Certificates* ICertificate::Certificates();
     };
 
-    extern Basic::Inline<Globals>* globals;
+    extern Globals* globals;
 }

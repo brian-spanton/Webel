@@ -2,14 +2,12 @@
 
 #pragma once
 
-#include "Basic.IRefCounted.h"
-
 namespace Basic
 {
-    template <class character_type>
-    __interface INumberStream : public IRefCounted
+    template <typename element_type>
+    __interface INumberStream
     {
-        bool WriteDigit(character_type digit);
+        bool WriteDigit(element_type digit);
         uint8 get_digit_count();
     };
 }

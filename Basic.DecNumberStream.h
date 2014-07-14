@@ -6,17 +6,32 @@
 
 namespace Basic
 {
-    template <class character_type, class number_type>
-    class DecNumberStream : public INumberStream<character_type>
+    template <typename element_type, class number_type>
+    class DecNumberStream : public INumberStream<element_type>
     {
     private:
         number_type* value;
         uint8 count;
 
     public:
-        typedef Basic::Ref<DecNumberStream<character_type, number_type>, INumberStream<character_type> > Ref;
+        DecNumberStream<element_type, number_type>() :
+            count(0),
+            value(0)
+        {
+        }
 
-        void Initialize(number_type* value)
+        DecNumberStream<element_type, number_type>(number_type* value) :
+            count(0),
+            value(value)
+        {
+        }
+
+        void reset()
+        {
+            this->count = 0;
+        }
+
+        void reset(number_type* value)
         {
             this->count = 0;
             this->value = value;
@@ -27,11 +42,11 @@ namespace Basic
             return this->count;
         }
 
-        virtual bool INumberStream<character_type>::WriteDigit(character_type digit)
+        virtual bool INumberStream<element_type>::WriteDigit(element_type digit)
         {
             byte digit_value;
 
-            bool success = base_10<character_type>(digit, &digit_value);
+            bool success = base_10<element_type>(digit, &digit_value);
             if (!success)
                 return false;
 

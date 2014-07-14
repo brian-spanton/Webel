@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "Web.Globals.h"
 #include "Tls.RecordLayer.h"
+#include "Tls.ServerNameFrame.h"
+#include "Tls.SignatureAndHashAlgorithmFrame.h"
 
 namespace Web
 {
@@ -18,47 +20,45 @@ namespace Web
     {
     }
 
-    void Globals::CreateServerSocket(Basic::Ref<Tls::ICertificate> certificate, IProcess* protocol, ServerSocket::Ref* socket, Basic::Ref<IBufferedStream<byte> >* peer)
+    void Globals::CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, std::shared_ptr<ServerSocket>* socket, std::shared_ptr<IBufferedStream<byte> >* peer)
     {
-        ServerSocket::Ref server_socket = New<ServerSocket>();
-        server_socket->Initialize();
-
-        if (certificate.item() != 0)
+        if (certificate.get() != 0)
         {
-            Tls::RecordLayer::Ref tls_frame = New<Tls::RecordLayer>();
-            tls_frame->Initialize(server_socket, protocol, true, certificate);
+            std::shared_ptr<Tls::RecordLayer> tls_frame = std::make_shared<Tls::RecordLayer>(protocol, true, certificate);
+            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(tls_frame);
 
-            server_socket->InitializeProtocol(tls_frame);
+            tls_frame->set_transport(server_socket);
+
             (*peer) = tls_frame;
+            (*socket) = server_socket;
         }
         else
         {
-            server_socket->InitializeProtocol(protocol);
-            (*peer) = server_socket;
-        }
+            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(protocol);
 
-        (*socket) = server_socket;
+            (*peer) = server_socket;
+            (*socket) = server_socket;
+        }
     }
 
-    void Globals::CreateClientSocket(bool secure, IProcess* protocol, ClientSocket::Ref* socket, Basic::Ref<IBufferedStream<byte> >* peer)
+    void Globals::CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, std::shared_ptr<ClientSocket>* socket, std::shared_ptr<IBufferedStream<byte> >* peer)
     {
-        ClientSocket::Ref client_socket = New<ClientSocket>();
-        client_socket->Initialize();
-
         if (secure)
         {
-            Tls::RecordLayer::Ref tls_frame = New<Tls::RecordLayer>();
-            tls_frame->Initialize(client_socket, protocol, false, 0);
+            std::shared_ptr<Tls::RecordLayer> tls_frame = std::make_shared<Tls::RecordLayer>(protocol, false, std::shared_ptr<Tls::ICertificate>());
+            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(tls_frame);
 
-            client_socket->InitializeProtocol(tls_frame);
+            tls_frame->set_transport(client_socket);
+
             (*peer) = tls_frame;
+            (*socket) = client_socket;
         }
         else
         {
-            client_socket->InitializeProtocol(protocol);
-            (*peer) = client_socket;
-        }
+            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(protocol);
 
-        (*socket) = client_socket;
+            (*peer) = client_socket;
+            (*socket) = client_socket;
+        }
     }
 };

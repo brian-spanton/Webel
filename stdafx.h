@@ -59,6 +59,7 @@
 #include <unordered_set>
 #include <hash_set>
 #include <algorithm>
+#include <memory>
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -72,6 +73,7 @@
 #undef SendMessage
 #undef CHAR
 #undef EOF
+#undef Yield
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;
@@ -87,9 +89,7 @@ typedef int32 Codepoint;
 
 #define EOF ((Codepoint)-1)
 
-#include "Basic.Ref.h"
 #include "Basic.String.h"
-#include "Basic.RefCounted.h"
 #include "Basic.Types.h"
 #include "Basic.Lock.h"
 #include "Basic.Hold.h"

@@ -12,12 +12,11 @@ namespace Html
     {
         this->self_closing = false;
         this->acknowledged = false;
-        this->name = New<UnicodeString>();
-        this->attributes = New<StringMap>();
+        this->name = std::make_shared<UnicodeString>();
     }
 
-    bool TagToken::HasNameOf(ElementName* element)
+    bool TagToken::has_name_of(ElementName* element)
     {
-        return this->name.equals<true>(element->name);
+        return equals<UnicodeString, true>(this->name.get(), element->name.get());
     }
 }

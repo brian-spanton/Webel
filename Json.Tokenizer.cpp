@@ -14,142 +14,137 @@ namespace Json
 
     void Tokenizer::InitializeStatics()
     {
-        literal_map.insert(LiteralMap::value_type(Json::globals->json_false, Json::globals->false_token.item()));
-        literal_map.insert(LiteralMap::value_type(Json::globals->json_null, Json::globals->null_token.item()));
-        literal_map.insert(LiteralMap::value_type(Json::globals->json_true, Json::globals->true_token.item()));
+        literal_map.insert(LiteralMap::value_type(Json::globals->json_false, Json::globals->false_token));
+        literal_map.insert(LiteralMap::value_type(Json::globals->json_null, Json::globals->null_token));
+        literal_map.insert(LiteralMap::value_type(Json::globals->json_true, Json::globals->true_token));
     }
 
-    void Tokenizer::Initialize(IStream<Token::Ref>* output)
+    Tokenizer::Tokenizer(std::shared_ptr<IStream<std::shared_ptr<Token> > > output) :
+        output(output)
     {
-        __super::Initialize();
-        this->output = output;
     }
 
-    void Tokenizer::Emit(Token::Ref token)
+    void Tokenizer::Emit(std::shared_ptr<Token> token)
     {
-        this->output->Write(&token, 1);
+        this->output->write_element(token);
     }
 
-    void Tokenizer::Error(const char* error)
+    void Tokenizer::handle_error(const char* error)
     {
         HandleError(error);
         switch_to_state(State::error_state);
     }
 
-    void Tokenizer::Process(IEvent* event, bool* yield)
+    void Tokenizer::write_element(Codepoint c)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
+                switch(c)
+                {
+                case Json::globals->begin_script:
+                    Emit(std::make_shared<BeginScriptToken>());
+                    break;
 
-                if (c == Json::globals->begin_script)
-                {
-                    BeginScriptToken::Ref token = New<BeginScriptToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->end_script)
-                {
-                    EndScriptToken::Ref token = New<EndScriptToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->begin_parameter)
-                {
-                    BeginParameterToken::Ref token = New<BeginParameterToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->end_parameter)
-                {
-                    EndParameterToken::Ref token = New<EndParameterToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->token_separator)
-                {
-                    TokenSeparatorToken::Ref token = New<TokenSeparatorToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->begin_array)
-                {
-                    BeginArrayToken::Ref token = New<BeginArrayToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->begin_object)
-                {
-                    BeginObjectToken::Ref token = New<BeginObjectToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->end_array)
-                {
-                    EndArrayToken::Ref token = New<EndArrayToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->end_object)
-                {
-                    EndObjectToken::Ref token = New<EndObjectToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->name_separator)
-                {
-                    NameSeparatorToken::Ref token = New<NameSeparatorToken>();
-                    Emit(token.item());
-                }
-                else if (c == Json::globals->value_separator)
-                {
-                    ValueSeparatorToken::Ref token = New<ValueSeparatorToken>();
-                    Emit(token.item());
-                }
-                else if (c == '\"')
-                {
-                    this->string = New<UnicodeString>();
-                    switch_to_state(State::string_state);
-                }
-                else if (c == '-')
-                {
-                    this->sign = -1;
-                    this->dec_number_stream.Initialize(&this->whole);
-                    switch_to_state(State::number_state);
-                }
-                else if (c >= '0' && c <= '9')
-                {
-                    this->sign = 1;
-                    this->dec_number_stream.Initialize(&this->whole);
+                case Json::globals->end_script:
+                    Emit(std::make_shared<EndScriptToken>());
+                    break;
 
-                    Event::UndoReadNext(event);
-                    switch_to_state(State::number_state);
-                }
-                else
-                {
-                    for (this->literal_it = literal_map.begin(); this->literal_it != literal_map.end(); this->literal_it++)
+                case Json::globals->begin_parameter:
+                    Emit(std::make_shared<BeginParameterToken>());
+                    break;
+
+                case Json::globals->end_parameter:
+                    Emit(std::make_shared<EndParameterToken>());
+                    break;
+
+                case Json::globals->token_separator:
+                    Emit(std::make_shared<TokenSeparatorToken>());
+                    break;
+
+                case Json::globals->begin_array:
+                    Emit(std::make_shared<BeginArrayToken>());
+                    break;
+
+                case Json::globals->begin_object:
+                    Emit(std::make_shared<BeginObjectToken>());
+                    break;
+
+                case Json::globals->end_array:
+                    Emit(std::make_shared<EndArrayToken>());
+                    break;
+
+                case Json::globals->end_object:
+                    Emit(std::make_shared<EndObjectToken>());
+                    break;
+
+                case Json::globals->name_separator:
+                    Emit(std::make_shared<NameSeparatorToken>());
+                    break;
+
+                case Json::globals->value_separator:
+                    Emit(std::make_shared<ValueSeparatorToken>());
+                    break;
+
+                case '\"':
                     {
-                        if (c == this->literal_it->first->at(0))
-                            break;
+                        this->string = std::make_shared<UnicodeString>();
+                        this->string->reserve(0x40);
+                        switch_to_state(State::string_state);
                     }
+                    break;
 
-                    if (this->literal_it != literal_map.end())
+                case '-':
                     {
-                        this->matched = 1;
-                        switch_to_state(State::literal_state);
+                        this->sign = -1;
+                        this->dec_number_stream.reset(&this->whole);
+                        switch_to_state(State::number_state);
                     }
-                    else if (c == Json::globals->token_separator || Json::globals->ws->find(c) == UnicodeString::npos)
-                    {
-                        this->string = New<UnicodeString>();
+                    break;
 
-                        Event::UndoReadNext(event);
-                        switch_to_state(State::token_state);
+                default:
+                    {
+                        if (c >= '0' && c <= '9')
+                        {
+                            this->sign = 1;
+                            this->dec_number_stream.reset(&this->whole);
+
+                            switch_to_state(State::number_state);
+                            write_element(c);
+                            return;
+                        }
+                        else
+                        {
+                            for (this->literal_it = literal_map.begin(); this->literal_it != literal_map.end(); this->literal_it++)
+                            {
+                                if (c == this->literal_it->first->at(0))
+                                    break;
+                            }
+
+                            if (this->literal_it != literal_map.end())
+                            {
+                                this->matched = 1;
+                                switch_to_state(State::literal_state);
+                            }
+                            else if (c == Json::globals->token_separator || Json::globals->ws->find(c) == UnicodeString::npos)
+                            {
+                                this->string = std::make_shared<UnicodeString>();
+                                this->string->reserve(0x40);
+
+                                switch_to_state(State::token_state);
+                                write_element(c);
+                                return;
+                            }
+                        }
                     }
+                    break;
                 }
             }
             break;
 
         case State::literal_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c == this->literal_it->first->at(this->matched))
                 {
                     this->matched++;
@@ -162,80 +157,88 @@ namespace Json
                 }
                 else
                 {
-                    this->string = New<UnicodeString>();
+                    this->string = std::make_shared<UnicodeString>();
+                    this->string->reserve(0x40);
                     this->string->insert(this->string->end(), this->literal_it->first->begin(), this->literal_it->first->begin() + this->matched);
 
-                    Event::UndoReadNext(event);
                     switch_to_state(State::token_state);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case State::token_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
-                if (c == Json::globals->token_separator)
+                switch(c)
                 {
-                    TokenToken::Ref token = New<TokenToken>();
-                    token->value = this->string;
-                    Emit(token.item());
+                case Json::globals->token_separator:
+                    {
+                        std::shared_ptr<TokenToken> token = std::make_shared<TokenToken>();
+                        token->value = this->string;
+                        Emit(token);
 
-                    TokenSeparatorToken::Ref token2 = New<TokenSeparatorToken>();
-                    Emit(token2.item());
+                        std::shared_ptr<TokenSeparatorToken> token2 = std::make_shared<TokenSeparatorToken>();
+                        Emit(token2);
 
-                    this->string = New<UnicodeString>();
-                }
-                else if (c == Json::globals->begin_parameter)
-                {
-                    TokenToken::Ref token = New<TokenToken>();
-                    token->value = this->string;
-                    Emit(token.item());
+                        this->string = std::make_shared<UnicodeString>();
+                        this->string->reserve(0x40);
+                    }
+                    break;
 
-                    BeginParameterToken::Ref token2 = New<BeginParameterToken>();
-                    Emit(token2.item());
+                case Json::globals->begin_parameter:
+                    {
+                        std::shared_ptr<TokenToken> token = std::make_shared<TokenToken>();
+                        token->value = this->string;
+                        Emit(token);
 
-                    switch_to_state(State::start_state);
-                }
-                else if (c == Json::globals->end_script)
-                {
-                    TokenToken::Ref token = New<TokenToken>();
-                    token->value = this->string;
-                    Emit(token.item());
+                        std::shared_ptr<BeginParameterToken> token2 = std::make_shared<BeginParameterToken>();
+                        Emit(token2);
 
-                    EndScriptToken::Ref token2 = New<EndScriptToken>();
-                    Emit(token2.item());
+                        switch_to_state(State::start_state);
+                    }
+                    break;
 
-                    switch_to_state(State::start_state);
-                }
-                else if (Json::globals->ws->find(c) != UnicodeString::npos)
-                {
-                    TokenToken::Ref token = New<TokenToken>();
-                    token->value = this->string;
-                    Emit(token.item());
+                case Json::globals->end_script:
+                    {
+                        std::shared_ptr<TokenToken> token = std::make_shared<TokenToken>();
+                        token->value = this->string;
+                        Emit(token);
 
-                    switch_to_state(State::start_state);
-                }
-                else
-                {
-                    this->string->push_back(c);
+                        std::shared_ptr<EndScriptToken> token2 = std::make_shared<EndScriptToken>();
+                        Emit(token2);
+
+                        switch_to_state(State::start_state);
+                    }
+                    break;
+
+                default:
+                    {
+                        if (Json::globals->ws->find(c) != UnicodeString::npos)
+                        {
+                            std::shared_ptr<TokenToken> token = std::make_shared<TokenToken>();
+                            token->value = this->string;
+                            Emit(token);
+
+                            switch_to_state(State::start_state);
+                        }
+                        else
+                        {
+                            this->string->push_back(c);
+                        }
+                    }
+                    break;
                 }
             }
             break;
 
         case State::string_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c == '\"')
                 {
-                    StringToken::Ref token = New<StringToken>();
+                    std::shared_ptr<StringToken> token = std::make_shared<StringToken>();
                     token->value = this->string;
-                    Emit(token.item());
+                    Emit(token);
 
                     switch_to_state(State::start_state);
                 }
@@ -252,10 +255,6 @@ namespace Json
 
         case State::escape_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case '\"':
@@ -299,7 +298,7 @@ namespace Json
                     break;
 
                 case 'u':
-                    this->hex_number_stream.Initialize(&this->whole);
+                    this->hex_number_stream.reset(&this->whole);
                     switch_to_state(State::character_code_state);
                     break;
                 }
@@ -308,17 +307,14 @@ namespace Json
 
         case State::character_code_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool success = this->hex_number_stream.WriteDigit(c);
                 if (!success)
                 {
                     if (this->hex_number_stream.get_digit_count() != 4)
                     {
-                        Event::UndoReadNext(event);
-                        Error("character code does not have 4 digits");
+                        handle_error("character code does not have 4 digits");
+                        write_element(c);
+                        return;
                     }
                     else
                     {
@@ -326,8 +322,9 @@ namespace Json
 
                         this->string->push_back((Codepoint)this->whole);
 
-                        Event::UndoReadNext(event);
                         switch_to_state(State::string_state);
+                        write_element(c);
+                        return;
                     }
                 }
             }
@@ -335,40 +332,38 @@ namespace Json
 
         case State::number_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool success = this->dec_number_stream.WriteDigit(c);
                 if (!success)
                 {
                     if (this->dec_number_stream.get_digit_count() == 0)
                     {
-                        Event::UndoReadNext(event);
-                        Error("number token has no digits");
+                        handle_error("number token has no digits");
+                        write_element(c);
+                        return;
                     }
                     else if (c == '.')
                     {
                         this->number = (long double)this->whole * (long double)this->sign;
-                        this->dec_number_stream.Initialize(&this->fraction);
+                        this->dec_number_stream.reset(&this->fraction);
                         switch_to_state(State::fraction_state);
                     }
                     else if (Basic::lower_case(c) == 'e')
                     {
                         this->number = (long double)this->whole * (long double)this->sign;
-                        this->dec_number_stream.Initialize(&this->exponent);
+                        this->dec_number_stream.reset(&this->exponent);
                         switch_to_state(State::exponent_state);
                     }
                     else
                     {
                         this->number = (long double)this->whole * (long double)this->sign;
 
-                        NumberToken::Ref token = New<NumberToken>();
+                        std::shared_ptr<NumberToken> token = std::make_shared<NumberToken>();
                         token->value = this->number;
-                        Emit(token.item());
+                        Emit(token);
 
-                        Event::UndoReadNext(event);
                         switch_to_state(State::start_state);
+                        write_element(c);
+                        return;
                     }
                 }
             }
@@ -376,34 +371,32 @@ namespace Json
 
         case State::fraction_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool success = this->dec_number_stream.WriteDigit(c);
                 if (!success)
                 {
                     if (this->dec_number_stream.get_digit_count() == 0)
                     {
-                        Event::UndoReadNext(event);
-                        Error("fraction part has no digits");
+                        handle_error("fraction part has no digits");
+                        write_element(c);
+                        return;
                     }
                     else if (Basic::lower_case(c) == 'e')
                     {
                         this->number += this->fraction / (long double)pow((long double)10, (long double)this->dec_number_stream.get_digit_count());
-                        this->dec_number_stream.Initialize(&this->exponent);
+                        this->dec_number_stream.reset(&this->exponent);
                         switch_to_state(State::exponent_state);
                     }
                     else
                     {
                         this->number += this->fraction / (long double)pow((long double)10, (long double)this->dec_number_stream.get_digit_count());
 
-                        NumberToken::Ref token = New<NumberToken>();
+                        std::shared_ptr<NumberToken> token = std::make_shared<NumberToken>();
                         token->value = this->number;
-                        Emit(token.item());
+                        Emit(token);
 
-                        Event::UndoReadNext(event);
                         switch_to_state(State::start_state);
+                        write_element(c);
+                        return;
                     }
                 }
             }
@@ -411,35 +404,33 @@ namespace Json
 
         case State::exponent_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool success = this->dec_number_stream.WriteDigit(c);
                 if (!success)
                 {
                     if (this->dec_number_stream.get_digit_count() == 0)
                     {
-                        Event::UndoReadNext(event);
-                        Error("exponent part has no digits");
+                        handle_error("exponent part has no digits");
+                        write_element(c);
+                        return;
                     }
                     else
                     {
                         this->number = (long double)pow(this->number, (long double)this->exponent);
 
-                        NumberToken::Ref token = New<NumberToken>();
+                        std::shared_ptr<NumberToken> token = std::make_shared<NumberToken>();
                         token->value = this->number;
-                        Emit(token.item());
+                        Emit(token);
 
-                        Event::UndoReadNext(event);
                         switch_to_state(State::start_state);
+                        write_element(c);
+                        return;
                     }
                 }
             }
             break;
 
         default:
-            throw new Exception("Json::Tokenizer::Write unexpected state");
+            throw FatalError("Json::Tokenizer::write_element unexpected state");
         }
     }
 }

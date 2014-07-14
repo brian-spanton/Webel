@@ -9,64 +9,55 @@
 #include "Basic.FrameStream.h"
 #include "Tls.RecordLayer.h"
 #include "Tls.HandshakeFrame.h"
-#include "Tls.CertificatesFrame.h"
 #include "Tls.PreMasterSecretFrame.h"
 #include "Tls.RandomFrame.h"
 #include "Tls.Globals.h"
 #include "Tls.ServerHelloFrame.h"
-#include "Basic.ByteVector.h"
+#include "Tls.ServerNameFrame.h"
+#include "Tls.SignatureAndHashAlgorithmFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void ServerHandshake::Process(IEvent* event, bool* yield)
+    ServerHandshake::ServerHandshake(RecordLayer* session) :
+        HandshakeProtocol(session),
+        client_hello_frame(&this->clientHello),
+        pre_master_secret_frame(&this->pre_master_secret_bytes)
     {
-        switch (frame_state())
+    }
+
+    void ServerHandshake::consider_event(IEvent* event)
+    {
+        switch (get_state())
         {
         case State::start_state:
             Event::AddObserver<byte>(event, this->handshake_messages);
 
-            this->handshake_frame.Initialize(&this->handshake);
+            this->handshake_frame.reset();
             switch_to_state(State::expecting_client_hello_state);
             break;
 
         case State::expecting_client_hello_state:
-            if (this->handshake_frame.Pending())
             {
-                this->handshake_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_1_failed);
 
-            if (this->handshake_frame.Failed())
-            {
-                switch_to_state(State::handshake_frame_1_failed);
-            }
-            else if (this->handshake_frame.Succeeded())
-            {
                 if (this->handshake.msg_type != HandshakeType::client_hello)
                 {
                     switch_to_state(State::expecting_client_hello_error);
                 }
                 else
                 {
-                    this->client_hello_frame.Initialize(&this->clientHello, this->handshake.length);
+                    this->client_hello_frame.set_record_frame_length(this->handshake.length);
                     switch_to_state(State::hello_frame_pending_state);
                 }
             }
             break;
 
         case State::hello_frame_pending_state:
-            if (this->client_hello_frame.Pending())
             {
-                this->client_hello_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->client_hello_frame, event, State::hello_frame_failed);
 
-            if (this->client_hello_frame.Failed())
-            {
-                switch_to_state(State::hello_frame_failed);
-            }
-            else if (this->client_hello_frame.Succeeded())
-            {
                 if (this->clientHello.client_version < this->session->version_low)
                 {
                     switch_to_state(State::client_version_error);
@@ -139,7 +130,7 @@ namespace Tls
                 NTSTATUS error = BCryptGenRandom(0, this->security_parameters->server_random.random_bytes, sizeof(this->security_parameters->server_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                 if (error != 0)
                 {
-                    Basic::globals->HandleError("ServerHandshake::Process BCryptGenRandom", error);
+                    Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
                     switch_to_state(State::BCryptGenRandom_1_failed);
                     return;
                 }
@@ -176,24 +167,25 @@ namespace Tls
                     }
                 }
 
-                Inline<ServerHelloFrame> server_hello_frame;
-                server_hello_frame.Initialize(&serverHello, 0);
+                Serializer<ServerHello> server_hello_serializer(&serverHello);
 
-                success = WriteMessage(this->session, HandshakeType::server_hello, &server_hello_frame);
+                success = WriteMessage(this->session, HandshakeType::server_hello, &server_hello_serializer);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_1_failed);
                     return;
                 }
 
+                //bool send_cert; // $$ nyi
+                //bool send_dh; // $$ nyi
+
                 switch(this->key_exchange_algorithm)
                 {
                 case KeyExchangeAlgorithm::_KEA_RSA:
                     {
-                        CertificatesFrame::Ref frame = New<Tls::CertificatesFrame>();
-                        frame->Initialize(session->certificate->Certificates());
+                        Serializer<Certificates> certificates_serializer(session->certificate->Certificates());
 
-                        bool success = WriteMessage(this->session, HandshakeType::certificate, frame);
+                        bool success = WriteMessage(this->session, HandshakeType::certificate, &certificates_serializer);
                         if (!success)
                         {
                             switch_to_state(State::WriteMessage_4_failed);
@@ -205,7 +197,7 @@ namespace Tls
                 // $$ implement DHE_DSS
                 //case KeyExchangeAlgorithm::DHE_DSS:
                 //    {
-                //        CertificatesFrame::Ref frame = New<Tls::CertificatesFrame>();
+                //        std::shared_ptr<CertificatesFrame> frame = std::make_shared<Tls::CertificatesFrame>();
                 //        frame->Initialize(session->certificate->Certificates());
 
                 //        bool success = WriteMessage(this->session, HandshakeType::certificate, frame);
@@ -215,7 +207,7 @@ namespace Tls
                 //            return;
                 //        }
 
-                //        ServerKeyExchangeFrame::Ref frame = New<Tls::ServerKeyExchangeFrame>();
+                //        std::shared_ptr<ServerKeyExchangeFrame> frame = std::make_shared<Tls::ServerKeyExchangeFrame>();
                 //        frame->Initialize();
 
                 //        bool success = WriteMessage(this->session, HandshakeType::server_key_exchange, frame);
@@ -239,7 +231,7 @@ namespace Tls
                     return;
                 }
 
-                this->handshake_frame.Initialize(&this->handshake);
+                this->handshake_frame.reset();
                 switch_to_state(State::expecting_client_key_exchange_state);
 
                 this->session->Flush();
@@ -247,17 +239,9 @@ namespace Tls
             break;
 
         case State::expecting_client_key_exchange_state:
-            if (this->handshake_frame.Pending())
             {
-                this->handshake_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_2_failed);
 
-            if (this->handshake_frame.Failed())
-            {
-                switch_to_state(State::handshake_frame_2_failed);
-            }
-            else if (this->handshake_frame.Succeeded())
-            {
                 if (this->handshake.msg_type != HandshakeType::client_key_exchange)
                 {
                     switch_to_state(State::expecting_client_key_exchange_error);
@@ -267,18 +251,13 @@ namespace Tls
                     switch(this->key_exchange_algorithm)
                     {
                     case KeyExchangeAlgorithm::_KEA_RSA:
-                        {
-                            this->pre_master_secret_bytes = New<ByteVector>();
-                            this->pre_master_secret_frame.Initialize(this->pre_master_secret_bytes);
-
-                            switch_to_state(State::pre_master_secret_frame_pending);
-                        }
+                        switch_to_state(State::pre_master_secret_frame_pending);
                         break;
 
                     // $$ implement DHE_DSS
                     //case KeyExchangeAlgorithm::DHE_DSS:
                     //    {
-                    //        this->pre_master_secret_bytes = New<ByteVector>();
+                    //        this->pre_master_secret_bytes = std::make_shared<ByteString>();
                     //        this->pre_master_secret_frame.Initialize(this->pre_master_secret_bytes);
 
                     //        switch_to_state(State::client_diffie_hellman_public_value_frame_pending);
@@ -294,18 +273,8 @@ namespace Tls
             break;
 
         case State::pre_master_secret_frame_pending:
-            if (this->pre_master_secret_frame.Pending())
             {
-                this->pre_master_secret_frame.Process(event, yield);
-            }
-
-            if (this->pre_master_secret_frame.Failed())
-            {
-                switch_to_state(State::pre_master_secret_frame_failed);
-            }
-            else if (this->pre_master_secret_frame.Succeeded())
-            {
-                ByteVector::Ref pre_master_secret_bytes = New<ByteVector>();
+                delegate_event_change_state_on_fail(&this->pre_master_secret_frame, event, State::pre_master_secret_frame_failed);
 
                 bool success = ProcessClientKeyExchange(this->key_exchange_algorithm);
                 if (!success)
@@ -325,27 +294,24 @@ namespace Tls
                     // secret. Thus, the server will act identically whether the
                     // received RSA block is correctly encoded or not.
 
-                    this->pre_master_secret_bytes = New<ByteVector>();
-                    this->pre_master_secret_bytes->resize(48);
+                    this->pre_master_secret_bytes.resize(48);
 
-                    NTSTATUS error = BCryptGenRandom(0, this->pre_master_secret_bytes->FirstElement(), this->pre_master_secret_bytes->size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+                    NTSTATUS error = BCryptGenRandom(0, this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::globals->HandleError("ServerHandshake::Process BCryptGenRandom", error);
+                        Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
                         switch_to_state(State::BCryptGenRandom_2_failed);
                         return;
                     }
                 }
 
-                CalculateKeys(this->pre_master_secret_bytes);
+                CalculateKeys(&this->pre_master_secret_bytes);
 
-                this->pre_master_secret_bytes = 0;
-
-                opaque label[] = { 'c', 'l', 'i', 'e', 'n', 't', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
+                this->pre_master_secret_bytes.clear();
 
                 this->finished_expected.resize(this->security_parameters->verify_data_length);
 
-                CalculateVerifyData(label, sizeof(label), &finished_expected[0], finished_expected.size());
+                CalculateVerifyData(&Tls::globals->client_finished_label, finished_expected.address(), (uint16)finished_expected.size());
 
                 switch_to_state(State::expecting_cipher_change_state);
             }
@@ -355,27 +321,19 @@ namespace Tls
             {
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
-                    (*yield) = true;
-                    return;
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
                 }
 
-                this->handshake_frame.Initialize(&this->handshake);
+                this->handshake_frame.reset();
                 switch_to_state(State::expecting_finished_state);
             }
             break;
 
         case State::expecting_finished_state:
-            if (this->handshake_frame.Pending())
             {
-                this->handshake_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_3_failed);
 
-            if (this->handshake_frame.Failed())
-            {
-                switch_to_state(State::handshake_frame_3_failed);
-            }
-            else if (this->handshake_frame.Succeeded())
-            {
                 if (this->handshake.msg_type != HandshakeType::finished)
                 {
                     switch_to_state(State::expecting_finished_error);
@@ -387,24 +345,16 @@ namespace Tls
                 else
                 {
                     this->finished_received.resize(this->security_parameters->verify_data_length);
-                    this->finished_received_frame.Initialize(&this->finished_received[0], this->finished_received.size());
+                    this->finished_received_frame.reset(this->finished_received.address(), this->finished_received.size());
                     switch_to_state(State::finished_received_frame_pending_state);
                 }
             }
             break;
 
         case State::finished_received_frame_pending_state:
-            if (this->finished_received_frame.Pending())
             {
-                this->finished_received_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->finished_received_frame, event, State::finished_received_frame_failed);
 
-            if (this->finished_received_frame.Failed())
-            {
-                switch_to_state(State::finished_received_frame_failed);
-            }
-            else if (this->finished_received_frame.Succeeded())
-            {
                 for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
                 {
                     if (finished_received[i] != finished_expected[i])
@@ -414,21 +364,19 @@ namespace Tls
                     }
                 }
 
-                opaque label[] = { 's', 'e', 'r', 'v', 'e', 'r', ' ', 'f', 'i', 'n', 'i', 's', 'h', 'e', 'd', };
-
-                this->finished_sent = New<ByteVector>();
+                this->finished_sent = std::make_shared<ByteString>();
                 this->finished_sent->resize(this->security_parameters->verify_data_length);
 
                 Event::RemoveObserver<byte>(event, this->handshake_messages);
 
-                CalculateVerifyData(label, sizeof(label), this->finished_sent->FirstElement(), this->finished_sent->size());
+                CalculateVerifyData(&Tls::globals->server_finished_label, this->finished_sent->address(), (uint16)this->finished_sent->size());
 
-                ZeroMemory(this->handshake_messages->FirstElement(), this->handshake_messages->size());
+                ZeroMemory(this->handshake_messages->address(), this->handshake_messages->size());
                 this->handshake_messages->resize(0);
 
                 this->session->WriteChangeCipherSpec();
 
-                bool success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent);
+                bool success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent.get());
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_3_failed);
@@ -446,7 +394,7 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::ServerHandshake::Process unexpected state");
+            throw FatalError("Tls::ServerHandshake::handle_event unexpected state");
         }
     }
 
@@ -459,22 +407,21 @@ namespace Tls
                 DWORD result_length = 0;
 
                 bool success = this->session->certificate->CertDecrypt(
-                    this->pre_master_secret_bytes->FirstElement(),
-                    this->pre_master_secret_bytes->size(),
-                    this->pre_master_secret_bytes->FirstElement(),
-                    this->pre_master_secret_bytes->size(),
+                    this->pre_master_secret_bytes.address(),
+                    this->pre_master_secret_bytes.size(),
+                    this->pre_master_secret_bytes.address(),
+                    this->pre_master_secret_bytes.size(),
                     &result_length);
                 if (!success)
                     return false;
 
-                this->pre_master_secret_bytes->resize(result_length);
+                this->pre_master_secret_bytes.resize(result_length);
 
                 PreMasterSecret pre_master_secret;
 
-                Inline<PreMasterSecretFrame> frame;
-                frame.Initialize(&pre_master_secret);
+                std::shared_ptr<PreMasterSecretFrame> frame = std::make_shared<PreMasterSecretFrame>(&pre_master_secret);
 
-                success = FrameStream<byte>::Process(&frame, this->pre_master_secret_bytes->FirstElement(), this->pre_master_secret_bytes->size());
+                success = FrameStream<byte>::handle_event(frame.get(), this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size());
                 if (!success)
                     return false;
 
@@ -511,7 +458,7 @@ namespace Tls
         return true;
     }
 
-    void ServerHandshake::PartitionKeyMaterial(std::vector<opaque>* key_material)
+    void ServerHandshake::PartitionKeyMaterial(ByteString* key_material)
     {
         Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_read_state->MAC_key);
         Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_write_state->MAC_key);
@@ -520,8 +467,8 @@ namespace Tls
 
         if (this->session->version <= 0x0301)
         {
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_read_state->IV);
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_write_state->IV);
+            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_read_state->IV.get());
+            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_write_state->IV.get());
         }
     }
 }

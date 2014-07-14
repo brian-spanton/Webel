@@ -3,13 +3,12 @@
 #pragma once
 
 #include "Basic.IStream.h"
-#include "Basic.Ref.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    class UrlDecoder : public IStream<byte>
+    class UrlDecoder : public UnitStream<byte> // $$ this class is unused at the moment
     {
     private:
         enum State
@@ -21,17 +20,15 @@ namespace Http
             hex2_error,
         };
 
-        Ref<IStream<byte> > destination; // REF
+        std::shared_ptr<IStream<byte> > destination;
         byte hex;
 
     public:
-        typedef Basic::Ref<UrlDecoder> Ref;
-
         State state;
 
-        void Initialize(IStream<byte>* destination);
+        void Initialize(std::shared_ptr<IStream<byte> > destination);
 
-        virtual void IStream<byte>::Write(const byte* elements, uint32 count);
-        virtual void IStream<byte>::WriteEOF();
+        virtual void IStream<byte>::write_element(byte element);
+        virtual void IStream<byte>::write_eof();
     };
 }

@@ -9,38 +9,37 @@
 
 namespace Basic
 {
-    template <class T>
-    class FrameStream : public IStream<T>
+    // $$ get rid of this class?
+    template <class element_type>
+    class FrameStream : public ArrayStream<element_type>
     {
     private:
-        Inline<Basic::ElementSource<T> > element_source;
-        Basic::Ref<IProcess> frame; // REF
+        Basic::ElementSource<element_type> element_source;
+        IProcess* frame;
 
     public:
-        typedef Basic::Ref<FrameStream> Ref;
-
         void Initialize(IProcess* frame)
         {
             this->frame = frame;
         }
 
-        virtual void IStream<T>::Write(const T* elements, uint32 count);
+        virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 count);
 
-        virtual void IStream<T>::WriteEOF()
+        virtual void IStream<element_type>::write_eof()
         {
             ElementStreamEndingEvent event;
-            this->frame->Process(&event);
+            produce_event(this->frame, &event);
         }
 
-        static bool Process(IProcess* frame, const T* bytes, uint32 count)
+        static bool handle_event(IProcess* frame, const element_type* bytes, uint32 count)
         {
-            Inline<FrameStream<T> > protocol;
+            FrameStream<element_type> protocol;
             protocol.Initialize(frame);
 
-            protocol.Write(bytes, count);
-            protocol.WriteEOF();
+            protocol.write_elements(bytes, count);
+            protocol.write_eof();
 
-            return frame->Succeeded();
+            return frame->succeeded();
         }
     };
 }

@@ -2,31 +2,48 @@
 
 #pragma once
 
-#include "Basic.ICompletion.h"
-#include "Basic.AsyncBytes.h"
+#include "Basic.ICompleter.h"
 
 namespace Basic
 {
-    class Socket : public ICompletion
+    class ServerSocket;
+
+    struct SocketJobContext
+    {
+        enum Type
+        {
+            ready_for_send_type,
+            send_type,
+            receive_type,
+            accept_type,
+        };
+
+        Type type;
+        std::shared_ptr<ByteString> bytes;
+        WSABUF wsabuf;
+        std::shared_ptr<ServerSocket> server_socket;
+
+        SocketJobContext(Type type);
+    };
+
+    class Socket : public ICompleter, public std::enable_shared_from_this<Socket>
     {
     protected:
-        static const DWORD addressLength;
+        static const DWORD addressLength = sizeof(sockaddr_in) + 16;
 
         Lock lock;
 
-        void Initialize();
-        virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
-        virtual void CompleteWrite(AsyncBytes* bytes, int transferred, int error);
-        virtual void CompleteOther(int transferred, int error);
+        virtual void CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error);
+        virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
+        virtual void CompleteReadyForSend();
+        virtual void CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
 
     public:
-        typedef Basic::Ref<Socket, ICompletion> Ref;
-
         SOCKET socket;
 
         Socket();
         virtual ~Socket();
 
-        virtual void ICompletion::CompleteAsync(OVERLAPPED_ENTRY& entry);
+        virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
     };
 }

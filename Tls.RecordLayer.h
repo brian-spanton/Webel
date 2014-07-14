@@ -32,7 +32,8 @@ namespace Tls
             record_frame_pending_state,
             done_state = Succeeded_State,
             record_frame_failed,
-            record_length_too_large_error,
+            receive_record_length_too_large_error,
+            send_record_length_too_large_error,
             record_version_mismatch_error,
             application_stream_failed,
             change_cipher_spec_zero_fragment_error,
@@ -63,51 +64,55 @@ namespace Tls
             decrypt_block_mac_mismatch_error,
             decrypt_block_unexpected_bulk_cipher_algorithm_error,
             version_already_finalized_error,
+            application_lost_error_1,
+            application_lost_error_2,
         };
 
-        Inline<ElementSource<byte> > application_element_source;
-        Basic::Ref<IProcess> application_stream; // REF
+        static const uint32 max_record_length = 0x4000;
 
-        Inline<ElementSource<byte> > alert_element_source;
-        AlertProtocol::Ref alert_protocol; // REF
+        ElementSource<byte> application_element_source;
+        std::weak_ptr<IProcess> application_stream; // $$ was shared_ptr
 
-        Inline<ElementSource<byte> > handshake_element_source;
-        HandshakeProtocol::Ref handshake_protocol; // REF
+        ElementSource<byte> alert_element_source;
+        std::shared_ptr<AlertProtocol> alert_protocol;
 
-        Inline<ElementSource<byte> > heartbeat_element_source;
-        HeartbeatProtocol::Ref heartbeat_protocol; // REF
+        ElementSource<byte> handshake_element_source;
+        std::shared_ptr<HandshakeProtocol> handshake_protocol;
+
+        ElementSource<byte> heartbeat_element_source;
+        std::shared_ptr<HeartbeatProtocol> heartbeat_protocol;
 
         Record record;
-        std::vector<opaque> session_id;
+        SessionId session_id;
         ProtocolVersion version_low;
         ProtocolVersion version_high;
         ProtocolVersion version;
         bool version_finalized;
-        ByteVector::Ref record_buffer; // REF
+        std::shared_ptr<ByteString> record_buffer;
         ContentType buffer_type;
         ContentType current_type;
-        Basic::Ref<IBufferedStream<byte> > transport_peer; // REF
-        Inline<RecordFrame> record_frame;
+        std::shared_ptr<IBufferedStream<byte> > transport_peer;
+        RecordFrame record_frame;
         bool server;
-        Basic::Ref<ICertificate> certificate;
+        std::shared_ptr<ICertificate> certificate;
         bool send_heartbeats;
         bool receive_heartbeats;
         bool application_connected;
         //bool handshake_in_progress; // $$ set and use for error checking per RFC 4346
         //bool heartbeat_in_flight; // $$ set and use for error checking per RFC 6520
-        Inline<ByteVector> transport_buffer;
+        ByteString transport_buffer;
 
-        ConnectionState::Ref pending_read_state; // REF
-        ConnectionState::Ref pending_write_state; // REF
-        ConnectionState::Ref active_read_state; // REF
-        ConnectionState::Ref active_write_state; // REF
+        std::shared_ptr<ConnectionState> pending_read_state;
+        std::shared_ptr<ConnectionState> pending_write_state;
+        std::shared_ptr<ConnectionState> active_read_state;
+        std::shared_ptr<ConnectionState> active_write_state;
 
         void ConnectApplication();
         void DisconnectApplication();
         void FinalizeVersion(ProtocolVersion version);
         void ProcessRecord(Record* record);
         void WriteChangeCipherSpec();
-        void Write(ContentType type, const byte* elements, uint32 count);
+        void write_record_elements(ContentType type, const byte* elements, uint32 count);
 
         void Compress(Record* plaintext, Record* compressed);
         void Encrypt(Record* compressed, Record* encrypted);
@@ -124,20 +129,21 @@ namespace Tls
 
         void switch_to_state(uint32 state);
 
+        virtual void IProcess::consider_event(IEvent* event);
+
     public:
         friend class Tls::HandshakeProtocol;
         friend class Tls::ServerHandshake;
         friend class Tls::ClientHandshake;
         friend class Tls::RecordStream;
 
-        typedef Basic::Ref<RecordLayer, IProcess> Ref;
+        RecordLayer(std::shared_ptr<IProcess> application_stream, bool server, std::shared_ptr<ICertificate> certificate);
 
-        void Initialize(IBufferedStream<byte>* peer, IProcess* application_stream, bool server, Basic::Ref<ICertificate> certificate);
+        void set_transport(std::shared_ptr<IBufferedStream<byte> > peer);
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-
-        virtual void IBufferedStream<byte>::Write(const byte* elements, uint32 count);
-        virtual void IBufferedStream<byte>::WriteEOF();
-        virtual void IBufferedStream<byte>::Flush();
+        virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
+        virtual void IStream<byte>::write_element(byte element);
+        virtual void IStream<byte>::write_eof();
+        virtual void Flush();
     };
 }

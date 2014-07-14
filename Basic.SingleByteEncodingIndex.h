@@ -8,7 +8,6 @@ namespace Basic
     {
     public:
         typedef std::unordered_map<Codepoint, byte> CodepointMap;
-        typedef Ref<SingleByteEncodingIndex, ISingleByteEncodingIndex> Ref;
 
         void Initialize();
 

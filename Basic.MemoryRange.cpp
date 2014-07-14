@@ -9,51 +9,60 @@
 namespace Basic
 {
     MemoryRange::MemoryRange() :
+        received(0),
         bytes(0),
-        count(0),
-        received(0)
+        count(0)
     {
     }
 
-    void MemoryRange::Initialize(byte* bytes, uint32 count)
+    MemoryRange::MemoryRange(byte* bytes, uint32 count) :
+        received(0),
+        bytes(bytes),
+        count(count)
     {
+    }
+
+    void MemoryRange::reset(byte* bytes, uint32 count)
+    {
+        this->received = 0;
         this->bytes = bytes;
         this->count = count;
-        this->received = 0;
     }
 
-    void MemoryRange::Write(const byte* elements, uint32 received)
+    void MemoryRange::write_elements(const byte* elements, uint32 received)
     {
         uint32 remaining = this->count - this->received;
         if (received > remaining)
-            throw new Exception("MemoryRange::Write received > remaining");
+            throw FatalError("MemoryRange::write_elements received > remaining");
 
         CopyMemory(this->bytes + this->received, elements, received);
         this->received += received;
     }
 
-    void MemoryRange::WriteEOF()
+    void MemoryRange::write_element(byte element)
     {
+        if (this->count == this->received)
+            throw FatalError("MemoryRange::write_elements this->count == this->received");
+
+        this->bytes[this->received] = element;
+        this->received += 1;
     }
 
-    void MemoryRange::Process(IEvent* event, bool* yield)
+    void MemoryRange::write_eof()
+    {
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
+    }
+
+    void MemoryRange::consider_event(IEvent* event)
     {
         const byte* elements;
         uint32 useable;
 
-        if(!Event::Read(event, this->count - this->received, &elements, &useable, yield))
-            return;
+        Event::Read(event, this->count - this->received, &elements, &useable);
 
         CopyMemory(this->bytes + this->received, elements, useable);
         this->received += useable;
-
-        if (this->received < this->count)
-            (*yield) = true;
-    }
-
-    void MemoryRange::SerializeTo(IStream<byte>* stream)
-    {
-        stream->Write(this->bytes, this->count);
     }
 
     uint32 MemoryRange::Length()
@@ -61,22 +70,17 @@ namespace Basic
         return this->received;
     }
 
-    void MemoryRange::Process(IEvent* event)
-    {
-        Frame::Process(this, event);
-    }
-
-    bool MemoryRange::Pending()
+    bool MemoryRange::in_progress()
     {
         return this->received < this->count;
     }
 
-    bool MemoryRange::Succeeded()
+    bool MemoryRange::succeeded()
     {
         return this->received == this->count;
     }
 
-    bool MemoryRange::Failed()
+    bool MemoryRange::failed()
     {
         return false;
     }

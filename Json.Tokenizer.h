@@ -13,7 +13,7 @@ namespace Json
 
     class Parser;
 
-    class Tokenizer : public Frame
+    class Tokenizer : public StateMachine, public UnitStream<Codepoint>
     {
     private:
         enum State
@@ -31,31 +31,30 @@ namespace Json
             error_state,
         };
 
-        typedef std::unordered_map<UnicodeString::Ref, Token::Ref> LiteralMap;
+        typedef std::unordered_map<UnicodeStringRef, std::shared_ptr<Token> > LiteralMap;
 
-        static LiteralMap literal_map;
+        static LiteralMap literal_map; // $ why is this static instead of on globals
 
-        Basic::Ref<IStream<Token::Ref> > output; // REF
+        std::shared_ptr<IStream<std::shared_ptr<Token> > > output;
         uint8 matched;
         LiteralMap::iterator literal_it;
-        UnicodeString::Ref string; // REF
+        UnicodeStringRef string;
         int64 sign;
-        Inline<DecNumberStream<Codepoint, uint64> > dec_number_stream;
-        Inline<HexNumberStream<Codepoint, uint64> > hex_number_stream;
+        DecNumberStream<Codepoint, uint64> dec_number_stream;
+        HexNumberStream<Codepoint, uint64> hex_number_stream;
         long double number;
         uint64 whole;
         uint64 fraction;
         uint64 exponent;
 
-        void Emit(Token::Ref token);
-        void Error(const char* error);
+        void Emit(std::shared_ptr<Token> token);
+        void handle_error(const char* error);
 
     public:
-        typedef Basic::Ref<Tokenizer, IProcess> Ref;
-
         static void InitializeStatics();
 
-        void Initialize(IStream<Token::Ref>* output);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        Tokenizer(std::shared_ptr<IStream<std::shared_ptr<Token> > > output);
+
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
     };
 }

@@ -18,16 +18,14 @@ namespace Json
         friend class Tokenizer;
         friend class Text;
 
-        ByteStreamDecoder::Ref decoder; // REF
-        Tokenizer::Ref tokenizer; // REF
+        std::shared_ptr<ByteStreamDecoder> decoder;
+        std::shared_ptr<Tokenizer> tokenizer;
 
         bool ParseError(const char* error);
 
     public:
-        typedef Basic::Ref<Parser, IStream<byte> > Ref;
+        std::shared_ptr<Text> text;
 
-        Text::Ref text; // REF
-
-        void Initialize(Html::Node::Ref domain, UnicodeString::Ref charset);
+        void Initialize(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset);
     };
 }

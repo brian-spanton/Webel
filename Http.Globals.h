@@ -17,15 +17,16 @@ namespace Http
 
         void Initialize();
 
-        byte CR; // carriage return
-        byte LF; // line feed
-        byte SP; // space
-        byte HT; // horizontal tab
-        byte DQ; // double quote
-        byte QM; // question mark
-        byte FS; // forward slash
-        byte SC; // semi colon
-        byte EQ; // equals
+        static const byte CR = '\r'; // carriage return
+        static const byte LF = '\n'; // line feed
+        static const byte SP = ' '; // space
+        static const byte HT = '\t'; // horizontal tab
+        static const byte DQ = '\"'; // double quote
+        static const byte QM = '?'; // question mark
+        static const byte FS = '/'; // forward slash
+        static const byte SC = ';'; // semi colon
+        static const byte EQ = '='; // equals
+        static const byte colon = ':';
 
         byte CRLF[2];
 
@@ -43,38 +44,38 @@ namespace Http
         bool WSP[0x100]; // white space
         bool COOKIE_OCTET[0x100];
 
-        UnicodeString::Ref header_content_length; // REF
-        UnicodeString::Ref header_connection; // REF
-        UnicodeString::Ref keep_alive; // REF
-        UnicodeString::Ref header_content_type; // REF
-        UnicodeString::Ref HTTP_1_1; // REF
-        UnicodeString::Ref header_te; // REF
-        UnicodeString::Ref trailers; // REF
-        UnicodeString::Ref header_host; // REF
-        UnicodeString::Ref reason_ok; // REF
-        UnicodeString::Ref reason_request_uri; // REF
-        UnicodeString::Ref reason_method; // REF
-        UnicodeString::Ref reason_bad_request; // REF
-        UnicodeString::Ref header_content_encoding; // REF
-        UnicodeString::Ref identity; // REF
-        UnicodeString::Ref header_transfer_encoding; // REF
-        UnicodeString::Ref header_transfer_length; // REF
-        UnicodeString::Ref chunked; // REF
-        UnicodeString::Ref header_location; // REF
-        UnicodeString::Ref header_set_cookie; // REF
-        UnicodeString::Ref expires_av_name; // REF
-        UnicodeString::Ref max_age_av_name; // REF
-        UnicodeString::Ref domain_av_name; // REF
-        UnicodeString::Ref path_av_name; // REF
-        UnicodeString::Ref secure_av_name; // REF
-        UnicodeString::Ref httponly_av_name; // REF
-        UnicodeString::Ref header_cookie; // REF
+        UnicodeStringRef header_content_length;
+        UnicodeStringRef header_connection;
+        UnicodeStringRef keep_alive;
+        UnicodeStringRef header_content_type;
+        UnicodeStringRef HTTP_1_1;
+        UnicodeStringRef header_te;
+        UnicodeStringRef trailers;
+        UnicodeStringRef header_host;
+        UnicodeStringRef reason_ok;
+        UnicodeStringRef reason_request_uri;
+        UnicodeStringRef reason_method;
+        UnicodeStringRef reason_bad_request;
+        UnicodeStringRef header_content_encoding;
+        UnicodeStringRef identity;
+        UnicodeStringRef header_transfer_encoding;
+        UnicodeStringRef header_transfer_length;
+        UnicodeStringRef chunked;
+        UnicodeStringRef header_location;
+        UnicodeStringRef header_set_cookie;
+        UnicodeStringRef expires_av_name;
+        UnicodeStringRef max_age_av_name;
+        UnicodeStringRef domain_av_name;
+        UnicodeStringRef path_av_name;
+        UnicodeStringRef secure_av_name;
+        UnicodeStringRef httponly_av_name;
+        UnicodeStringRef header_cookie;
 
-        UnicodeString::Ref application_x_www_form_urlencoded_media_type; // REF
+        UnicodeStringRef application_x_www_form_urlencoded_media_type;
 
-        UnicodeString::Ref head_method; // REF
-        UnicodeString::Ref get_method; // REF
-        UnicodeString::Ref post_method; // REF
+        UnicodeStringRef head_method;
+        UnicodeStringRef get_method;
+        UnicodeStringRef post_method;
     };
 
     extern Globals* globals;

@@ -18,7 +18,7 @@ namespace Http
         this->state = State::parse_error;
     }
 
-    void MediaTypeStream::Write(const Codepoint* elements, uint32 count)
+    void MediaTypeStream::write_element(Codepoint codepoint)
     {
         //3.7 Media Types
         //
@@ -40,231 +40,229 @@ namespace Http
         //   attribute and its value. The presence or absence of a parameter might
         //   be significant to the processing of a media-type, depending on its
         //   definition within the media type registry.
-        for (uint32 element_index = 0; element_index < count; element_index++)
+
+        switch (this->state)
         {
-            Codepoint codepoint = elements[element_index];
-
-            switch (this->state)
+        case State::type_state:
             {
-            case State::type_state:
+                if (codepoint == Http::globals->FS)
                 {
-                    if (codepoint == Http::globals->FS)
-                    {
-                        this->state = State::subtype_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->mediaType->type->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
+                    this->state = State::subtype_state;
                 }
-                break;
-
-            case State::subtype_state:
+                else if (Http::globals->TOKEN[codepoint])
                 {
-                    if (codepoint == Http::globals->SC)
-                    {
-                        this->name = New<UnicodeString>();
-                        this->state = State::before_name_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                        this->state = State::after_subtype_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->mediaType->subtype->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
+                    this->mediaType->type->push_back(codepoint);
                 }
-                break;
-
-            case State::after_subtype_state:
+                else
                 {
-                    if (codepoint == Http::globals->SC)
-                    {
-                        this->name = New<UnicodeString>();
-                        this->state = State::before_name_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
+                    ParseError(codepoint);
                 }
-                break;
-
-            case State::before_name_state:
-                {
-                    if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->name->push_back(codepoint);
-                        this->state = State::name_state;
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::name_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->value = New<UnicodeString>();
-                        this->state = State::before_value_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                        this->value = New<UnicodeString>();
-                        this->state = State::after_name_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->name->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::after_name_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->state = State::before_value_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::before_value_state:
-                {
-                    if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                    }
-                    else if (codepoint == '\"')
-                    {
-                        this->state = State::value_quoted_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->value->push_back(codepoint);
-                        this->state = State::value_state;
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::value_state:
-                {
-                    if (codepoint == Http::globals->SC)
-                    {
-                        NameValueCollection::value_type nv(this->name, this->value);
-                        this->mediaType->parameters->insert(nv);
-
-                        this->value = (UnicodeString*)0;
-                        this->name = New<UnicodeString>();
-
-                        this->state = State::before_name_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                        NameValueCollection::value_type nv(this->name, this->value);
-                        this->mediaType->parameters->insert(nv);
-
-                        this->value = (UnicodeString*)0;
-                        this->name = (UnicodeString*)0;
-
-                        this->state = State::after_value_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->value->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::value_quoted_state:
-                {
-                    if (codepoint == '\"')
-                    {
-                        NameValueCollection::value_type nv(this->name, this->value);
-                        this->mediaType->parameters->insert(nv);
-
-                        this->value = (UnicodeString*)0;
-                        this->name = (UnicodeString*)0;
-
-                        this->state = State::after_value_state;
-                    }
-                    else
-                    {
-                        this->value->push_back(codepoint);
-                    }
-                }
-                break;
-
-            case State::after_value_state:
-                {
-                    if (codepoint == Http::globals->SC)
-                    {
-                        this->name = New<UnicodeString>();
-                        this->state = State::before_name_state;
-                    }
-                    else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
-                    {
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::parse_error:
-                break;
-
-            default:
-                throw new Exception("Http::MediaTypeStream::Process unexpected state");
             }
+            break;
+
+        case State::subtype_state:
+            {
+                if (codepoint == Http::globals->SC)
+                {
+                    this->name = std::make_shared<UnicodeString>();
+                    this->state = State::before_name_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                    this->state = State::after_subtype_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->mediaType->subtype->push_back(codepoint);
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::after_subtype_state:
+            {
+                if (codepoint == Http::globals->SC)
+                {
+                    this->name = std::make_shared<UnicodeString>();
+                    this->state = State::before_name_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::before_name_state:
+            {
+                if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->name->push_back(codepoint);
+                    this->state = State::name_state;
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::name_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->value = std::make_shared<UnicodeString>();
+                    this->state = State::before_value_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                    this->value = std::make_shared<UnicodeString>();
+                    this->state = State::after_name_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->name->push_back(codepoint);
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::after_name_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->state = State::before_value_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::before_value_state:
+            {
+                if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                }
+                else if (codepoint == '\"')
+                {
+                    this->state = State::value_quoted_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->value->push_back(codepoint);
+                    this->state = State::value_state;
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::value_state:
+            {
+                if (codepoint == Http::globals->SC)
+                {
+                    NameValueCollection::value_type nv(this->name, this->value);
+                    this->mediaType->parameters->insert(nv);
+
+                    this->value = 0;
+                    this->name = std::make_shared<UnicodeString>();
+
+                    this->state = State::before_name_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                    NameValueCollection::value_type nv(this->name, this->value);
+                    this->mediaType->parameters->insert(nv);
+
+                    this->value = 0;
+                    this->name = 0;
+
+                    this->state = State::after_value_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->value->push_back(codepoint);
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::value_quoted_state:
+            {
+                if (codepoint == '\"')
+                {
+                    NameValueCollection::value_type nv(this->name, this->value);
+                    this->mediaType->parameters->insert(nv);
+
+                    this->value = 0;
+                    this->name = 0;
+
+                    this->state = State::after_value_state;
+                }
+                else
+                {
+                    this->value->push_back(codepoint);
+                }
+            }
+            break;
+
+        case State::after_value_state:
+            {
+                if (codepoint == Http::globals->SC)
+                {
+                    this->name = std::make_shared<UnicodeString>();
+                    this->state = State::before_name_state;
+                }
+                else if (codepoint == Http::globals->SP || codepoint == Http::globals->HT)
+                {
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::parse_error:
+            break;
+
+        default:
+            throw FatalError("Http::MediaTypeStream::handle_event unexpected state");
         }
     }
 
-    void MediaTypeStream::WriteEOF()
+    void MediaTypeStream::write_eof()
     {
+         // $$ probably move logic to write_element and translate to EOF...
+
         if (this->state == State::value_state)
         {
             NameValueCollection::value_type nv(this->name, this->value);
             this->mediaType->parameters->insert(nv);
-            this->name = (UnicodeString*)0;
-            this->value = (UnicodeString*)0;
+            this->name = 0;
+            this->value = 0;
         }
     }
 }

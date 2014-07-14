@@ -23,7 +23,7 @@ namespace Basic
         char full_error[0x100];
         int result = sprintf_s(full_error, "Utf8Decoder::EmitDecoderError needed=%d seen=%d %hs", this->needed, this->seen, error);
         if (result == -1)
-            throw new Exception("sprintf_s");
+            throw FatalError("sprintf_s");
 
         HandleError(full_error);
 
@@ -38,7 +38,15 @@ namespace Basic
         EmitDecoderError(error);
     }
 
-    void Utf8Decoder::Write(const byte* elements, uint32 count)
+    void Utf8Decoder::write_elements(const byte* elements, uint32 count)
+    {
+        for (const byte* element = elements; element != elements + count; element++)
+        {
+            write_element(*element);
+        }
+    }
+
+    void Utf8Decoder::write_element(byte b)
     {
         // From http://encoding.spec.whatwg.org/#encodings
         // A decoder algorithm takes a byte stream and emits a code point stream. The byte pointer is initially zero,
@@ -52,94 +60,80 @@ namespace Basic
     
         // http://encoding.spec.whatwg.org/#utf-8-decoder
 
-        uint32 i = 0;
-
-        while (true)
+        if (this->needed == 0)
         {
-            if (i == count)
-                break;
-
-            byte b = elements[i];
-
-            i++;
-
-            if (this->needed == 0)
+            if (b >= 0 && b <= 0x7F)
             {
-                if (b >= 0 && b <= 0x7F)
-                {
-                    Emit(b);
-                    continue;
-                }
-                else if (b >= 0xC2 && b <= 0xDF)
-                {
-                    this->needed = 1;
-                    this->codepoint = b - 0xC0;
-                }
-                else if (b >= 0xE0 && b <= 0xEF)
-                {
-                    if (b == 0xE0)
-                        this->lower_bound = 0xA0;
-                    else if (b == 0xED)
-                        this->upper_bound = 0x9F;
-
-                    this->needed = 2;
-                    this->codepoint = b - 0xE0;
-                }
-                else if (b >= 0xF0 && b <= 0xF4)
-                {
-                    if (b == 0xF0)
-                        this->lower_bound = 0x90;
-                    else if (b == 0xF4)
-                        this->upper_bound = 0x8F;
-
-                    this->needed = 3;
-                    this->codepoint = b - 0xF0;
-                }
-                else
-                {
-                    EmitDecoderError(b);
-                    continue;
-                }
-
-                // (byte is in the range 0xC2 to 0xF4)
-                this->codepoint <<= 6 * this->needed;
-                continue;
+                Emit(b);
+                return;
             }
-
-            if (!(b >= this->lower_bound && b <= this->upper_bound))
+            else if (b >= 0xC2 && b <= 0xDF)
             {
-                this->codepoint = 0;
-                this->needed = 0;
-                this->seen = 0;
-                this->lower_bound = 0x80;
-                this->upper_bound = 0xBF;
+                this->needed = 1;
+                this->codepoint = b - 0xC0;
+            }
+            else if (b >= 0xE0 && b <= 0xEF)
+            {
+                if (b == 0xE0)
+                    this->lower_bound = 0xA0;
+                else if (b == 0xED)
+                    this->upper_bound = 0x9F;
 
-                i--;
+                this->needed = 2;
+                this->codepoint = b - 0xE0;
+            }
+            else if (b >= 0xF0 && b <= 0xF4)
+            {
+                if (b == 0xF0)
+                    this->lower_bound = 0x90;
+                else if (b == 0xF4)
+                    this->upper_bound = 0x8F;
 
+                this->needed = 3;
+                this->codepoint = b - 0xF0;
+            }
+            else
+            {
                 EmitDecoderError(b);
-                continue;
+                return;
             }
 
-            this->lower_bound = 0x80;
-            this->upper_bound = 0xBF;
-            this->seen++;
-            this->codepoint += (b - 0x80) << (6 * (this->needed - this->seen));
+            // (byte is in the range 0xC2 to 0xF4)
+            this->codepoint <<= 6 * this->needed;
+            return;
+        }
 
-            if (this->seen != this->needed)
-                continue;
-
-            Codepoint codepoint = this->codepoint;
-
+        if (!(b >= this->lower_bound && b <= this->upper_bound))
+        {
             this->codepoint = 0;
             this->needed = 0;
             this->seen = 0;
+            this->lower_bound = 0x80;
+            this->upper_bound = 0xBF;
 
-            Emit(codepoint);
-            continue;
+            EmitDecoderError(b);
+            write_element(b);
+            return;
         }
+
+        this->lower_bound = 0x80;
+        this->upper_bound = 0xBF;
+        this->seen++;
+        this->codepoint += (b - 0x80) << (6 * (this->needed - this->seen));
+
+        if (this->seen != this->needed)
+            return;
+
+        Codepoint codepoint = this->codepoint;
+
+        this->codepoint = 0;
+        this->needed = 0;
+        this->seen = 0;
+
+        Emit(codepoint);
     }
 
-    void Utf8Decoder::WriteEOF()
+    void Utf8Decoder::write_eof()
     {
         if (this->needed != 0)
         {
@@ -148,16 +142,20 @@ namespace Basic
             EmitDecoderError("end of stream with needed != 0");
         }
 
-        Emit(EOF);
+        // I think eof is for the end of the encoded bytes, and should not propagate to the destination
+        // because it might not at all be the last thing sent to the destination
+
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 
     void Utf8Decoder::Emit(Codepoint codepoint)
     {
-        this->destination->Write(&codepoint, 1);
+        this->destination->write_element(codepoint);
     }
 
-    void Utf8DecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder)
+    void Utf8DecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder)
     {
-        (*decoder) = New<Utf8Decoder>();
+        (*decoder) = std::make_shared<Utf8Decoder>();
     }
 }

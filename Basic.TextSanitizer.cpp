@@ -23,47 +23,37 @@ namespace Basic
         this->destination = destination;
     }
 
-    void TextSanitizer::Write(const Codepoint* elements, uint32 count)
+    void TextSanitizer::write_element(Codepoint c)
     {
-        for (uint32 i = 0; i < count; i++)
+        switch (this->state)
         {
-            Codepoint c = elements[i];
-
-            switch (this->state)
+        case State::before_first_word_state:
+            if (!white_space(c))
             {
-            case State::before_first_word_state:
-                if (!white_space(c))
-                {
-                    this->destination->Write(&c, 1);
-                    this->state = State::in_word_state;
-                }
-                break;
-
-            case State::in_word_state:
-                if (white_space(c))
-                {
-                    this->state = State::before_next_word_state;
-                }
-                else
-                {
-                    this->destination->Write(&c, 1);
-                }
-                break;
-
-            case State::before_next_word_state:
-                if (!white_space(c))
-                {
-                    Codepoint space = 0x0020;
-                    this->destination->Write(&space, 1);
-                    this->destination->Write(&c, 1);
-                    this->state = State::in_word_state;
-                }
-                break;
+                this->destination->write_element(c);
+                this->state = State::in_word_state;
             }
-        }
-    }
+            break;
 
-    void TextSanitizer::WriteEOF()
-    {
+        case State::in_word_state:
+            if (white_space(c))
+            {
+                this->state = State::before_next_word_state;
+            }
+            else
+            {
+                this->destination->write_element(c);
+            }
+            break;
+
+        case State::before_next_word_state:
+            if (!white_space(c))
+            {
+                this->destination->write_element(0x0020);
+                this->destination->write_element(c);
+                this->state = State::in_word_state;
+            }
+            break;
+        }
     }
 }

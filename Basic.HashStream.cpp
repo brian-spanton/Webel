@@ -24,31 +24,31 @@ namespace Basic
     void HashStream::Initialize(HashAlgorithm* algorithm, byte* secret, uint32 secret_length, byte* output, uint32 output_max)
     {
         if (output_max < algorithm->hash_output_length)
-            throw new Exception("HashStream::Initialize output_max < algorithm->hash_output_length", 0);
+            throw FatalError("HashStream::Initialize output_max < algorithm->hash_output_length", 0);
 
         bool hmac = secret_length > 0;
         if (hmac != algorithm->hmac)
-            throw new Exception("HashStream::Initialize hmac != algorithm->hmac", 0);
+            throw FatalError("HashStream::Initialize hmac != algorithm->hmac", 0);
 
         this->output = output;
         this->output_length = algorithm->hash_output_length;
 
         NTSTATUS error = BCryptCreateHash(algorithm->hash_algorithm, &this->hash, this->hash_object, sizeof(this->hash_object), secret, secret_length, 0);
         if (error != 0)
-            throw new Exception("BCryptCreateHash", error);
+            throw FatalError("BCryptCreateHash", error);
     }
 
-    void HashStream::Write(const byte* elements, uint32 count)
+    void HashStream::write_elements(const byte* elements, uint32 count)
     {
         NTSTATUS error = BCryptHashData(hash, (PUCHAR)elements, count, 0);
         if (error != 0)
-            throw new Exception("BCryptHashData", error);
+            throw FatalError("BCryptHashData", error);
     }
 
-    void HashStream::WriteEOF()
+    void HashStream::write_eof()
     {
         NTSTATUS error = BCryptFinishHash(hash, this->output, this->output_length, 0);
         if (error != 0)
-            throw new Exception("BCryptFinishHash", error);
+            throw FatalError("BCryptFinishHash", error);
     }
 }

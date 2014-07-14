@@ -1,15 +1,14 @@
 // Copyright © 2013 Brian Spanton
 
 #include "stdafx.h"
+#include "Basic.Globals.h"
 #include "Tls.ConnectionState.h"
-#include "Tls.NumberFrame.h"
 #include "Tls.RecordFrame.h"
 #include "Tls.Globals.h"
 
 namespace Tls
 {
     ConnectionState::ConnectionState() :
-        encryption_key(0),
         sequence_number(0)
     {
     }
@@ -18,7 +17,7 @@ namespace Tls
     {
     }
 
-    bool ConnectionState::Initialize(SecurityParameters* security_parameters)
+    bool ConnectionState::Initialize(std::shared_ptr<SecurityParameters> security_parameters)
     {
         wchar_t* algorithm;
 
@@ -47,19 +46,19 @@ namespace Tls
 
         NTSTATUS error = BCryptOpenAlgorithmProvider(&bulk_cipher_algorithm_handle, algorithm, 0, 0);
         if (error != 0)
-            throw new Exception("BCryptOpenAlgorithmProvider", error);
+            throw FatalError("BCryptOpenAlgorithmProvider", error);
 
-        std::vector<byte> key_blob;
+        ByteString key_blob;
         key_blob.reserve(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + this->encryption_key.size());
         key_blob.resize(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER));
         key_blob.insert(key_blob.end(), this->encryption_key.begin(), this->encryption_key.end());
 
-        BCRYPT_KEY_DATA_BLOB_HEADER* header = (BCRYPT_KEY_DATA_BLOB_HEADER*)&key_blob[0];
+        BCRYPT_KEY_DATA_BLOB_HEADER* header = (BCRYPT_KEY_DATA_BLOB_HEADER*)key_blob.address();
         header->dwMagic = BCRYPT_KEY_DATA_BLOB_MAGIC;
         header->dwVersion = BCRYPT_KEY_DATA_BLOB_VERSION1;
         header->cbKeyData = this->encryption_key.size();
 
-        error = BCryptImportKey(bulk_cipher_algorithm_handle, 0, BCRYPT_KEY_DATA_BLOB, &this->key_handle, 0, 0, &key_blob[0], key_blob.size(), 0);
+        error = BCryptImportKey(bulk_cipher_algorithm_handle, 0, BCRYPT_KEY_DATA_BLOB, &this->key_handle, 0, 0, key_blob.address(), key_blob.size(), 0);
         if (error != 0)
             return Basic::globals->HandleError("BCryptImportKey", error);
 
@@ -68,20 +67,16 @@ namespace Tls
         return true;
     }
 
-    void ConnectionState::MAC(Record* compressed, opaque* output, uint8 output_max)
+    void ConnectionState::MAC(Record* compressed, byte* output, uint8 output_max)
     {
-        NumberFrame<uint64>::Ref seqFrame = New<NumberFrame<uint64> >();
-        seqFrame->Initialize(&this->sequence_number);
+        Serializer<uint64> sequence_number_serializer(&this->sequence_number);
+        Serializer<Record> compressed_serializer(compressed);
 
-        RecordFrame::Ref compressedFrame = New<RecordFrame>();
-        compressedFrame->Initialize(compressed);
-
-        ISerializable* seed[] = { seqFrame, compressedFrame, };
+        IStreamWriter<byte>* seed[] = { &sequence_number_serializer, &compressed_serializer, };
 
         Tls::globals->HMAC_hash(
             this->security_parameters->mac_algorithm,
-            &this->MAC_key[0],
-            this->MAC_key.size(),
+            &this->MAC_key,
             seed,
             _countof(seed),
             output,

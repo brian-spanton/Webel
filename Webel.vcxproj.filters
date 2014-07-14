@@ -64,13 +64,7 @@
     <ClInclude Include="Tls.AlertProtocol.h">
       <Filter>Tls</Filter>
     </ClInclude>
-    <ClInclude Include="Tls.CertificatesFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
     <ClInclude Include="Tls.CertificateStatusRequestFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.CipherSuitesFrame.h">
       <Filter>Tls</Filter>
     </ClInclude>
     <ClInclude Include="Tls.ClientHelloFrame.h">
@@ -79,19 +73,10 @@
     <ClInclude Include="Tls.ConnectionState.h">
       <Filter>Tls</Filter>
     </ClInclude>
-    <ClInclude Include="Tls.ECPointFormatListFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.EllipticCurveListFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
     <ClInclude Include="Tls.HandshakeFrame.h">
       <Filter>Tls</Filter>
     </ClInclude>
     <ClInclude Include="Tls.HandshakeProtocol.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.NumberFrame.h">
       <Filter>Tls</Filter>
     </ClInclude>
     <ClInclude Include="Tls.OCSPStatusRequestFrame.h">
@@ -109,9 +94,6 @@
     <ClInclude Include="Tls.RecordLayer.h">
       <Filter>Tls</Filter>
     </ClInclude>
-    <ClInclude Include="Tls.ResponderIDListFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
     <ClInclude Include="Tls.SecurityParameters.h">
       <Filter>Tls</Filter>
     </ClInclude>
@@ -119,15 +101,6 @@
       <Filter>Tls</Filter>
     </ClInclude>
     <ClInclude Include="Tls.ServerNameFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.ServerNameListFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.VectorFrame.h">
-      <Filter>Tls</Filter>
-    </ClInclude>
-    <ClInclude Include="Tls.VectorFrames.h">
       <Filter>Tls</Filter>
     </ClInclude>
     <ClInclude Include="Html.TextNode.h">
@@ -178,18 +151,6 @@
     <ClInclude Include="Basic.IBufferedStream.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.ICompletion.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.IProtocolFactory.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.IRefCounted.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.ISerializable.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Basic.IStream.h">
       <Filter>Basic</Filter>
     </ClInclude>
@@ -208,12 +169,6 @@
     <ClInclude Include="Basic.NameValueCollection.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.Ref.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.RefCounted.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Basic.Socket.h">
       <Filter>Basic</Filter>
     </ClInclude>
@@ -224,9 +179,6 @@
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.TextWriter.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.AsyncBytes.h">
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.ClientSocket.h">
@@ -245,9 +197,6 @@
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.CountStream.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.DebugLog.h">
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.DecNumberStream.h">
@@ -337,9 +286,6 @@
     <ClInclude Include="Basic.SingleByteDecoder.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.DebugStream.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Basic.MatchFrame.h">
       <Filter>Basic</Filter>
     </ClInclude>
@@ -380,9 +326,6 @@
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.IProcess.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.ByteVector.h">
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.IEvent.h">
@@ -460,7 +403,6 @@
     <ClInclude Include="Service.Types.h">
       <Filter>Service</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="Tls.HeartbeatExtensionFrame.h">
       <Filter>Tls</Filter>
     </ClInclude>
@@ -469,6 +411,33 @@
     </ClInclude>
     <ClInclude Include="Tls.HeartbeatProtocol.h">
       <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Ftp.Server.h">
+      <Filter>Ftp</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.Endpoint.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Ftp.Globals.h">
+      <Filter>Ftp</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.SignatureAndHashAlgorithmFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.LogStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IStreamWriter.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ICompleter.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Job.h">
+      <Filter>Basic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -628,16 +597,10 @@
     <ClCompile Include="Basic.TextWriter.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.AsyncBytes.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
     <ClCompile Include="Basic.ClientSocket.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.Cng.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
-    <ClCompile Include="Basic.CommandFrame.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.ConnectedSocket.cpp">
@@ -647,9 +610,6 @@
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.CountStream.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
-    <ClCompile Include="Basic.DebugLog.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.Globals.cpp">
@@ -694,9 +654,6 @@
     <ClCompile Include="Basic.Types.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.IgnoreFrame.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
     <ClCompile Include="Http.LengthBodyFrame.cpp">
       <Filter>Http</Filter>
     </ClCompile>
@@ -713,9 +670,6 @@
       <Filter>Http</Filter>
     </ClCompile>
     <ClCompile Include="Basic.SingleByteDecoder.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
-    <ClCompile Include="Basic.DebugStream.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.String.cpp">
@@ -754,9 +708,6 @@
     <ClCompile Include="Basic.Frame.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.ByteVector.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
     <ClCompile Include="Tls.Types.cpp">
       <Filter>Tls</Filter>
     </ClCompile>
@@ -774,9 +725,6 @@
     </ClCompile>
     <ClCompile Include="Tls.ServerHandshake.cpp">
       <Filter>Tls</Filter>
-    </ClCompile>
-    <ClCompile Include="Basic.RefCounted.cpp">
-      <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Http.MediaTypeStream.cpp">
       <Filter>Http</Filter>
@@ -820,7 +768,6 @@
     <ClCompile Include="Service.Types.cpp">
       <Filter>Service</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp">
       <Filter>Tls</Filter>
     </ClCompile>
@@ -829,6 +776,27 @@
     </ClCompile>
     <ClCompile Include="Tls.HeartbeatProtocol.cpp">
       <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Ftp.Server.cpp">
+      <Filter>Ftp</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.Endpoint.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Ftp.Globals.cpp">
+      <Filter>Ftp</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.SignatureAndHashAlgorithmFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.LogStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Job.cpp">
+      <Filter>Basic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -853,5 +821,19 @@
     <Filter Include="Service">
       <UniqueIdentifier>{e7ae404a-c6ee-4fba-ba6b-c933bffa4746}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Ftp">
+      <UniqueIdentifier>{f1cde2ec-7922-489d-b99a-36299c66b895}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Project">
+      <UniqueIdentifier>{3cc562fd-369c-4160-a320-5e75a28611dd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt">
+      <Filter>Project</Filter>
+    </Text>
+    <Text Include="README.txt">
+      <Filter>Project</Filter>
+    </Text>
   </ItemGroup>
 </Project>

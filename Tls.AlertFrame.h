@@ -4,13 +4,12 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class AlertFrame : public Frame, public ISerializable
+    class AlertFrame : public Frame
     {
     private:
         enum State
@@ -23,14 +22,22 @@ namespace Tls
         };
 
         Alert* alert;
-        Inline<NumberFrame<AlertLevel> > level_frame;
-        Inline<NumberFrame<AlertDescription> > description_frame;
+        NumberFrame<AlertLevel> level_frame;
+        NumberFrame<AlertDescription> description_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<AlertFrame, IProcess> Ref;
+        AlertFrame(Alert* alert);
+    };
 
-        void Initialize(Alert* alert);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<Alert>
+    {
+        void operator()(const Alert* value, IStream<byte>* stream) const
+        {
+            serialize<AlertLevel>()(&value->level, stream);
+            serialize<AlertDescription>()(&value->description, stream);
+        }
     };
 }

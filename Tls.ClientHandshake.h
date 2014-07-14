@@ -7,7 +7,6 @@
 #include "Tls.SecurityParameters.h"
 #include "Tls.Types.h"
 #include "Tls.ServerHelloFrame.h"
-#include "Tls.CertificatesFrame.h"
 
 namespace Tls
 {
@@ -58,15 +57,13 @@ namespace Tls
 
         ServerHello serverHello;
         Certificates certificates;
-        Inline<ServerHelloFrame> server_hello_frame;
-        Inline<CertificatesFrame> certificates_frame;
+        ServerHelloFrame server_hello_frame;
+        VectorFrame<Certificates> certificates_frame;
 
-        virtual void PartitionKeyMaterial(std::vector<opaque>* key_material);
+        virtual void PartitionKeyMaterial(ByteString* key_material);
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ClientHandshake, IProcess> Ref;
-
-        void Initialize(RecordLayer* session);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        ClientHandshake(RecordLayer* session);
     };
 }

@@ -7,7 +7,7 @@ namespace Html
 {
     using namespace Basic;
 
-    void FormattingElement::Initialize(ElementNode* element, TagToken* token)
+    void FormattingElement::Initialize(std::shared_ptr<ElementNode> element, std::shared_ptr<TagToken> token)
     {
         this->element = element;
         this->token = token;
@@ -15,7 +15,7 @@ namespace Html
 
     bool FormattingElement::equals(ElementNode* element, TagToken* token)
     {
-        if (!this->element->has_element_name(element->element_name))
+        if (!this->element->has_element_name(element->element_name.get()))
             return false;
 
         if (this->element->get_attribute_count() != element->get_attribute_count())
@@ -31,7 +31,7 @@ namespace Html
 
     bool FormattingElement::IsMarker()
     {
-        if (this->element.item() == 0)
+        if (this->element.get() == 0)
             return true;
 
         return false;

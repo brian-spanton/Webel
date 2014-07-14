@@ -12,17 +12,15 @@ namespace Web
     using namespace Basic;
     using namespace Html;
 
-    class Link : public IRefCounted
+    class Link
     {
     public:
-        typedef Basic::Ref<Link> Ref;
+        std::shared_ptr<ElementNode> element;
+        std::shared_ptr<Uri> url;
+        UnicodeStringRef text;
 
-        Basic::Ref<ElementNode> element; // REF
-        Uri::Ref url; // REF
-        UnicodeString::Ref text; // REF
-
-        void Initialize(ElementNode* element, Uri* document_url);
+        void Initialize(std::shared_ptr<ElementNode> element, std::shared_ptr<Uri> document_url);
     };
 
-    typedef std::vector<Link::Ref> LinkList; // REF
+    typedef std::vector<std::shared_ptr<Link> > LinkList;
 }

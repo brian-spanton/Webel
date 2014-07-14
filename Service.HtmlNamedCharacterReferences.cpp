@@ -7,75 +7,69 @@
 
 namespace Service
 {
-    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences()
+    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+        characters_completion(completion),
+        characters_cookie(cookie),
+        client(std::make_shared<Web::Client>())
     {
-    }
-
-    void HtmlNamedCharacterReferences::Initialize(Basic::Ref<IProcess> completion, ByteString::Ref cookie)
-    {
-        __super::Initialize();
-
-        this->codepoints_member_name.Initialize("codepoints");
-
-        this->characters_completion = completion;
-        this->characters_cookie = cookie;
-
-        this->client = New<Web::Client>();
-        this->client->Initialize();
+        initialize_unicode(&this->codepoints_member_name, "codepoints");
 
         // http://www.whatwg.org/specs/web-apps/current-work/multipage/named-character-references.html#named-character-references
-
-        Http::Uri::Ref url = New<Http::Uri>();
-        url->Initialize("http://www.whatwg.org/specs/web-apps/current-work/multipage/entities.json");
-
-        this->client->Get(url, this, (ByteString*)0);
     }
 
-    void HtmlNamedCharacterReferences::Process(IEvent* event, bool* yield)
+    void HtmlNamedCharacterReferences::start()
     {
-        (*yield) = true;
+        std::shared_ptr<Uri> url = std::make_shared<Uri>();
+        url->Initialize("http://www.whatwg.org/specs/web-apps/current-work/multipage/entities.json");
 
-        switch (frame_state())
+        this->client->Get(url, this->shared_from_this(), ByteStringRef());
+    }
+
+    void HtmlNamedCharacterReferences::consider_event(IEvent* event)
+    {
+        switch (get_state())
         {
         case State::named_character_reference_state:
             switch(event->get_type())
             {
             case Http::EventType::response_headers_event:
                 {
-                    Http::Response::Ref response = this->client->history.back().response;
+                    std::shared_ptr<Http::Response> response = this->client->history.back().response;
                     if (response->code != 200)
                     {
-                        Uri::Ref url;
+                        std::shared_ptr<Uri> url;
                         this->client->get_url(&url);
 
-                        url->SerializeTo(Basic::globals->DebugStream(), 0, 0);
+                        url->write_to_stream(Basic::globals->LogStream(), 0, 0);
                         Basic::globals->DebugWriter()->WriteLine(" did not return 200");
 
                         switch_to_state(State::done_state);
-                        break;
+                        return;
                     }
 
-                    UnicodeString::Ref charset;
+                    UnicodeStringRef charset;
                     bool success = this->client->get_content_type_charset(&charset);
 
-                    this->json_parser = New<Json::Parser>();
-                    this->json_parser->Initialize((Html::Node*)0, charset);
+                    this->json_parser = std::make_shared<Json::Parser>();
+                    this->json_parser->Initialize(std::shared_ptr<Html::Node>(), charset);
 
                     this->client->set_body_stream(this->json_parser);
+
+                    throw Yield("event consumed");
                 }
                 break;
 
             case Http::EventType::response_complete_event:
                 {
                     if (this->client->history.size() == 0)
-                        break;
+                        throw FatalError("was Yield... expecting to have this completed request in our history...");
 
-                    Http::Response::Ref response = this->client->history.back().response;
+                    std::shared_ptr<Http::Response> response = this->client->history.back().response;
 
                     if (this->json_parser->text->value->type != Json::Value::Type::object_value)
-                        break;
+                        throw FatalError("was Yield... expecting the json body to be an object type");
 
-                    Json::Object::Ref root = (Json::Object*)this->json_parser->text->value.item();
+                    std::shared_ptr<Json::Object> root = std::static_pointer_cast<Json::Object>(this->json_parser->text->value);
 
                     for (Json::MemberList::iterator mapping = root->members.begin(); mapping != root->members.end(); mapping++)
                     {
@@ -88,7 +82,7 @@ namespace Service
                         if (mapping->second->type != Json::Value::Type::object_value)
                             continue;
 
-                        Json::Object::Ref line = (Json::Object*)mapping->second.item();
+                        std::shared_ptr<Json::Object> line = std::static_pointer_cast<Json::Object>(mapping->second);
 
                         Json::MemberList::iterator member = line->members.find(codepoints_member_name);
                         if (member == line->members.end())
@@ -97,19 +91,19 @@ namespace Service
                         if (member->second->type != Json::Value::Type::array_value)
                             continue;
 
-                        Json::Array::Ref codepoints = (Json::Array*)member->second.item();
+                        std::shared_ptr<Json::Array> codepoints = std::static_pointer_cast<Json::Array>(member->second);
 
-                        UnicodeString::Ref unicode_name = New<UnicodeString>();
+                        UnicodeStringRef unicode_name = std::make_shared<UnicodeString>();
                         unicode_name->append(mapping->first->cbegin() + 1, mapping->first->cend());
 
-                        UnicodeString::Ref list = New<UnicodeString>();
+                        UnicodeStringRef list = std::make_shared<UnicodeString>();
 
                         for (Json::ValueList::iterator codepoint = codepoints->elements.begin(); codepoint != codepoints->elements.end(); codepoint++)
                         {
                             if ((*codepoint)->type != Json::Value::Type::number_value)
                                 continue;
 
-                            Json::Number::Ref number = (Json::Number*)codepoint->item();
+                            std::shared_ptr<Json::Number> number = std::static_pointer_cast<Json::Number>(*codepoint);
                             list->push_back((Codepoint)number->value);
                         }
 
@@ -122,27 +116,27 @@ namespace Service
 
                     Basic::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d HTML named character references\n", Html::globals->named_character_references_table->size());
 
-                    Basic::Ref<IProcess> completion = this->characters_completion;
+                    std::shared_ptr<IProcess> completion = this->characters_completion;
                     this->characters_completion = 0;
 
                     CharactersCompleteEvent event;
                     event.cookie = this->characters_cookie;
                     this->characters_cookie = 0;
 
-                    if (completion.item() != 0)
-                        completion->Process(&event);
+                    if (completion.get() != 0)
+                        produce_event(completion.get(), &event);
 
                     switch_to_state(State::done_state);
                 }
                 break;
 
             default:
-                throw new Exception("Html::Globals::Complete unexpected event");
+                throw FatalError("Html::Globals::Complete unexpected event");
             }
             break;
 
         default:
-            throw new Exception("Html::Globals::Complete unexpected state");
+            throw FatalError("Html::Globals::Complete unexpected state");
         }
     }
 }

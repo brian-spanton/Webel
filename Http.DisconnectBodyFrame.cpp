@@ -8,36 +8,34 @@ namespace Http
 {
     using namespace Basic;
 
-    void DisconnectBodyFrame::Initialize(IStream<byte>* body_stream)
+    DisconnectBodyFrame::DisconnectBodyFrame(std::shared_ptr<IStream<byte> > body_stream) :
+        body_stream(body_stream)
     {
-        __super::Initialize();
-        this->body_stream = body_stream;
     }
 
-    void DisconnectBodyFrame::Process(IEvent* event, bool* yield)
+    void DisconnectBodyFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::receiving_body_state:
-            if (event->get_type() == EventType::element_stream_ending_event)
             {
-                switch_to_state(State::done_state);
-            }
-            else
-            {
+                if (event->get_type() == EventType::element_stream_ending_event)
+                {
+                    switch_to_state(State::done_state);
+                    return;
+                }
+
                 const byte* elements;
                 uint32 count;
 
-                if (!Event::Read(event, 0xffffffff, &elements, &count, yield))
-                    return;
+                Event::Read(event, 0xffffffff, &elements, &count);
 
-                this->body_stream->Write(elements, count);
-                (*yield) = true;
+                this->body_stream->write_elements(elements, count);
             }
             break;
 
         default:
-            throw new Exception("Http::DisconnectBodyFrame::Process unexpected state");
+            throw FatalError("Http::DisconnectBodyFrame::handle_event unexpected state");
         }
     }
 }

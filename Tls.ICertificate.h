@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include "Basic.IRefCounted.h"
 #include "Tls.Types.h"
 
 namespace Tls
 {
-    __interface ICertificate : public Basic::IRefCounted
+    __interface ICertificate
     {
         Certificates* Certificates();
         bool CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);

@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Basic.HashAlgorithm.h"
 #include "Basic.HashStream.h"
+#include "Basic.Globals.h"
 #include "Tls.Globals.h"
 #include "Tls.SecurityParameters.h"
 
@@ -20,40 +21,43 @@ namespace Tls
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_3DES_EDE_CBC_SHA);
         //this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA); // $$
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_RC4_128_MD5);
+
+        initialize_ascii(&client_finished_label, "client finished");
+        initialize_ascii(&server_finished_label, "server finished");
+        initialize_ascii(&master_secret_label, "master secret");
+        initialize_ascii(&key_expansion_label, "key expansion");
     }
 
-    void Globals::PRF(PRFAlgorithm prf_algorithm, opaque* secret, uint32 secret_length, opaque* label, uint32 label_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_length)
+    void Globals::PRF(PRFAlgorithm prf_algorithm, IVector<byte>* secret, ByteString* label, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_length)
     {
-        std::vector<ISerializable*> currentSeed;
+        Serializer<ByteString> label_serializer(label);
 
-        MemoryRange::Ref labelFrame = New<MemoryRange>();
-        labelFrame->Initialize(label, label_length);
-
-        currentSeed.insert(currentSeed.end(), labelFrame);
+        std::vector<IStreamWriter<byte>*> currentSeed;
+        currentSeed.insert(currentSeed.end(), &label_serializer);
         currentSeed.insert(currentSeed.end(), seed, seed + seed_count);
 
-        PRF_hash(prf_algorithm, secret, secret_length, &currentSeed[0], currentSeed.size(), output, output_length);
+        PRF_hash(prf_algorithm, secret, &*currentSeed.begin(), currentSeed.size(), output, output_length);
     }
 
-    void Globals::PRF_hash(PRFAlgorithm prf_algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_length)
+    void Globals::PRF_hash(PRFAlgorithm prf_algorithm, IVector<byte>* secret, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_length)
     {
         switch(prf_algorithm)
         {
         case PRFAlgorithm::tls_prf_tls_v1:
             {
-                uint32 S_length = (secret_length + 1) / 2;
-                opaque* S1 = secret;
-                opaque* S2 = secret + secret_length - S_length;
+                uint32 S_length = (secret->size() + 1) / 2;
+                byte* S1 = secret->address();
+                byte* S2 = S1 + secret->size() - S_length;
 
-                std::vector<opaque> md5_stream;
+                ByteString md5_stream;
                 md5_stream.resize(2 * output_length);
-                P_hash(BCRYPT_MD5_ALGORITHM, S1, S_length, seed, seed_count, &md5_stream[0], output_length, md5_stream.size());
+                P_hash(BCRYPT_MD5_ALGORITHM, S1, S_length, seed, seed_count, md5_stream.address(), output_length, md5_stream.size());
 
                 md5_stream.resize(output_length);
 
-                std::vector<opaque> sha1_stream;
+                ByteString sha1_stream;
                 sha1_stream.resize(2 * output_length);
-                P_hash(BCRYPT_SHA1_ALGORITHM, S2, S_length, seed, seed_count, &sha1_stream[0], output_length, sha1_stream.size());
+                P_hash(BCRYPT_SHA1_ALGORITHM, S2, S_length, seed, seed_count, sha1_stream.address(), output_length, sha1_stream.size());
 
                 sha1_stream.resize(output_length);
 
@@ -63,39 +67,41 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::PRF unsupported PRFAlgorithm", 0);
+            throw FatalError("Tls::PRF unsupported PRFAlgorithm", 0);
         }
     }
 
-    void Globals::P_hash(LPCWSTR algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_min, uint32 output_max)
+    void Globals::P_hash(LPCWSTR algorithm, byte* secret, uint32 secret_length, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_min, uint32 output_max)
     {
-        Basic::HashAlgorithm::Ref hashAlgorithm = New<Basic::HashAlgorithm>();
+        std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
         hashAlgorithm->Initialize(algorithm, true);
 
-        std::vector<ISerializable*> a_minus_one;
+        std::vector<IStreamWriter<byte>*> a_minus_one;
         a_minus_one.insert(a_minus_one.end(), seed, seed + seed_count);
 
         // make sure this is outside the loop so it doesn't get deleted before it's used
-        ByteVector::Ref a_current = New<ByteVector>();
+        ByteString a_current;
 
         for(uint32 generated_length = 0; generated_length < output_min; generated_length += hashAlgorithm->hash_output_length)
         {
-            a_current->resize(hashAlgorithm->hash_output_length);
+            a_current.resize(hashAlgorithm->hash_output_length);
 
-            Hash(hashAlgorithm.item(), secret, secret_length, &a_minus_one[0], a_minus_one.size(), a_current->FirstElement(), a_current->size());
+            Hash(hashAlgorithm.get(), secret, secret_length, &*a_minus_one.begin(), a_minus_one.size(), a_current.address(), a_current.size());
+
+            Serializer<ByteString> a_current_serializer(&a_current);
 
             a_minus_one.clear();
-            a_minus_one.push_back(a_current);
+            a_minus_one.push_back(&a_current_serializer);
 
-            std::vector<ISerializable*> p_seed;
-            p_seed.insert(p_seed.end(), a_current);
+            std::vector<IStreamWriter<byte>*> p_seed;
+            p_seed.insert(p_seed.end(), &a_current_serializer);
             p_seed.insert(p_seed.end(), seed, seed + seed_count);
 
-            Hash(hashAlgorithm, secret, secret_length, &p_seed[0], p_seed.size(), output + generated_length, output_max - generated_length);
+            Hash(hashAlgorithm.get(), secret, secret_length, &*p_seed.begin(), p_seed.size(), output + generated_length, output_max - generated_length);
         }
     }
 
-    void Globals::HMAC_hash(MACAlgorithm mac_algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 expected_output_length)
+    void Globals::HMAC_hash(MACAlgorithm mac_algorithm, ByteString* secret, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 expected_output_length)
     {
         LPCWSTR cng_algorithm;
 
@@ -114,29 +120,29 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::HMAC_hash unsupported mac_algorithm", 0);
+            throw FatalError("Tls::HMAC_hash unsupported mac_algorithm", 0);
         }
 
-        Basic::Ref<Basic::HashAlgorithm> hashAlgorithm = New<Basic::HashAlgorithm>();
+        std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
         hashAlgorithm->Initialize(cng_algorithm, true);
 
         if (expected_output_length != hashAlgorithm->hash_output_length)
-            throw new Exception("expected_output_length != hashAlgorithm->hash_output_length", 0);
+            throw FatalError("expected_output_length != hashAlgorithm->hash_output_length", 0);
 
-        Hash(hashAlgorithm, secret, secret_length, seed, seed_count, output, expected_output_length);
+        Hash(hashAlgorithm.get(), secret->address(), secret->size(), seed, seed_count, output, expected_output_length);
     }
 
-    void Globals::Hash(Basic::HashAlgorithm* hashAlgorithm, byte* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, byte* output, uint32 output_max)
+    void Globals::Hash(Basic::HashAlgorithm* hashAlgorithm, byte* secret, uint32 secret_length, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_max)
     {
-        HashStream::Ref hashStream = New<HashStream>();
+        std::shared_ptr<HashStream> hashStream = std::make_shared<HashStream>();
         hashStream->Initialize(hashAlgorithm, secret, secret_length, output, output_max);
 
         for (uint32 i = 0; i < seed_count; i++)
         {
-            seed[i]->SerializeTo(hashStream);
+            seed[i]->write_to_stream(hashStream.get());
         }
 
-        hashStream->WriteEOF();
+        hashStream->write_eof();
     }
 
     bool Globals::SelectCipherSuite(CipherSuites* proposed_cipher_suites, CipherSuite* selected_cipher_suite)
@@ -154,14 +160,14 @@ namespace Tls
         return Basic::globals->HandleError("Tls::SelectCipherSuite no match", 0);
     }
 
-    void Globals::Partition(std::vector<opaque>* source, uint16 length, std::vector<opaque>* destination)
+    void Globals::Partition(ByteString* source, uint16 length, IStream<byte>* destination)
     {
         if (length > 0)
         {
             if (length > source->size())
-                throw new Exception("Tls::Partition length > source.size()", 0);
+                throw FatalError("Tls::Partition length > source.size()", 0);
 
-            destination->insert(destination->begin(), source->begin(), source->begin() + length);
+            destination->write_elements(source->address(), length);
             source->erase(source->begin(), source->begin() + length);
         }
     }

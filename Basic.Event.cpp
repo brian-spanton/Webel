@@ -2,39 +2,38 @@
 
 #include "stdafx.h"
 #include "Basic.Event.h"
+#include "Basic.Frame.h"
 
 namespace Basic
 {
     template <>
-    bool Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count, bool* yield)
+    void Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
     {
-        if (event->get_type() == EventType::ready_for_read_bytes_event)
+        if (event->get_type() != EventType::ready_for_read_bytes_event)
         {
-            ReadyForReadBytesEvent* read_event = (ReadyForReadBytesEvent*)event;
-            return read_event->element_source->Read(count, out_address, out_count, yield);
+            HandleError("unexpected event");
+            throw Yield("unexpected event");
         }
 
-        (*out_address) = 0;
-        (*out_count) = 0;
-        (*yield) = (count > 0);
-        return false;
+        ReadyForReadBytesEvent* read_event = (ReadyForReadBytesEvent*)event;
+        read_event->element_source->Read(count, out_address, out_count);
     }
 
     template <>
-    bool Event::ReadNext(IEvent* event, byte* element, bool* yield)
+    void Event::ReadNext(IEvent* event, byte* element)
     {
-        if (event->get_type() == EventType::ready_for_read_bytes_event)
+        if (event->get_type() != EventType::ready_for_read_bytes_event)
         {
-            ReadyForReadBytesEvent* read_event = (ReadyForReadBytesEvent*)event;
-            return read_event->element_source->ReadNext(element, yield);
+            HandleError("unexpected event");
+            throw Yield("unexpected event");
         }
 
-        (*yield) = true;
-        return false;
+        ReadyForReadBytesEvent* read_event = (ReadyForReadBytesEvent*)event;
+        read_event->element_source->ReadNext(element);
     }
 
     template <>
-    void Event::AddObserver(IEvent* event, IStream<byte>* stream)
+    void Event::AddObserver(IEvent* event, std::shared_ptr<IStream<byte> > stream)
     {
         if (event->get_type() == EventType::ready_for_read_bytes_event)
         {
@@ -47,11 +46,11 @@ namespace Basic
             return write_event->element_source->AddObserver(stream);
         }
 
-        throw new Exception("Basic::Event::AddObserver");
+        throw FatalError("Basic::Event::AddObserver");
     }
 
     template <>
-    void Event::RemoveObserver(IEvent* event, IStream<byte>* stream)
+    void Event::RemoveObserver(IEvent* event, std::shared_ptr<IStream<byte> > stream)
     {
         if (event->get_type() == EventType::ready_for_read_bytes_event)
         {
@@ -64,39 +63,37 @@ namespace Basic
             return write_event->element_source->RemoveObserver(stream);
         }
 
-        throw new Exception("Basic::Event::RemoveObserver");
+        throw FatalError("Basic::Event::RemoveObserver");
     }
 
     template <>
-    bool Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count, bool* yield)
+    void Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
     {
-        if (event->get_type() == EventType::ready_for_read_codepoints_event)
+        if (event->get_type() != EventType::ready_for_read_codepoints_event)
         {
-            ReadyForReadCodepointsEvent* read_event = (ReadyForReadCodepointsEvent*)event;
-            return read_event->element_source->Read(count, out_address, out_count, yield);
+            HandleError("unexpected event");
+            throw Yield("unexpected event");
         }
 
-        (*out_address) = 0;
-        (*out_count) = 0;
-        (*yield) = (count > 0);
-        return false;
+        ReadyForReadCodepointsEvent* read_event = (ReadyForReadCodepointsEvent*)event;
+        read_event->element_source->Read(count, out_address, out_count);
     }
 
     template <>
-    bool Event::ReadNext(IEvent* event, Codepoint* element, bool* yield)
+    void Event::ReadNext(IEvent* event, Codepoint* element)
     {
-        if (event->get_type() == EventType::ready_for_read_codepoints_event)
+        if (event->get_type() != EventType::ready_for_read_codepoints_event)
         {
-            ReadyForReadCodepointsEvent* read_event = (ReadyForReadCodepointsEvent*)event;
-            return read_event->element_source->ReadNext(element, yield);
+            HandleError("unexpected event");
+            throw Yield("unexpected event");
         }
 
-        (*yield) = true;
-        return false;
+        ReadyForReadCodepointsEvent* read_event = (ReadyForReadCodepointsEvent*)event;
+        read_event->element_source->ReadNext(element);
     }
 
     template <>
-    void Event::AddObserver(IEvent* event, IStream<Codepoint>* stream)
+    void Event::AddObserver(IEvent* event, std::shared_ptr<IStream<Codepoint> > stream)
     {
         if (event->get_type() == EventType::ready_for_read_codepoints_event)
         {
@@ -109,11 +106,11 @@ namespace Basic
             return write_event->element_source->AddObserver(stream);
         }
 
-        throw new Exception("Basic::Event::AddObserver");
+        throw FatalError("Basic::Event::AddObserver");
     }
 
     template <>
-    void Event::RemoveObserver(IEvent* event, IStream<Codepoint>* stream)
+    void Event::RemoveObserver(IEvent* event, std::shared_ptr<IStream<Codepoint> > stream)
     {
         if (event->get_type() == EventType::ready_for_read_codepoints_event)
         {
@@ -126,7 +123,7 @@ namespace Basic
             return write_event->element_source->RemoveObserver(stream);
         }
 
-        throw new Exception("Basic::Event::RemoveObserver");
+        throw FatalError("Basic::Event::RemoveObserver");
     }
 
     void Event::UndoReadNext(IEvent* event)
@@ -142,6 +139,6 @@ namespace Basic
             return read_event->element_source->UndoReadNext();
         }
 
-        throw new Exception("Basic::Event::UndoReadNext");
+        throw FatalError("Basic::Event::UndoReadNext");
     }
 }

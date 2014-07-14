@@ -3,16 +3,14 @@
 #pragma once
 
 #include "Basic.IProcess.h"
-#include "Basic.ISerializable.h"
 #include "Basic.MemoryRange.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class PreMasterSecretFrame : public Frame, public ISerializable
+    class PreMasterSecretFrame : public Frame
     {
     private:
         enum State
@@ -25,14 +23,22 @@ namespace Tls
         };
 
         PreMasterSecret* pre_master_secret;
-        Inline<NumberFrame<uint16> > version_frame;
-        Inline<MemoryRange> random_frame;
+        NumberFrame<uint16> version_frame;
+        MemoryRange random_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<PreMasterSecretFrame, IProcess> Ref;
+        PreMasterSecretFrame(PreMasterSecret* pre_master_secret);
+    };
 
-        void Initialize(PreMasterSecret* pre_master_secret);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<PreMasterSecret>
+    {
+        void operator()(const PreMasterSecret* value, IStream<byte>* stream) const
+        {
+            serialize<uint16>()(&value->client_version, stream);
+            serialize<const byte[46]>()(&value->random, stream);
+        }
     };
 }

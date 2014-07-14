@@ -4,7 +4,6 @@
 #include "Json.ValueFrame.h"
 #include "Json.Globals.h"
 #include "Json.Types.h"
-#include "Json.Tokenizer.h"
 #include "Json.Parser.h"
 #include "Json.ObjectFrame.h"
 #include "Json.ArrayFrame.h"
@@ -14,59 +13,57 @@ namespace Json
 {
     using namespace Basic;
 
-    void ValueFrame::Initialize(Html::Node::Ref domain, Value::Ref* value)
+    ValueFrame::ValueFrame(std::shared_ptr<Html::Node> domain, std::shared_ptr<Value>* value) :
+        domain(domain),
+        value(value)
     {
-        __super::Initialize();
-
-        this->domain = domain;
-        this->value = value;
     }
 
-    void ValueFrame::Process(IEvent* event, bool* yield)
+    void ValueFrame::reset()
     {
-        switch (frame_state())
+        __super::reset();
+    }
+
+    void ValueFrame::write_element(std::shared_ptr<Token> token)
+    {
+        switch (get_state())
         {
         case State::start_state:
             {
-                Token::Ref token;
-                if (!ReadyForReadTokenPointerEvent::ReadNext(event, &token, yield))
-                    return;
-
                 switch(token->type)
                 {
                 case Token::Type::begin_script_token:
-                    this->script_frame.Initialize(this->domain, &this->script);
+                    this->script = std::make_shared<Script>();
+                    this->script_frame = std::make_shared<ScriptFrame>(this->domain, this->script.get());
                     switch_to_state(State::script_frame_pending_state);
                     break;
 
                 case Token::Type::begin_array_token:
                     {
-                        Array::Ref value = New<Array>();
+                        std::shared_ptr<Array> value = std::make_shared<Array>();
                         (*this->value) = value;
 
-                        this->array_frame = New<ArrayFrame>();
-                        this->array_frame->Initialize(this->domain, value);
+                        this->array_frame = std::make_shared<ArrayFrame>(this->domain, value.get());
                         switch_to_state(State::array_frame_pending_state);
                     }
                     break;
 
                 case Token::Type::begin_object_token:
                     {
-                        Object::Ref value = New<Object>();
+                        std::shared_ptr<Object> value = std::make_shared<Object>();
                         (*this->value) = value;
 
-                        this->object_frame = New<ObjectFrame>();
-                        this->object_frame->Initialize(this->domain, value);
+                        this->object_frame = std::make_shared<ObjectFrame>(this->domain, value.get());
                         switch_to_state(State::object_frame_pending_state);
                     }
                     break;
 
                 case Token::Type::number_token:
                     {
-                        Number::Ref value = New<Number>();
+                        std::shared_ptr<Number> value = std::make_shared<Number>();
                         (*this->value) = value;
 
-                        value->value = ((NumberToken*)token.item())->value;
+                        value->value = ((NumberToken*)token.get())->value;
 
                         switch_to_state(State::done_state);
                     }
@@ -74,10 +71,10 @@ namespace Json
 
                 case Token::Type::string_token:
                     {
-                        String::Ref value = New<String>();
+                        std::shared_ptr<String> value = std::make_shared<String>();
                         (*this->value) = value;
 
-                        value->value = ((StringToken*)token.item())->value;
+                        value->value = ((StringToken*)token.get())->value;
 
                         switch_to_state(State::done_state);
                     }
@@ -85,10 +82,10 @@ namespace Json
 
                 case Token::Type::bool_token:
                     {
-                        Bool::Ref value = New<Bool>();
+                        std::shared_ptr<Bool> value = std::make_shared<Bool>();
                         (*this->value) = value;
 
-                        value->value = ((BoolToken*)token.item())->value;
+                        value->value = ((BoolToken*)token.get())->value;
 
                         switch_to_state(State::done_state);
                     }
@@ -96,7 +93,7 @@ namespace Json
 
                 case Token::Type::null_token:
                     {
-                        Null::Ref value = New<Null>();
+                        std::shared_ptr<Null> value = std::make_shared<Null>();
                         (*this->value) = value;
 
                         switch_to_state(State::done_state);
@@ -104,7 +101,6 @@ namespace Json
                     break;
 
                 default:
-                    ReadyForReadTokenPointerEvent::UndoReadNext(event);
                     switch_to_state(State::start_state_error);
                     break;
                 }
@@ -112,30 +108,31 @@ namespace Json
             break;
 
         case State::script_frame_pending_state:
-            if (this->script_frame.Pending())
             {
-                this->script_frame.Process(event, yield);
-            }
-            
-            if (this->script_frame.Failed())
-            {
-                switch_to_state(State::script_frame_failed);
-            }
-            else if (this->script_frame.Succeeded())
-            {
-                UnicodeString::Ref element;
+                this->script_frame->write_element(token);
 
-                bool success = this->script.Execute(this->domain, &element);
+                if (this->script_frame->in_progress())
+                    break;
+
+                if (this->script_frame->failed())
+                {
+                    switch_to_state(State::script_frame_failed);
+                    break;
+                }
+
+                UnicodeStringRef element;
+
+                bool success = this->script->Execute(this->domain, &element);
                 if (success)
                 {
-                    String::Ref value = New<String>();
+                    std::shared_ptr<String> value = std::make_shared<String>();
                     (*this->value) = value;
 
                     value->value = element;
                 }
                 else
                 {
-                    Null::Ref value = New<Null>();
+                    std::shared_ptr<Null> value = std::make_shared<Null>();
                     (*this->value) = value;
                 }
 
@@ -144,39 +141,41 @@ namespace Json
             break;
 
         case State::array_frame_pending_state:
-            if (this->array_frame->Pending())
             {
-                this->array_frame->Process(event, yield);
-            }
+                this->array_frame->write_element(token);
 
-            if (this->array_frame->Failed())
-            {
-                switch_to_state(State::array_frame_failed);
-            }
-            else if (this->array_frame->Succeeded())
-            {
+                if (this->array_frame->in_progress())
+                    return;
+
+                if (this->array_frame->failed())
+                {
+                    switch_to_state(State::array_frame_failed);
+                    return;
+                }
+
                 switch_to_state(State::done_state);
             }
             break;
 
         case State::object_frame_pending_state:
-            if (this->object_frame->Pending())
             {
-                this->object_frame->Process(event, yield);
-            }
+                this->object_frame->write_element(token);
 
-            if (this->object_frame->Failed())
-            {
-                switch_to_state(State::object_frame_failed);
-            }
-            else if (this->object_frame->Succeeded())
-            {
+                if (this->object_frame->in_progress())
+                    return;
+
+                if (this->object_frame->failed())
+                {
+                    switch_to_state(State::object_frame_failed);
+                    return;
+                }
+
                 switch_to_state(State::done_state);
             }
             break;
 
         default:
-            throw new Exception("Json::ValueFrame::Process unexpected state");
+            throw FatalError("Json::ValueFrame::handle_event unexpected state");
         }
     }
 }

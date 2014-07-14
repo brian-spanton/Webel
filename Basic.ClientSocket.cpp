@@ -2,26 +2,20 @@
 
 #include "stdafx.h"
 #include "Basic.ClientSocket.h"
-#include "Basic.AsyncBytes.h"
 #include "Basic.Globals.h"
 #include "Basic.Event.h"
 
 namespace Basic
 {
-    ClientSocket::ClientSocket()
+    ClientSocket::ClientSocket(std::shared_ptr<IProcess> protocol) :
+        ConnectedSocket(protocol),
+        state(State::new_state)
     {
-        this->sendBuffer.SetHolder(this);
     }
 
-    void ClientSocket::Initialize()
+    bool ClientSocket::Resolve(UnicodeStringRef host, uint16 port, sockaddr_in* remoteAddress)
     {
-        __super::Initialize();
-        this->state = State::new_state;
-    }
-
-    bool ClientSocket::Resolve(UnicodeString::Ref host, uint16 port, sockaddr_in* remoteAddress)
-    {
-        if (host.is_null_or_empty())
+        if (is_null_or_empty(host.get()))
         {
             Basic::globals->HandleError("host is empty", 0);
             return false;
@@ -34,13 +28,11 @@ namespace Basic
 
         ADDRINFOEXA* results;
 
-        ZeroMemory(&resolveAddress, sizeof(resolveAddress));
-
-        Inline<ByteString> host_bytes;
-        host->ascii_encode(&host_bytes);
+        ByteString host_bytes;
+        ascii_encode(host.get(), &host_bytes);
 
         // $ this DNS lookup isn't async, but should be.  possibly implement from scratch?
-        int error = GetAddrInfoExA((const char*)host_bytes.c_str(), 0, NS_DNS, 0, &hints, &results, 0, 0, 0, 0);
+        int error = GetAddrInfoExA((const char*)host_bytes.address(), 0, NS_DNS, 0, &hints, &results, 0, 0, 0, 0);
         if (error != NO_ERROR)
         {
             Basic::globals->HandleError("ClientSocket::Resolve WSAIoctl", WSAGetLastError());
@@ -65,7 +57,7 @@ namespace Basic
     void ClientSocket::StartConnect(sockaddr_in remoteAddress)
     {
         if (this->state != State::new_state)
-            throw new Exception("ClientSocket::StartConnect this->state != State::new_state");
+            throw FatalError("ClientSocket::StartConnect this->state != State::new_state");
 
         sockaddr_in localAddress;
         localAddress.sin_family = AF_INET;
@@ -74,80 +66,90 @@ namespace Basic
 
         int error = bind(this->socket, reinterpret_cast<const sockaddr*>(&localAddress), sizeof(localAddress));
         if (error == SOCKET_ERROR)
-            throw new Exception("ClientSocket::StartConnect bind", WSAGetLastError());
+            throw FatalError("ClientSocket::StartConnect bind", WSAGetLastError());
 
         this->state = State::bound_state;
 
         InitializePeer(&remoteAddress);
 
-        Basic::globals->PostCompletion(this, 0);
+        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::ready_for_send_type);
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
+
+        Basic::globals->QueueJob(job);
     }
 
-    void ClientSocket::CompleteOther(int transferred, int error)
+    void ClientSocket::CompleteReadyForSend()
     {
-        if (this->protocol.item() != 0)
+        std::shared_ptr<IProcess> protocol = this->protocol.lock();
+        if (protocol.get() != 0)
         {
             ReadyForWriteBytesEvent event;
             event.Initialize(&this->protocol_element_source);
-            this->protocol->Process(&event);
+            produce_event(protocol.get(), &event);
         }
     }
 
-    void ClientSocket::Write(const byte* elements, uint32 count)
+    void ClientSocket::write_elements(const byte* elements, uint32 count)
     {
         if (count == 0)
-            throw new Exception("ClientSocket::Write count == 0");
+            throw FatalError("ClientSocket::write_elements count == 0");
 
         if (this->state == State::receiving_state)
         {
-            __super::Write(elements, count);
+            __super::write_elements(elements, count);
         }
         else
         {
-            if (this->sendBuffer.item() == 0)
+            if (this->sendBuffer.get() == 0)
             {
-                this->sendBuffer = New<AsyncBytes>("1");
-                this->sendBuffer->Initialize(0x1000);
+                this->sendBuffer = std::make_shared<ByteString>();
+                this->sendBuffer->reserve(0x1000);
             }
 
-            this->sendBuffer->Write(elements, count);
+            this->sendBuffer->write_elements(elements, count);
 
             if (this->state == State::bound_state)
             {
                 this->state = State::connecting_state;
 
-                AsyncBytes::Ref sendBuffer = this->sendBuffer;
-                this->sendBuffer = 0;
-                sendBuffer->PrepareForSend("ClientSocket::Write ConnectEx", this);
+                std::shared_ptr<ByteString> sendBuffer;
+                sendBuffer.swap(this->sendBuffer);
+
+                std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::send_type);
+                job_context->bytes = sendBuffer;
+                job_context->wsabuf.buf = (char*)job_context->bytes->address();
+                job_context->wsabuf.len = job_context->bytes->size();
+
+                std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
 
                 uint32 count;
                 BOOL success = Basic::globals->ConnectEx(
                     this->socket,
                     reinterpret_cast<const sockaddr*>(&remoteAddress),
                     sizeof(remoteAddress),
-                    sendBuffer->bytes,
-                    sendBuffer->count,
+                    (void*)sendBuffer->address(),
+                    sendBuffer->size(),
                     &count,
-                    sendBuffer);
+                    job.get());
                 if (success == FALSE)
                 {
                     int error = WSAGetLastError();
                     if (error != ERROR_IO_PENDING)
                     {
-                        sendBuffer->Internal = error;
-                        Basic::globals->PostCompletion(this, sendBuffer);
+                        job->Internal = error;
+                        Basic::globals->QueueJob(job);
                     }
                 }
             }
         }
     }
 
-    void ClientSocket::CompleteWrite(AsyncBytes* bytes, int transferred, int error)
+    void ClientSocket::CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error)
     {
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED)
-                Basic::globals->HandleError("ConnectedSocket::CompleteWrite", error);
+                Basic::globals->HandleError("ConnectedSocket::CompleteSend", error);
 
             DisconnectAndNotifyProtocol();
         }
@@ -159,12 +161,12 @@ namespace Basic
                 {
                     this->state = State::receiving_state;
 
-                    StartReceive();
+                    StartReceive(bytes);
 
-                    if (this->sendBuffer.item() != 0)
+                    if (this->sendBuffer.get() != 0)
                     {
-                        AsyncBytes::Ref sendBuffer = this->sendBuffer;
-                        this->sendBuffer = 0;
+                        std::shared_ptr<ByteString> sendBuffer;
+                        sendBuffer.swap(this->sendBuffer);
 
                         Send(sendBuffer);
                     }
@@ -175,7 +177,7 @@ namespace Basic
                 break;
 
             default:
-                throw new Exception("ClientSocket::CompleteWrite unexpected state");
+                throw FatalError("ClientSocket::CompleteSend unexpected state");
             }
         }
     }

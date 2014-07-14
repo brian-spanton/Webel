@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Basic.ListenSocket.h"
-#include "Basic.ByteVector.h"
 #include "Http.RequestFrame.h"
 #include "Tls.ICertificate.h"
 
@@ -12,7 +11,7 @@ namespace Web
     using namespace Basic;
     using namespace Http;
 
-    class Proxy : public Frame
+    class Proxy : public Frame, public std::enable_shared_from_this<Proxy>
     {
     private:
         enum State
@@ -23,35 +22,33 @@ namespace Web
             done_state = Succeeded_State,
         };
 
-        Basic::Ref<IBufferedStream<byte> > client_peer; // REF
-        Basic::Ref<IBufferedStream<byte> > server_peer; // REF
-        Basic::Ref<IProcess> accept_completion; // REF
-        ByteString::Ref accept_cookie; // REF
-        Uri::Ref server_url; // REF
+        std::shared_ptr<IBufferedStream<byte> > client_peer;
+        std::shared_ptr<IBufferedStream<byte> > server_peer;
+        std::shared_ptr<IProcess> accept_completion;
+        ByteStringRef accept_cookie;
+        std::shared_ptr<Uri> server_url;
         Lock lock;
-        Basic::ByteVector::Ref buffer; // REF
+        std::shared_ptr<ByteString> buffer;
 
         void switch_to_state(State state);
 
+        virtual void IProcess::consider_event(IEvent* event);
+
     public:
-        typedef Basic::Ref<Proxy, IProcess> Ref;
+        Proxy(std::shared_ptr<IProcess> completion, ByteStringRef cookie, std::shared_ptr<Uri> server_url);
 
-        void Initialize(ListenSocket* listen_socket, Basic::Ref<Tls::ICertificate> certificate, Basic::Ref<IProcess> completion, ByteString::Ref cookie, Uri::Ref server_url);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        void process_from_server(IEvent* event, bool* yield);
+        void start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate);
+        void consider_server_event(IEvent* event);
     };
 
     class ServerProxy : public Frame
     {
     private:
-        Proxy::Ref proxy; // REF
+        std::shared_ptr<Proxy> proxy;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ServerProxy, IProcess> Ref;
-
-        void Initialize(Proxy::Ref proxy);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        void Initialize(std::shared_ptr<Proxy> proxy);
     };
 }

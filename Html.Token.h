@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include "Basic.Ref.h"
 #include "Html.Types.h"
 
 namespace Html
 {
     using namespace Basic;
 
-    class Token : public IRefCounted
+    class Token
     {
     public:
         enum Type
@@ -22,14 +21,12 @@ namespace Html
             end_of_file_token,
         };
 
-        typedef Basic::Ref<Token> Ref;
-
         Type type;
 
         Token(Type type);
 
-        virtual void GetDebugString(char* debug_string, int count);
+        virtual void GetDebugString(char* debug_string, int count) const;
     };
 
-    typedef Token* TokenPointer;
+    typedef std::shared_ptr<Token> TokenRef;
 }

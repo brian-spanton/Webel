@@ -18,13 +18,16 @@ namespace Http
             done_state = Succeeded_State,
         };
 
-        Ref<IStream<byte> > body_stream; // REF
+        std::shared_ptr<IStream<byte> > body_stream;
         uint32 bytes_expected;
         uint32 bytes_received;
 
-    public:
-        void Initialize(IStream<byte>* body_stream, uint32 bytes_expected);
+        virtual void IProcess::consider_event(IEvent* event);
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+    public:
+        LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream);
+        LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream, uint32 bytes_expected);
+
+        void reset(uint32 bytes_expected);
     };
 }

@@ -13,8 +13,8 @@ namespace Html
     {
     }
 
-    bool DocTypeToken::HasNameOf(ElementName* element)
+    bool DocTypeToken::has_name_of(ElementName* element)
     {
-        return this->name.equals<true>(element->name);
+        return equals<UnicodeString, true>(this->name.get(), element->name.get());
     }
 }

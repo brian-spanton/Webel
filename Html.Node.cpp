@@ -14,8 +14,7 @@ namespace Html
     using namespace Basic;
 
     Node::Node(NodeType type) :
-        type(type),
-        parent(0)
+        type(type)
     {
     }
 
@@ -23,26 +22,26 @@ namespace Html
     {
         if (this->children.size() == 0 || this->children.back()->type != TEXT_NODE)
         {
-            TextNode::Ref text_node = New<TextNode>();
-            Append(text_node.item());
+            std::shared_ptr<TextNode> text_node = std::make_shared<TextNode>();
+            Append(text_node);
         }
 
-        TextNode* text_node = static_cast<TextNode*>(this->children.back().item());
+        TextNode* text_node = static_cast<TextNode*>(this->children.back().get());
         text_node->data->push_back(c);
     }
 
-    void Node::Append(Node* node)
+    void Node::Append(std::shared_ptr<Node> node)
     {
-        node->parent = this;
+        node->parent = this->shared_from_this();
         node->html_document = this->html_document;
         this->children.push_back(node);
     }
 
-    void Node::Remove(Node* node)
+    void Node::Remove(std::shared_ptr<Node> node)
     {
         for (NodeList::iterator it = this->children.begin(); it != this->children.end(); it++)
         {
-            if (it->item() == node)
+            if (*it == node)
             {
                 this->children.erase(it);
                 return;
@@ -50,35 +49,41 @@ namespace Html
         }
     }
 
-    bool Node::has_ancestor(Node* node)
+    bool Node::has_ancestor(std::shared_ptr<Node> node)
     {
-        if (this->parent == node)
+        std::shared_ptr<Node> parent(this->parent);
+
+        if (parent == node)
             return true;
 
-        if (this->parent == 0)
+        if (parent.get() == 0)
             return false;
 
-        return this->parent->has_ancestor(node);
+        return parent->has_ancestor(node);
     }
 
     bool Node::has_ancestor(ElementName* element_name)
     {
-        if (this->parent == 0)
+        std::shared_ptr<Node> parent(this->parent);
+
+        if (parent.get() == 0)
             return false;
 
-        if (this->parent->type == NodeType::ELEMENT_NODE)
+        if (parent->type == NodeType::ELEMENT_NODE)
         {
-            if (((ElementNode*)this->parent)->has_element_name(element_name))
+            if (((ElementNode*)parent.get())->has_element_name(element_name))
                 return true;
         }
 
-        return this->parent->has_ancestor(element_name);
+        return parent->has_ancestor(element_name);
     }
 
     void Node::remove_from_parent()
     {
-        if (this->parent != 0)
-            this->parent->Remove(this);
+        std::shared_ptr<Node> parent(this->parent);
+
+        if (parent.get() != 0)
+            parent->Remove(shared_from_this());
     }
 
     void Node::take_all_child_nodes_of(Node* node)
@@ -101,13 +106,13 @@ namespace Html
         writer.WriteFormat<0x10>("%08X", (unsigned long)this);
     }
 
-    bool Node::find_element_with_child_count(Node* after, ElementName* name, uint32 child_count, Basic::Ref<ElementNode>* result)
+    bool Node::find_element_with_child_count(Node* after, ElementName* name, uint32 child_count, std::shared_ptr<ElementNode>* result)
     {
         if (after == 0)
         {
             if (this->type == NodeType::ELEMENT_NODE)
             {
-                ElementNode* element = (ElementNode*)this;
+                std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(shared_from_this());
 
                 if (element->has_element_name(name) && element->children.size() == child_count)
                 {
@@ -121,7 +126,7 @@ namespace Html
         {
             if (after != 0)
             {
-                if ((*it).item() == after)
+                if ((*it).get() == after)
                 {
                     after = 0;
                 }
@@ -145,21 +150,21 @@ namespace Html
         return false;
     }
 
-    bool Node::find_element_with_attribute_prefix(Node* after, ElementName* name, UnicodeString* attribute, UnicodeString* value, Basic::Ref<ElementNode>* result)
+    bool Node::find_element_with_attribute_prefix(Node* after, ElementName* name, UnicodeStringRef attribute, UnicodeStringRef value, std::shared_ptr<ElementNode>* result)
     {
         if (after == 0)
         {
             if (this->type == NodeType::ELEMENT_NODE)
             {
-                ElementNode* element = (ElementNode*)this;
+                std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(shared_from_this());
 
                 if (element->has_element_name(name) &&
                     element->has_attribute(attribute))
                 {
-                    UnicodeString::Ref attribute_value;
+                    UnicodeStringRef attribute_value;
                     element->get_attribute(attribute, &attribute_value);
 
-                    if (attribute_value->starts_with<true>(value))
+                    if (attribute_value->starts_with<true>(value.get()))
                     {
                         (*result) = element;
                         return true;
@@ -172,7 +177,7 @@ namespace Html
         {
             if (after != 0)
             {
-                if ((*it).item() == after)
+                if ((*it).get() == after)
                 {
                     after = 0;
                 }
@@ -196,13 +201,13 @@ namespace Html
         return false;
     }
 
-    bool Node::find_element_with_attribute_value(Node* after, ElementName* name, UnicodeString* attribute, UnicodeString* value, Basic::Ref<ElementNode>* result)
+    bool Node::find_element_with_attribute_value(Node* after, ElementName* name, UnicodeStringRef attribute, UnicodeStringRef value, std::shared_ptr<ElementNode>* result)
     {
         if (after == 0)
         {
             if (this->type == NodeType::ELEMENT_NODE)
             {
-                ElementNode* element = (ElementNode*)this;
+                std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(shared_from_this());
 
                 if (element->has_element_name(name) &&
                     element->has_attribute_value(attribute, value))
@@ -217,7 +222,7 @@ namespace Html
         {
             if (after != 0)
             {
-                if ((*it).item() == after)
+                if ((*it).get() == after)
                 {
                     after = 0;
                 }
@@ -241,25 +246,25 @@ namespace Html
         return false;
     }
 
-    bool Node::find_element_with_text_value(Node* after, ElementName* name, UnicodeString* value, Basic::Ref<ElementNode>* result)
+    bool Node::find_element_with_text_value(Node* after, ElementName* name, UnicodeStringRef value, std::shared_ptr<ElementNode>* result)
     {
         if (after == 0)
         {
             if (this->type == NodeType::ELEMENT_NODE)
             {
-                ElementNode* element = (ElementNode*)this;
+                std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(shared_from_this());
 
                 if (element->has_element_name(name))
                 {
-                    UnicodeString::Ref text = New<UnicodeString>();
+                    UnicodeStringRef text = std::make_shared<UnicodeString>();
                     text->reserve(0x100);
 
-                    Inline<TextSanitizer> stream;
-                    stream.Initialize(text);
+                    std::shared_ptr<TextSanitizer> stream = std::make_shared<TextSanitizer>();
+                    stream->Initialize(text.get());
 
-                    element->extract_text(&stream);
+                    element->extract_text(stream.get());
 
-                    if (text.equals<true>(value))
+                    if (equals<UnicodeString, true>(text.get(), value.get()))
                     {
                         (*result) = element;
                         return true;
@@ -272,7 +277,7 @@ namespace Html
         {
             if (after != 0)
             {
-                if ((*it).item() == after)
+                if ((*it).get() == after)
                 {
                     after = 0;
                 }
@@ -296,15 +301,15 @@ namespace Html
         return false;
     }
 
-    bool Node::find_element(ElementName* name, UnicodeString* attribute_name, UnicodeString* attribute_value, Basic::Ref<ElementNode>* result)
+    bool Node::find_element(ElementName* name, UnicodeStringRef attribute_name, UnicodeStringRef attribute_value, std::shared_ptr<ElementNode>* result)
     {
         if (this->type == NodeType::ELEMENT_NODE)
         {
-            ElementNode* element = (ElementNode*)this;
+            std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(shared_from_this());
 
             if (element->has_element_name(name))
             {
-                if (attribute_name != 0 && attribute_value != 0)
+                if (attribute_name.get() != 0 && attribute_value.get() != 0)
                 {
                     if (element->has_attribute_value(attribute_name, attribute_value))
                     {
@@ -312,7 +317,7 @@ namespace Html
                         return true;
                     }
                 }
-                else if (attribute_name != 0)
+                else if (attribute_name.get() != 0)
                 {
                     if (element->has_attribute(attribute_name))
                     {
@@ -338,33 +343,33 @@ namespace Html
         return false;
     }
 
-    void Node::extract_text(IStream<Codepoint>* destination)
+    void Node::extract_text(IStream<Codepoint>* stream)
     {
         if (this->type == Html::NodeType::TEXT_NODE)
         {
             Html::TextNode* element = (Html::TextNode*)this;
-            element->write_to_human(destination, false);
+            element->write_to_human(stream, false);
             return;
         }
 
         for (Node::NodeList::iterator it = this->children.begin(); it != this->children.end(); it++)
         {
-            (*it)->extract_text(destination);
+            (*it)->extract_text(stream);
         }
     }
 
-    bool Node::first_text(IStream<Codepoint>* destination)
+    bool Node::first_text(IStream<Codepoint>* stream)
     {
         if (this->type == Html::NodeType::TEXT_NODE)
         {
             Html::TextNode* element = (Html::TextNode*)this;
-            element->write_to_human(destination, false);
+            element->write_to_human(stream, false);
             return true;
         }
 
         for (Node::NodeList::iterator it = this->children.begin(); it != this->children.end(); it++)
         {
-            bool success = (*it)->first_text(destination);
+            bool success = (*it)->first_text(stream);
             if (success)
                 return true;
         }

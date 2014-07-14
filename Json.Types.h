@@ -10,7 +10,7 @@ namespace Json
 {
     using namespace Basic;
 
-    class Token : public IRefCounted
+    class Token
     {
     public:
         enum Type
@@ -33,8 +33,6 @@ namespace Json
             null_token,
         };
 
-        typedef Basic::Ref<Token> Ref;
-
         Type type;
 
         void GetDebugString(char* debug_string, int count)
@@ -53,8 +51,6 @@ namespace Json
     class BeginScriptToken : public Token
     {
     public:
-        typedef Basic::Ref<BeginScriptToken> Ref;
-
         BeginScriptToken() : Token(begin_script_token)
         {
         }
@@ -63,8 +59,6 @@ namespace Json
     class EndScriptToken : public Token
     {
     public:
-        typedef Basic::Ref<EndScriptToken> Ref;
-
         EndScriptToken() : Token(end_script_token)
         {
         }
@@ -73,8 +67,6 @@ namespace Json
     class BeginParameterToken : public Token
     {
     public:
-        typedef Basic::Ref<BeginParameterToken> Ref;
-
         BeginParameterToken() : Token(begin_parameter_token)
         {
         }
@@ -83,8 +75,6 @@ namespace Json
     class EndParameterToken : public Token
     {
     public:
-        typedef Basic::Ref<EndParameterToken> Ref;
-
         EndParameterToken() : Token(end_parameter_token)
         {
         }
@@ -93,8 +83,6 @@ namespace Json
     class TokenSeparatorToken : public Token
     {
     public:
-        typedef Basic::Ref<TokenSeparatorToken> Ref;
-
         TokenSeparatorToken() : Token(token_separator_token)
         {
         }
@@ -103,9 +91,7 @@ namespace Json
     class TokenToken : public Token
     {
     public:
-        typedef Basic::Ref<TokenToken> Ref;
-
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef value;
 
         TokenToken() : Token(token_token)
         {
@@ -115,8 +101,6 @@ namespace Json
     class BeginArrayToken : public Token
     {
     public:
-        typedef Basic::Ref<BeginArrayToken> Ref;
-
         BeginArrayToken() : Token(begin_array_token)
         {
         }
@@ -125,8 +109,6 @@ namespace Json
     class BeginObjectToken : public Token
     {
     public:
-        typedef Basic::Ref<BeginObjectToken> Ref;
-
         BeginObjectToken() : Token(begin_object_token)
         {
         }
@@ -135,8 +117,6 @@ namespace Json
     class EndArrayToken : public Token
     {
     public:
-        typedef Basic::Ref<EndArrayToken> Ref;
-
         EndArrayToken() : Token(end_array_token)
         {
         }
@@ -145,8 +125,6 @@ namespace Json
     class EndObjectToken : public Token
     {
     public:
-        typedef Basic::Ref<EndObjectToken> Ref;
-
         EndObjectToken() : Token(end_object_token)
         {
         }
@@ -155,8 +133,6 @@ namespace Json
     class NameSeparatorToken : public Token
     {
     public:
-        typedef Basic::Ref<NameSeparatorToken> Ref;
-
         NameSeparatorToken() : Token(name_separator_token)
         {
         }
@@ -165,8 +141,6 @@ namespace Json
     class ValueSeparatorToken : public Token
     {
     public:
-        typedef Basic::Ref<ValueSeparatorToken> Ref;
-
         ValueSeparatorToken() : Token(value_separator_token)
         {
         }
@@ -175,9 +149,7 @@ namespace Json
     class StringToken : public Token
     {
     public:
-        typedef Basic::Ref<StringToken> Ref;
-
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef value;
 
         StringToken() : Token(string_token)
         {
@@ -187,8 +159,6 @@ namespace Json
     class NumberToken : public Token
     {
     public:
-        typedef Basic::Ref<NumberToken> Ref;
-
         long double value;
 
         NumberToken() : Token(number_token)
@@ -199,8 +169,6 @@ namespace Json
     class BoolToken : public Token
     {
     public:
-        typedef Basic::Ref<BoolToken> Ref;
-
         bool value;
 
         BoolToken() : Token(bool_token)
@@ -211,14 +179,12 @@ namespace Json
     class NullToken : public Token
     {
     public:
-        typedef Basic::Ref<NullToken> Ref;
-
         NullToken() : Token(null_token)
         {
         }
     };
 
-    struct Value : public IRefCounted
+    struct Value : public IStreamWriter<Codepoint>
     {
         enum Type
         {
@@ -230,11 +196,9 @@ namespace Json
             string_value,
         };
 
-        typedef Basic::Ref<Value> Ref;
-
         Type type;
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream) = 0;
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const = 0;
 
     protected:
         Value(Type type) : type(type)
@@ -242,113 +206,74 @@ namespace Json
         }
     };
 
-    typedef std::vector<Value::Ref> ValueList; // REF
+    typedef std::vector<std::shared_ptr<Value> > ValueList;
 
     struct Array : public Value
     {
-        typedef Basic::Ref<Array> Ref;
-
         ValueList elements;
 
         Array() : Value(Type::array_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
     };
 
-    typedef std::unordered_map<UnicodeString::Ref, Value::Ref> MemberList; // REF
+    typedef std::unordered_map<UnicodeStringRef, std::shared_ptr<Value> > MemberList;
 
     struct Object : public Value
     {
-        typedef Basic::Ref<Object> Ref;
-
         MemberList members;
 
         Object() : Value(Type::object_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
     };
 
     struct Number : public Value
     {
-        typedef Basic::Ref<Number> Ref;
-
         long double value;
 
         Number() : Value(Type::number_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
     };
 
     struct String : public Value
     {
-        typedef Basic::Ref<String> Ref;
-
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef value;
 
         String() : Value(Type::string_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
-        static void write_value(Basic::UnicodeString::Ref value, Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
+        static void write_value(Basic::UnicodeStringRef value, Basic::IStream<Codepoint>* stream);
     };
 
     struct Bool : public Value
     {
-        typedef Basic::Ref<Bool> Ref;
-
         bool value;
 
         Bool() : Value(Type::bool_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
     };
 
     struct Null : public Value
     {
-        typedef Basic::Ref<Null> Ref;
-
         Null() : Value(Type::null_value)
         {
         }
 
-        virtual void write_to(Basic::IStream<Codepoint>* stream);
+        virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const;
     };
 
-    enum EventType
-    {
-        ready_for_read_token_pointer_event = 0x3000,
-    };
-
-    struct ReadyForReadTokenPointerEvent : public IEvent
-    {
-    public:
-        Basic::Ref<IElementSource<Token::Ref> > element_source; // REF
-
-        virtual uint32 get_type();
-
-        void Initialize(IElementSource<Token::Ref>* element_source);
-
-        static bool ReadNext(IEvent* event, Token::Ref* element, bool* yield);
-        static void UndoReadNext(IEvent* event);
-    };
-
-    class TokenVector : public std::vector<Token::Ref>, public IStream<Token::Ref>
-    {
-    public:
-        typedef Basic::Ref<TokenVector> Ref;
-
-        void IStream<Token::Ref>::Write(const Token::Ref* elements, uint32 count);
-        void IStream<Token::Ref>::WriteEOF();
-
-        void write_to(IStream<Token::Ref>* dest);
-    };
+    typedef std::vector<std::shared_ptr<Token> > TokenVector;
 }

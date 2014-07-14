@@ -9,7 +9,7 @@ namespace Http
 {
     using namespace Basic;
 
-    class CookieParser : public IStream<Codepoint>
+    class CookieParser : public UnitStream<Codepoint>
     {
     private:
         enum State
@@ -43,18 +43,16 @@ namespace Http
         Cookie* cookie;
         StringMap::iterator attr;
         uint8 matched;
-        UnicodeString::Ref node; // REF
+        UnicodeStringRef node;
 
         void ParseError(Codepoint c);
 
     public:
-        typedef Basic::Ref<CookieParser, IProcess> Ref;
-
         static void InitializeStatics();
 
         void Initialize(Cookie* cookie);
 
-        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-        virtual void IStream<Codepoint>::WriteEOF();
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
+        virtual void IStream<Codepoint>::write_eof();
     };
 }

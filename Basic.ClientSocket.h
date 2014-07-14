@@ -6,7 +6,7 @@
 
 namespace Basic
 {
-    class ClientSocket : public ConnectedSocket, public IRefHolder
+    class ClientSocket : public ConnectedSocket
     {
     private:
         enum State
@@ -18,22 +18,19 @@ namespace Basic
         };
 
         State state;
-        OVERLAPPED resolveAddress;
-        AsyncBytes::Ref sendBuffer;
+        ByteStringRef sendBuffer;
 
-        virtual void CompleteOther(int transferred, int error);
-        virtual void CompleteWrite(AsyncBytes* bytes, int transferred, int error);
+        virtual void CompleteReadyForSend();
+        virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
 
     public:
-        typedef Basic::Ref<ClientSocket, IStream<byte> > Ref;
+        ClientSocket(std::shared_ptr<IProcess> protocol);
 
-        ClientSocket();
-
-        bool Resolve(UnicodeString::Ref host, uint16 port, sockaddr_in* remoteAddress);
+        bool Resolve(UnicodeStringRef host, uint16 port, sockaddr_in* remoteAddress);
         void Initialize();
         void StartConnect(IN_ADDR server, uint16 port);
         void StartConnect(sockaddr_in remoteAddress);
 
-        virtual void IBufferedStream<byte>::Write(const byte* elements, uint32 count);
+        virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
     };
 }

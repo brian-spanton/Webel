@@ -7,17 +7,17 @@
 
 namespace Basic
 {
-    SingleByteEncoder::SingleByteEncoder()
-        : error_replacement_byte(0x7F) // $ is this a good default error_replacement_byte char?
+    SingleByteEncoder::SingleByteEncoder() :
+        error_replacement_byte(0x7F) // $ is this a good default error_replacement_byte char?
     {
     }
 
-    void SingleByteEncoder::Initialize(ISingleByteEncodingIndex* index)
+    void SingleByteEncoder::Initialize(std::shared_ptr<ISingleByteEncodingIndex> index)
     {
         this->index = index;
     }
 
-    void SingleByteEncoder::Initialize(ISingleByteEncodingIndex* index, IStream<byte>* destination)
+    void SingleByteEncoder::Initialize(std::shared_ptr<ISingleByteEncodingIndex> index, IStream<byte>* destination)
     {
         this->index = index;
         this->destination = destination;
@@ -38,12 +38,20 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw new Exception("sprintf_s");
+            throw FatalError("sprintf_s");
 
         HandleError(error);
     }
 
-    void SingleByteEncoder::Write(const Codepoint* elements, uint32 count)
+    void SingleByteEncoder::write_elements(const Codepoint* elements, uint32 count)
+    {
+        for (const Codepoint* element = elements; element != elements + count; element++)
+        {
+            write_element(*element);
+        }
+    }
+
+    void SingleByteEncoder::write_element(Codepoint codepoint)
     {
         // From http://encoding.spec.whatwg.org/#encodings
         // An encoder algorithm takes a code point stream and emits a byte stream. It fails when a code point is passed for
@@ -57,54 +65,46 @@ namespace Basic
     
         // http://encoding.spec.whatwg.org/#legacy-single-byte-encodings
 
-        uint32 i = 0;
-
-        while (true)
+        if (codepoint >= 0 && codepoint <= 0x7F)
         {
-            if (i == count)
-                break;
-
-            Codepoint codepoint = elements[i];
-
-            i++;
-
-            if (codepoint >= 0 && codepoint <= 0x7F)
-            {
-                Emit((byte)codepoint);
-                continue;
-            }
-
-            byte pointer = this->index->codepoint_to_pointer(codepoint);
-
-            if (pointer == 0)
-            {
-                EncoderError(codepoint);
-                Emit(this->error_replacement_byte);
-                continue;
-            }
-
-            Emit(pointer + 0x80);
-            continue;
+            Emit((byte)codepoint);
+            return;
         }
+
+        byte pointer = this->index->codepoint_to_pointer(codepoint);
+
+        if (pointer == 0)
+        {
+            EncoderError(codepoint);
+            Emit(this->error_replacement_byte);
+            return;
+        }
+
+        Emit(pointer + 0x80);
     }
 
-    void SingleByteEncoder::WriteEOF()
+    void SingleByteEncoder::write_eof()
     {
+        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
+        // because it might not at all be the last thing sent to the destination
+
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 
     void SingleByteEncoder::Emit(byte b)
     {
-        this->destination->Write(&b, 1);
+        this->destination->write_element(b);
     }
 
-    void SingleByteEncoderFactory::Initialize(ISingleByteEncodingIndex* index)
+    void SingleByteEncoderFactory::Initialize(std::shared_ptr<ISingleByteEncodingIndex> index)
     {
         this->index = index;
     }
 
-    void SingleByteEncoderFactory::CreateEncoder(Basic::Ref<IEncoder>* encoder)
+    void SingleByteEncoderFactory::CreateEncoder(std::shared_ptr<IEncoder>* encoder)
     {
-        SingleByteEncoder::Ref single_byte_encoder = New<SingleByteEncoder>();
+        std::shared_ptr<SingleByteEncoder> single_byte_encoder = std::make_shared<SingleByteEncoder>();
         single_byte_encoder->Initialize(this->index);
 
         (*encoder) = single_byte_encoder;

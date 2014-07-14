@@ -7,96 +7,54 @@ namespace Tls
 {
     using namespace Basic;
 
-    void RecordFrame::Initialize(Record* record)
+    RecordFrame::RecordFrame(Record* record) :
+        record(record),
+        type_frame(&this->record->type),
+        version_frame(&this->record->version),
+        length_frame(&this->record->length)
     {
-        __super::Initialize();
-        this->record = record;
-        this->type_frame.Initialize(&this->record->type);
-        this->version_frame.Initialize(&this->record->version);
-        this->length_frame.Initialize(&this->record->length);
     }
 
-    void RecordFrame::Process(IEvent* event, bool* yield)
+    void RecordFrame::reset()
     {
-        switch (frame_state())
+        __super::reset();
+        this->type_frame.reset();
+        this->version_frame.reset();
+        this->length_frame.reset();
+    }
+
+    void RecordFrame::consider_event(IEvent* event)
+    {
+        switch (get_state())
         {
         case State::type_frame_pending_state:
-            if (this->type_frame.Pending())
-            {
-                this->type_frame.Process(event, yield);
-            }
-
-            if (this->type_frame.Failed())
-            {
-                switch_to_state(State::type_frame_failed);
-            }
-            else if (this->type_frame.Succeeded())
-            {
-                switch_to_state(State::version_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            switch_to_state(State::version_frame_pending_state);
             break;
 
         case State::version_frame_pending_state:
-            if (this->version_frame.Pending())
-            {
-                this->version_frame.Process(event, yield);
-            }
-
-            if (this->version_frame.Failed())
-            {
-                switch_to_state(State::version_frame_failed);
-            }
-            else if (this->version_frame.Succeeded())
-            {
-                switch_to_state(State::length_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
+            switch_to_state(State::length_frame_pending_state);
             break;
 
         case State::length_frame_pending_state:
-            if (this->length_frame.Pending())
             {
-                this->length_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
 
-            if (this->length_frame.Failed())
-            {
-                switch_to_state(State::length_frame_failed);
-            }
-            else if (this->length_frame.Succeeded())
-            {
-                this->record->fragment = New<ByteVector>();
+                this->record->fragment = std::make_shared<ByteString>();
                 this->record->fragment->resize(this->record->length);
-                this->fragment_frame.Initialize(this->record->fragment->FirstElement(), this->record->fragment->size());
+                this->fragment_frame.reset(this->record->fragment->address(), this->record->fragment->size());
                 switch_to_state(State::fragment_frame_pending_state);
             }
             break;
 
         case State::fragment_frame_pending_state:
-            if (this->fragment_frame.Pending())
-            {
-                this->fragment_frame.Process(event, yield);
-            }
-
-            if (this->fragment_frame.Failed())
-            {
-                switch_to_state(State::fragment_frame_failed);
-            }
-            else if (this->fragment_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->fragment_frame, event, State::fragment_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("Tls::RecordFrame::Process unexpected state");
+            throw FatalError("Tls::RecordFrame::handle_event unexpected state");
         }
-    }
-
-    void RecordFrame::SerializeTo(IStream<byte>* stream)
-    {
-        this->type_frame.SerializeTo(stream);
-        this->version_frame.SerializeTo(stream);
-        this->length_frame.SerializeTo(stream);
-        this->record->fragment->SerializeTo(stream);
     }
 }

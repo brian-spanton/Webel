@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Basic.Ref.h"
 #include "Basic.CommandFrame.h"
 #include "Basic.IProcess.h"
 #include "Basic.IBufferedStream.h"
@@ -18,7 +17,9 @@
 
 namespace Service
 {
-    class AdminProtocol : public Basic::Frame
+    using namespace Basic;
+
+    class AdminProtocol : public Basic::Frame, public std::enable_shared_from_this<AdminProtocol>
     {
     private:
         enum State
@@ -31,23 +32,22 @@ namespace Service
         };
 
         Basic::Lock lock;
-        std::vector<Basic::UnicodeString::Ref> command; // REF
-        Basic::Inline<Basic::CommandFrame> command_frame;
-        Basic::Ref<Basic::IStream<Codepoint> > peer; // REF
-        Web::Client::Ref client; // REF
-        Html::Parser::Ref html_parser; // REF
-        Web::Page::Ref current_page; // REF
-        Web::Form::Ref current_form; // REF
-        Basic::ByteString::Ref get_cookie; // REF
+        std::vector<UnicodeStringRef> command;
+        Basic::CommandFrame<Codepoint> command_frame;
+        std::shared_ptr<Basic::IStream<Codepoint> > peer;
+        std::shared_ptr<Web::Client> client;
+        std::shared_ptr<Html::Parser> html_parser;
+        std::shared_ptr<Web::Page> current_page;
+        std::shared_ptr<Web::Form> current_form;
+        Basic::ByteStringRef get_cookie;
 
         void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
 
+        virtual void Basic::IProcess::consider_event(Basic::IEvent* event);
+
     public:
-        typedef Basic::Ref<AdminProtocol, IProcess> Ref;
+        AdminProtocol(std::shared_ptr<Basic::IStream<Codepoint> > peer);
 
-        void Initialize(Basic::IStream<Codepoint>* peer);
-        void set_peer(Basic::IStream<Codepoint>* peer);
-
-        virtual void Basic::IProcess::Process(Basic::IEvent* event, bool* yield);
+        void reset(std::shared_ptr<Basic::IStream<Codepoint> > peer);
     };
 }

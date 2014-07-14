@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Basic.Ref.h"
 #include "Html.Types.h"
 #include "Html.ElementName.h"
 
@@ -29,16 +28,15 @@ namespace Html
     class Document;
     class ElementNode;
 
-    class Node : public IRefCounted
+    class Node : public std::enable_shared_from_this<Node>
     {
     public:
-        typedef Basic::Ref<Node> Ref;
-        typedef std::vector<Node::Ref> NodeList; // REF
+        typedef std::vector<std::shared_ptr<Node> > NodeList;
 
     public:
-        Document* html_document;
+        std::weak_ptr<Document> html_document;
         NodeType type;
-        Node* parent;
+        std::weak_ptr<Node> parent;
         NodeList children;
 
     protected:
@@ -46,22 +44,22 @@ namespace Html
 
     public:
         void Insert(Codepoint c);
-        virtual void Append(Node* node);
-        void Remove(Node* node);
+        virtual void Append(std::shared_ptr<Node> node);
+        void Remove(std::shared_ptr<Node> node);
 
         bool has_ancestor(ElementName* element_name);
-        bool has_ancestor(Node* node);
+        bool has_ancestor(std::shared_ptr<Node> node);
         void remove_from_parent();
         void take_all_child_nodes_of(Node* node);
         virtual void write_to_human(IStream<Codepoint>* stream, bool verbose);
         void write_pointer_to_human(IStream<Codepoint>* stream);
 
-        bool find_element(ElementName* name, UnicodeString* attribute_name, UnicodeString* attribute_value, Basic::Ref<ElementNode>* result);
-        bool find_element_with_child_count(Node* after, ElementName* name, uint32 child_count, Basic::Ref<ElementNode>* result);
-        bool find_element_with_attribute_prefix(Node* after, ElementName* name, UnicodeString* attribute, UnicodeString* value, Basic::Ref<ElementNode>* result);
-        bool find_element_with_attribute_value(Node* after, ElementName* name, UnicodeString* attribute, UnicodeString* value, Basic::Ref<ElementNode>* result);
-        bool find_element_with_text_value(Node* after, ElementName* name, UnicodeString* value, Basic::Ref<ElementNode>* result);
-        void extract_text(IStream<Codepoint>* destination);
-        bool first_text(IStream<Codepoint>* destination);
+        bool find_element(ElementName* name, UnicodeStringRef attribute_name, UnicodeStringRef attribute_value, std::shared_ptr<ElementNode>* result);
+        bool find_element_with_child_count(Node* after, ElementName* name, uint32 child_count, std::shared_ptr<ElementNode>* result);
+        bool find_element_with_attribute_prefix(Node* after, ElementName* name, UnicodeStringRef attribute, UnicodeStringRef value, std::shared_ptr<ElementNode>* result);
+        bool find_element_with_attribute_value(Node* after, ElementName* name, UnicodeStringRef attribute, UnicodeStringRef value, std::shared_ptr<ElementNode>* result);
+        bool find_element_with_text_value(Node* after, ElementName* name, UnicodeStringRef value, std::shared_ptr<ElementNode>* result);
+        void extract_text(IStream<Codepoint>* stream);
+        bool first_text(IStream<Codepoint>* stream);
     };
 }

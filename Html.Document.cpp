@@ -7,19 +7,15 @@ namespace Html
 {
     using namespace Basic;
 
-    Document::Document() :
-        Node(NodeType::DOCUMENT_NODE)
+    Document::Document(std::shared_ptr<Uri> url) :
+        Node(NodeType::DOCUMENT_NODE),
+        url(url)
     {
     }
 
-    void Document::Initialize(Uri::Ref url)
-    {
-        this->url = url;
-    }
-
-    void Document::Append(Node* node)
+    void Document::Append(std::shared_ptr<Node> node)
     {
         __super::Append(node);
-        node->html_document = this;
+        node->html_document = std::static_pointer_cast<Document>(this->shared_from_this());
     }
 }

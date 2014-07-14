@@ -10,7 +10,7 @@ namespace Service
 {
     using namespace Basic;
 
-    class StandardEncodings : public Frame
+    class StandardEncodings : public Frame, public std::enable_shared_from_this<StandardEncodings>
     {
     private:
         enum State
@@ -19,27 +19,23 @@ namespace Service
             done_state = Succeeded_State,
         };
 
-        Basic::Ref<Web::Client, IProcess> client; // REF
-        Basic::Ref<Json::Parser, IStream<byte> > json_parser; // REF
-        Basic::Ref<IProcess> encodings_completion; // REF
-        ByteString::Ref encodings_cookie; // REF
+        std::shared_ptr<Web::Client> client;
+        std::shared_ptr<Json::Parser> json_parser;
+        std::shared_ptr<IProcess> encodings_completion;
+        ByteStringRef encodings_cookie;
 
-        UnicodeString::Ref Name_encodings; // REF
-        UnicodeString::Ref Name_heading; // REF
-        UnicodeString::Ref heading_utf8; // REF
-        UnicodeString::Ref heading_legacy; // REF
-        UnicodeString::Ref Name_name; // REF
-        UnicodeString::Ref Name_labels; // REF
+        UnicodeStringRef Name_encodings;
+        UnicodeStringRef Name_heading;
+        UnicodeStringRef heading_utf8;
+        UnicodeStringRef heading_legacy;
+        UnicodeStringRef Name_name;
+        UnicodeStringRef Name_labels;
 
-        Uri::Ref encodings_url; // REF
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<StandardEncodings> Ref;
+        StandardEncodings(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        StandardEncodings();
-
-        void Initialize(Basic::Ref<IProcess> completion, ByteString::Ref cookie);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        void start();
     };
 }

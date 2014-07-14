@@ -11,42 +11,38 @@ namespace Json
 {
     using namespace Basic;
 
-    void ByteStreamDecoder::Initialize(UnicodeString::Ref charset, IStream<Codepoint>* output)
+    ByteStreamDecoder::ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output) :
+        charset(charset),
+        output(output),
+        bom_frame(this->bom, sizeof(this->bom))
     {
-        __super::Initialize();
-        this->charset = charset;
-        this->output = output;
-        this->bom_frame.Initialize(this->bom, sizeof(this->bom));
     }
 
-    void ByteStreamDecoder::Process(IEvent* event, bool* yield)
+    void ByteStreamDecoder::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::unconsume_not_initialized_state:
             {
-                this->unconsume = New<ByteString>();
-                this->unconsume->reserve(1024);
-                Event::AddObserver<byte>(event, this->unconsume);
+                this->not_consumed = std::make_shared<ByteString>();
+                this->not_consumed->reserve(1024);
+                Event::AddObserver<byte>(event, this->not_consumed);
 
                 switch_to_state(State::bom_frame_pending_state);
             }
             break;
 
         case State::bom_frame_pending_state:
-            if (this->bom_frame.Pending())
             {
-                this->bom_frame.Process(event, yield);
-            }
+                delegate_event(&this->bom_frame, event);
             
-            if (this->bom_frame.Failed())
-            {
-                Event::RemoveObserver<byte>(event, this->unconsume);
-                switch_to_state(State::bom_frame_failed);
-            }
-            else if (this->bom_frame.Succeeded())
-            {
-                Event::RemoveObserver<byte>(event, this->unconsume);
+                Event::RemoveObserver<byte>(event, this->not_consumed);
+
+                if (this->bom_frame.failed())
+                {
+                    switch_to_state(State::bom_frame_failed);
+                    return;
+                }
 
                 if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0 && bom[3] != 0)
                 {
@@ -68,7 +64,7 @@ namespace Json
                 {
                     this->encoding = Basic::globals->utf_8_label;
                 }
-                else if (this->charset.item() != 0)
+                else if (this->charset.get() != 0)
                 {
                     this->encoding = this->charset;
                 }
@@ -79,7 +75,7 @@ namespace Json
                 }
 
                 Basic::globals->GetDecoder(this->encoding, &this->decoder);
-                if (this->decoder.item() == 0)
+                if (this->decoder.get() == 0)
                 {
                     switch_to_state(State::could_not_find_decoder_error);
                 }
@@ -87,7 +83,7 @@ namespace Json
                 {
                     this->decoder->set_destination(this->output);
 
-                    this->decoder->Write(this->unconsume->c_str(), this->unconsume->size());
+                    this->decoder->write_elements(this->not_consumed->address(), this->not_consumed->size());
                     switch_to_state(State::decoding_byte_stream);
                 }
             }
@@ -98,16 +94,14 @@ namespace Json
                 const byte* elements;
                 uint32 count;
 
-                if (!Event::Read(event, 0xffffffff, &elements, &count, yield))
-                    return;
+                Event::Read(event, 0xffffffff, &elements, &count);
 
-                this->decoder->Write(elements, count);
-                (*yield) = true;
+                this->decoder->write_elements(elements, count);
             }
             break;
 
         default:
-            throw new Exception("Json::ByteStreamDecoder::Process unexpected state");
+            throw FatalError("Json::ByteStreamDecoder::handle_event unexpected state");
         }
     }
 }

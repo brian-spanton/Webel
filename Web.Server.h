@@ -11,7 +11,7 @@ namespace Web
     using namespace Basic;
     using namespace Http;
 
-    class Server : public Frame
+    class Server : public Frame, public std::enable_shared_from_this<Server>
     {
     private:
         enum State
@@ -24,23 +24,23 @@ namespace Web
             request_frame_failed,
         };
 
-        Basic::Ref<IBufferedStream<byte> > peer; // REF
-        Basic::Ref<IProcess> accept_completion; // REF
-        ByteString::Ref accept_cookie; // REF
-        Inline<RequestFrame> request_frame;
+        std::shared_ptr<IBufferedStream<byte> > peer;
+        std::shared_ptr<IProcess> accept_completion;
+        ByteStringRef accept_cookie;
+        std::shared_ptr<RequestFrame> request_frame;
 
         void switch_to_state(State state);
 
     protected:
-        Request::Ref request; // REF
-        Response::Ref response; // REF
+        std::shared_ptr<Request> request;
+        std::shared_ptr<Response> response;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<Server, IProcess> Ref;
+        Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        void Initialize(ListenSocket* listen_socket, Basic::Ref<Tls::ICertificate> certificate, Basic::Ref<IProcess> completion, ByteString::Ref cookie);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void Process() = 0;
+        void start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate);
+        virtual void handle_event() = 0;
     };
 }

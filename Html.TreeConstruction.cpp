@@ -19,21 +19,20 @@ namespace Html
 {
     using namespace Basic;
 
-    void TreeConstruction::Initialize(Parser* parser, Uri::Ref url)
+    TreeConstruction::TreeConstruction(Parser* parser, std::shared_ptr<Uri> url) :
+        parser(parser),
+        script_nesting_level(0),
+        parser_pause_flag(false),
+        insertion_mode(InsertionMode::initial_insertion_mode),
+        original_insertion_mode(InsertionMode::initial_insertion_mode),
+        scripting_flag(false),
+        frameset_ok(true),
+        document(std::make_shared<Document>(url)),
+        ignore_line_feed(false)
     {
-        this->parser = parser;
-        this->script_nesting_level = 0;
-        this->parser_pause_flag = false;
-        this->insertion_mode = InsertionMode::initial_insertion_mode;
-        this->original_insertion_mode = InsertionMode::initial_insertion_mode;
-        this->scripting_flag = false;
-        this->frameset_ok = true;
-        this->document = New<Document>();
-        this->document->Initialize(url);
-        this->ignore_line_feed = false;
     }
 
-    ElementNode* TreeConstruction::CurrentNode()
+    std::shared_ptr<ElementNode> TreeConstruction::CurrentNode()
     {
         if (this->open_elements.size() == 0)
             return 0;
@@ -41,15 +40,15 @@ namespace Html
         return this->open_elements.back();
     }
 
-    ElementNode* TreeConstruction::AdjustedCurrentNode()
+    std::shared_ptr<ElementNode> TreeConstruction::AdjustedCurrentNode()
     {
-        if (this->fragment_context.item() != 0 && this->open_elements.size() == 1)
+        if (this->fragment_context.get() != 0 && this->open_elements.size() == 1)
             return this->fragment_context;
 
         return CurrentNode();
     }
 
-    bool TreeConstruction::InForeignContent(TokenPointer token)
+    bool TreeConstruction::InForeignContent(const Token* token)
     {
         if (this->AdjustedCurrentNode() == 0)
             return false;
@@ -60,17 +59,17 @@ namespace Html
         if (this->AdjustedCurrentNode()->IsMathMLTextIntegrationPoint() && token->type == Token::Type::start_tag_token)
         {
             StartTagToken* tag = (StartTagToken*)token;
-            if (tag->HasNameOf(Html::globals->MathML_mglyph) && tag->HasNameOf(Html::globals->MathML_malignmark))
+            if (tag->has_name_of(Html::globals->MathML_mglyph.get()) && tag->has_name_of(Html::globals->MathML_malignmark.get()))
                 return false;
         }
 
         if (this->AdjustedCurrentNode()->IsMathMLTextIntegrationPoint() && token->type == Token::Type::character_token)
             return false;
 
-        if (this->AdjustedCurrentNode()->has_element_name(Html::globals->MathML_annotation_xml) && token->type == Token::Type::start_tag_token)
+        if (this->AdjustedCurrentNode()->has_element_name(Html::globals->MathML_annotation_xml.get()) && token->type == Token::Type::start_tag_token)
         {
             StartTagToken* tag = (StartTagToken*)token;
-            if (tag->HasNameOf(Html::globals->SVG_svg))
+            if (tag->has_name_of(Html::globals->SVG_svg.get()))
                 return false;
         }
 
@@ -105,7 +104,7 @@ namespace Html
     {
         for (ElementList::iterator it = this->open_elements.begin(); it != this->open_elements.end(); it++)
         {
-            if (it->item() == node)
+            if (it->get() == node)
             {
                 this->open_elements.erase(it);
                 return;
@@ -119,7 +118,7 @@ namespace Html
     {
         for (FormattingElementList::iterator it = this->active_formatting_elements.begin(); it != this->active_formatting_elements.end(); it++)
         {
-            if ((*it)->element.item() == node)
+            if ((*it)->element.get() == node)
             {
                 this->active_formatting_elements.erase(it);
                 return;
@@ -129,7 +128,7 @@ namespace Html
         HandleError("TreeConstruction::remove_node_from_the_list_of_active_formatting_elements");
     }
 
-    void TreeConstruction::create_an_element_for_a_token(TagToken* token, UnicodeString* name_space, ElementNode::Ref* element)
+    void TreeConstruction::create_an_element_for_a_token(TagToken* token, UnicodeStringRef name_space, std::shared_ptr<ElementNode>* element)
     {
         // http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#creating-and-inserting-elements
         // When the steps below require the UA to create an element for a token in a particular namespace, the UA must create a
@@ -146,11 +145,14 @@ namespace Html
         // (This initializes the element's value and checkedness based on the element's attributes.)
         HandleNyi("TreeConstruction::create_an_element_for_a_token", false); // $ NYI
 
-        ElementName::Ref name = New<ElementName>();
+        std::shared_ptr<ElementName> name = std::make_shared<ElementName>();
         name->Initialize(name_space, token->name);
 
-        ElementNode::Ref local_element = New<ElementNode>();
-        local_element->Initialize(name, token->attributes);
+        std::shared_ptr<ElementNode> local_element = std::make_shared<ElementNode>();
+
+        std::shared_ptr<StringMap> attributes = std::make_shared<StringMap>();
+        attributes->insert(token->attributes.begin(), token->attributes.end());
+        local_element->Initialize(name, attributes);
 
         if (element != 0)
             (*element) = local_element;
@@ -166,15 +168,15 @@ namespace Html
         HandleNyi("TreeConstruction::provide_a_stable_state", false); // $ NYI
     }
 
-    void TreeConstruction::insert_an_HTML_element(ElementNode* place, TagToken* token, ElementNode::Ref* element)
+    void TreeConstruction::insert_an_HTML_element(ElementNode* place, TagToken* token, std::shared_ptr<ElementNode>* element)
     {
         // $ this algorithm is outdated.  see current section 12.2.5.1
 
-        ElementNode::Ref local_element;
+        std::shared_ptr<ElementNode> local_element;
         create_an_element_for_a_token(token, Html::globals->Namespace_HTML, &local_element);
 
         if (local_element->IsFormAssociated()
-            && this->form_element.item() != 0
+            && this->form_element.get() != 0
             && !local_element->has_attribute(Html::globals->form_attribute_name))
         {
             // When a form-associated element or one of its ancestors is inserted into a Document, then the user agent must 
@@ -195,9 +197,9 @@ namespace Html
             (*element) = local_element;
     }
 
-    void TreeConstruction::insert_an_HTML_element(TagToken* token, ElementNode::Ref* element)
+    void TreeConstruction::insert_an_HTML_element(TagToken* token, std::shared_ptr<ElementNode>* element)
     {
-        insert_an_HTML_element(this->CurrentNode(), token, element);
+        insert_an_HTML_element(this->CurrentNode().get(), token, element);
     }
 
     void TreeConstruction::insert_a_foreign_element(TagToken* token, UnicodeString* name_space)
@@ -235,15 +237,15 @@ namespace Html
 
     void TreeConstruction::generate_implied_end_tags(TagToken* except_for)
     {
-        while ((this->CurrentNode()->has_element_name(Html::globals->HTML_dd) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_dt) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_li) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_option) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_p) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_rp) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_rt)) &&
-            (except_for == 0 || !except_for->HasNameOf(this->CurrentNode()->element_name)))
+        while ((this->CurrentNode()->has_element_name(Html::globals->HTML_dd.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_dt.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_li.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_p.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_rp.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_rt.get())) &&
+            (except_for == 0 || !except_for->has_name_of(this->CurrentNode()->element_name.get())))
         {
             pop_the_current_node_off_the_stack_of_open_elements();
         }
@@ -251,15 +253,15 @@ namespace Html
 
     void TreeConstruction::generate_implied_end_tags(ElementName* except_for)
     {
-        while ((this->CurrentNode()->has_element_name(Html::globals->HTML_dd) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_dt) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_li) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_option) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_p) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_rp) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_rt)) &&
-            (except_for == 0 || !except_for->equals(this->CurrentNode()->element_name)))
+        while ((this->CurrentNode()->has_element_name(Html::globals->HTML_dd.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_dt.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_li.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_p.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_rp.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_rt.get())) &&
+            (except_for == 0 || !except_for->equals(this->CurrentNode()->element_name.get())))
         {
             pop_the_current_node_off_the_stack_of_open_elements();
         }
@@ -272,7 +274,7 @@ namespace Html
 
     void TreeConstruction::reconstruct_the_active_formatting_elements()
     {
-        FormattingElement::Ref entry;
+        std::shared_ptr<FormattingElement> entry;
 
         // 1. If there are no entries in the list of active formatting elements, then there is nothing to reconstruct; stop this algorithm.
         if (this->active_formatting_elements.size() == 0)
@@ -281,7 +283,7 @@ namespace Html
         // 2. If the last (most recently added) entry in the list of active formatting elements is a marker, or if it is an element that is
         // in the stack of open elements, then there is nothing to reconstruct; stop this algorithm.
         if (this->active_formatting_elements.back()->IsMarker() ||
-            is_in_the_stack_of_open_elements(this->active_formatting_elements.back()->element))
+            is_in_the_stack_of_open_elements(this->active_formatting_elements.back()->element.get()))
         {
             return;
         }
@@ -299,7 +301,7 @@ step_4:
 
         // 6. If entry is neither a marker nor an element that is also in the stack of open elements, go to step 4.
         entry = this->active_formatting_elements.at(entry_index);
-        if (!entry->IsMarker() && !is_in_the_stack_of_open_elements(entry->element))
+        if (!entry->IsMarker() && !is_in_the_stack_of_open_elements(entry->element.get()))
             goto step_4;
 
 step_7:
@@ -315,8 +317,8 @@ step_7:
 
 step_8:
         // 8. Create an element for the token for which the element entry was created, to obtain new element.
-        ElementNode::Ref new_element;
-        create_an_element_for_a_token(entry->token, entry->element->element_name->name_space, &new_element);
+        std::shared_ptr<ElementNode> new_element;
+        create_an_element_for_a_token(entry->token.get(), entry->element->element_name->name_space, &new_element);
 
         // 9. Append new element to the current node and push it onto the stack of open elements so that it is the new current node.
         this->CurrentNode()->Append(new_element);
@@ -339,8 +341,8 @@ step_8:
 
     void TreeConstruction::clear_the_stack_back_to_a_table_context()
     {
-        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_table) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_html)))
+        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_table.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_html.get())))
         {
             pop_the_current_node_off_the_stack_of_open_elements();
         }
@@ -350,10 +352,10 @@ step_8:
 
     void TreeConstruction::clear_the_stack_back_to_a_table_body_context()
     {
-        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_tbody) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_tfoot) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_thead) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_html)))
+        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_tbody.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_tfoot.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_thead.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_html.get())))
         {
             pop_the_current_node_off_the_stack_of_open_elements();
         }
@@ -363,8 +365,8 @@ step_8:
 
     void TreeConstruction::clear_the_stack_back_to_a_table_row_context()
     {
-        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_tr) ||
-            this->CurrentNode()->has_element_name(Html::globals->HTML_html)))
+        while (!(this->CurrentNode()->has_element_name(Html::globals->HTML_tr.get()) ||
+            this->CurrentNode()->has_element_name(Html::globals->HTML_html.get())))
         {
             pop_the_current_node_off_the_stack_of_open_elements();
         }
@@ -374,13 +376,13 @@ step_8:
 
     void TreeConstruction::close_the_cell()
     {
-        if (has_element_in_table_scope(Html::globals->HTML_td))
+        if (has_element_in_table_scope(Html::globals->HTML_td.get()))
         {
-            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_td, 0);
+            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_td.get(), 0);
         }
-        else if (has_element_in_table_scope(Html::globals->HTML_th))
+        else if (has_element_in_table_scope(Html::globals->HTML_th.get()))
         {
-            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_th, 0);
+            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_th.get(), 0);
         }
 
         // Note: The stack of open elements cannot have both a td and a th element in table scope at the same time, nor can
@@ -391,7 +393,7 @@ step_8:
     {
         for (ElementList::iterator it = this->open_elements.begin(); it != this->open_elements.end(); it++)
         {
-            if (it->item() == element)
+            if (it->get() == element)
                 return true;
         }
 
@@ -402,7 +404,7 @@ step_8:
     {
         for (FormattingElementList::iterator it = this->active_formatting_elements.begin(); it != this->active_formatting_elements.end(); it++)
         {
-            if ((*it)->element.item() == element)
+            if ((*it)->element.get() == element)
                 return true;
         }
 
@@ -411,12 +413,12 @@ step_8:
 
     void TreeConstruction::insert_a_marker_at_the_end_of_the_list_of_active_formatting_elements()
     {
-        FormattingElement::Ref marker = New<FormattingElement>();
+        std::shared_ptr<FormattingElement> marker = std::make_shared<FormattingElement>();
 
         this->active_formatting_elements.push_back(marker);
     }
 
-    void TreeConstruction::push_onto_the_list_of_active_formatting_elements(ElementNode* element, TagToken* token)
+    void TreeConstruction::push_onto_the_list_of_active_formatting_elements(std::shared_ptr<ElementNode> element, std::shared_ptr<TagToken> token)
     {
         // 1. If there are already three elements in the list of active formatting elements after the last list marker, if any,
         // or anywhere in the list if there are no list markers, that have the same tag name, namespace, and attributes as element,
@@ -438,7 +440,7 @@ step_8:
             }
             else
             {
-                if ((*it)->equals(element, token))
+                if ((*it)->equals(element.get(), token.get()))
                 {
                     count++;
 
@@ -452,7 +454,7 @@ step_8:
             this->active_formatting_elements.erase(earliest);
 
         // 2. Add element to the list of active formatting elements.
-        FormattingElement::Ref formatting_element = New<FormattingElement>();
+        std::shared_ptr<FormattingElement> formatting_element = std::make_shared<FormattingElement>();
         formatting_element->Initialize(element, token);
 
         this->active_formatting_elements.push_back(formatting_element);
@@ -462,16 +464,12 @@ step_8:
     {
         while (true)
         {
-            FormattingElement::Ref entry = this->active_formatting_elements.back();
+            std::shared_ptr<FormattingElement> entry = this->active_formatting_elements.back();
             this->active_formatting_elements.pop_back();
 
             if (entry->IsMarker())
                 return;
         }
-    }
-
-    void TreeConstruction::WriteEOF()
-    {
     }
 
     void TreeConstruction::switch_the_insertion_mode(InsertionMode insertion_mode)
@@ -518,7 +516,7 @@ step_8:
 
         while(true)
         {
-            ElementNode::Ref& node = (*it);
+            std::shared_ptr<ElementNode>& node = (*it);
 
             // fragment case
             if (it == this->open_elements.rend() - 1)
@@ -528,72 +526,72 @@ step_8:
             }
 
             // fragment case
-            if (node->has_element_name(Html::globals->select_element_name))
+            if (node->has_element_name(Html::globals->select_element_name.get()))
             {
                 this->insertion_mode = InsertionMode::in_select_insertion_mode;
                 return;
             }
 
-            if ((node->has_element_name(Html::globals->HTML_td) || node->has_element_name(Html::globals->HTML_th)) && last == false)
+            if ((node->has_element_name(Html::globals->HTML_td.get()) || node->has_element_name(Html::globals->HTML_th.get())) && last == false)
             {
                 this->insertion_mode = InsertionMode::in_cell_insertion_mode;
                 return;
             }
 
-            if (node->has_element_name(Html::globals->HTML_tr))
+            if (node->has_element_name(Html::globals->HTML_tr.get()))
             {
                 this->insertion_mode = InsertionMode::in_row_insertion_mode;
                 return;
             }
 
-            if (node->has_element_name(Html::globals->HTML_tbody) || node->has_element_name(Html::globals->HTML_thead) || node->has_element_name(Html::globals->HTML_tfoot))
+            if (node->has_element_name(Html::globals->HTML_tbody.get()) || node->has_element_name(Html::globals->HTML_thead.get()) || node->has_element_name(Html::globals->HTML_tfoot.get()))
             {
                 this->insertion_mode = InsertionMode::in_table_body_insertion_mode;
                 return;
             }
 
-            if (node->has_element_name(Html::globals->HTML_caption))
+            if (node->has_element_name(Html::globals->HTML_caption.get()))
             {
                 this->insertion_mode = InsertionMode::in_caption_insertion_mode;
                 return;
             }
 
             // fragment case
-            if (node->has_element_name(Html::globals->HTML_colgroup))
+            if (node->has_element_name(Html::globals->HTML_colgroup.get()))
             {
                 this->insertion_mode = InsertionMode::in_column_group_insertion_mode;
                 return;
             }
 
-            if (node->has_element_name(Html::globals->HTML_table))
+            if (node->has_element_name(Html::globals->HTML_table.get()))
             {
                 this->insertion_mode = InsertionMode::in_table_insertion_mode;
                 return;
             }
 
             // fragment case
-            if (node->has_element_name(Html::globals->HTML_head))
+            if (node->has_element_name(Html::globals->HTML_head.get()))
             {
                 // Intentional: ("in body"!  not "in head"!)
                 this->insertion_mode = InsertionMode::in_body_insertion_mode;
                 return;
             }
 
-            if (node->has_element_name(Html::globals->HTML_body))
+            if (node->has_element_name(Html::globals->HTML_body.get()))
             {
                 this->insertion_mode = InsertionMode::in_body_insertion_mode;
                 return;
             }
 
             // fragment case
-            if (node->has_element_name(Html::globals->HTML_frameset))
+            if (node->has_element_name(Html::globals->HTML_frameset.get()))
             {
                 this->insertion_mode = InsertionMode::in_frameset_insertion_mode;
                 return;
             }
 
             // fragment case
-            if (node->has_element_name(Html::globals->HTML_html))
+            if (node->has_element_name(Html::globals->HTML_html.get()))
             {
                 this->insertion_mode = InsertionMode::before_head_insertion_mode;
                 return;
@@ -610,27 +608,27 @@ step_8:
         }
     }
 
-    void TreeConstruction::in_table_insertion_mode_anything_else(TokenPointer token)
+    void TreeConstruction::in_table_insertion_mode_anything_else(const Token* token)
     {
         ParseError(token);
 
-        // Process the token using the rules for the "in body" insertion mode, except that whenever a node would be 
+        // handle_event the token using the rules for the "in body" insertion mode, except that whenever a node would be 
         // inserted into the current node when the current node is a table, tbody, tfoot, thead, or tr element, then it 
         // must instead be foster parented.
         //apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0);
         HandleNyi("TreeConstruction::in_table_insertion_mode_anything_else", true); // $ NYI
     }
 
-    bool TreeConstruction::has_element_in_specific_scope(ElementName* target, ElementNameList* list)
+    bool TreeConstruction::has_element_in_specific_scope(ElementName* target, const ElementNameList& list)
     {
         for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
         {
             if ((*it)->has_element_name(target))
                 return true;
 
-            for (ElementNameList::iterator it2 = list->begin(); it2 != list->end(); it2++)
+            for (ElementNameList::const_iterator it2 = list.cbegin(); it2 != list.cend(); it2++)
             {
-                if ((*it)->has_element_name(*it2))
+                if ((*it)->has_element_name(it2->get()))
                     return false;
             }
         }
@@ -639,16 +637,16 @@ step_8:
         return false;
     }
 
-    bool TreeConstruction::has_element_in_specific_scope(TagToken* target, ElementNameList* list)
+    bool TreeConstruction::has_element_in_specific_scope(TagToken* target, const ElementNameList& list)
     {
         for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
         {
-            if (target->HasNameOf((*it)->element_name))
+            if (target->has_name_of((*it)->element_name.get()))
                 return true;
 
-            for (ElementNameList::iterator it2 = list->begin(); it2 != list->end(); it2++)
+            for (ElementNameList::const_iterator it2 = list.cbegin(); it2 != list.cend(); it2++)
             {
-                if ((*it)->has_element_name(*it2))
+                if ((*it)->has_element_name(it2->get()))
                     return false;
             }
         }
@@ -657,7 +655,7 @@ step_8:
         return false;
     }
 
-    bool TreeConstruction::has_element_in_specific_anti_scope(ElementName* target, ElementNameList* list)
+    bool TreeConstruction::has_element_in_specific_anti_scope(ElementName* target, const ElementNameList& list)
     {
         for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
         {
@@ -666,9 +664,9 @@ step_8:
 
             bool match = true;
 
-            for (ElementNameList::iterator it2 = list->begin(); it2 != list->end(); it2++)
+            for (ElementNameList::const_iterator it2 = list.cbegin(); it2 != list.cend(); it2++)
             {
-                if ((*it)->has_element_name(*it2))
+                if ((*it)->has_element_name(it2->get()))
                 {
                     match = false;
                     break;
@@ -683,18 +681,18 @@ step_8:
         return false;
     }
 
-    bool TreeConstruction::has_element_in_specific_anti_scope(TagToken* target, ElementNameList* list)
+    bool TreeConstruction::has_element_in_specific_anti_scope(TagToken* target, const ElementNameList& list)
     {
         for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
         {
-            if (target->HasNameOf((*it)->element_name))
+            if (target->has_name_of((*it)->element_name.get()))
                 return true;
 
             bool match = true;
 
-            for (ElementNameList::iterator it2 = list->begin(); it2 != list->end(); it2++)
+            for (ElementNameList::const_iterator it2 = list.cbegin(); it2 != list.cend(); it2++)
             {
-                if ((*it)->has_element_name(*it2))
+                if ((*it)->has_element_name(it2->get()))
                 {
                     match = false;
                     break;
@@ -711,7 +709,7 @@ step_8:
 
     bool TreeConstruction::has_element_in_scope(ElementNode* target)
     {
-        return has_element_in_specific_scope(target->element_name, Html::globals->Scope);
+        return has_element_in_specific_scope(target->element_name.get(), Html::globals->Scope);
     }
 
     bool TreeConstruction::has_element_in_scope(TagToken* token)
@@ -761,97 +759,97 @@ step_8:
 
     bool TreeConstruction::is_special(ElementName* name)
     {
-        if (name->equals(Html::globals->HTML_address) ||
-            name->equals(Html::globals->HTML_applet) ||
-            name->equals(Html::globals->HTML_area) || 
-            name->equals(Html::globals->HTML_article) || 
-            name->equals(Html::globals->HTML_aside) || 
-            name->equals(Html::globals->HTML_base) ||
-            name->equals(Html::globals->HTML_basefont) || 
-            name->equals(Html::globals->HTML_bgsound) || 
-            name->equals(Html::globals->HTML_blockquote) || 
-            name->equals(Html::globals->HTML_body) || 
-            name->equals(Html::globals->HTML_br) || 
-            name->equals(Html::globals->button_element_name) || 
-            name->equals(Html::globals->HTML_caption) || 
-            name->equals(Html::globals->HTML_center) || 
-            name->equals(Html::globals->HTML_col) || 
-            name->equals(Html::globals->HTML_colgroup) || 
-            name->equals(Html::globals->HTML_dd) || 
-            name->equals(Html::globals->HTML_details) || 
-            name->equals(Html::globals->HTML_dir) || 
-            name->equals(Html::globals->HTML_div) || 
-            name->equals(Html::globals->HTML_dl) || 
-            name->equals(Html::globals->HTML_dt) || 
-            name->equals(Html::globals->HTML_embed) || 
-            name->equals(Html::globals->HTML_fieldset) || 
-            name->equals(Html::globals->HTML_figcaption) || 
-            name->equals(Html::globals->HTML_figure) || 
-            name->equals(Html::globals->HTML_footer) || 
-            name->equals(Html::globals->HTML_form) || 
-            name->equals(Html::globals->HTML_frame) || 
-            name->equals(Html::globals->HTML_frameset) || 
-            name->equals(Html::globals->HTML_h1) || 
-            name->equals(Html::globals->HTML_h2) || 
-            name->equals(Html::globals->HTML_h3) || 
-            name->equals(Html::globals->HTML_h4) || 
-            name->equals(Html::globals->HTML_h5) || 
-            name->equals(Html::globals->HTML_h6) || 
-            name->equals(Html::globals->HTML_head) || 
-            name->equals(Html::globals->HTML_header) || 
-            name->equals(Html::globals->HTML_hgroup) || 
-            name->equals(Html::globals->HTML_hr) || 
-            name->equals(Html::globals->HTML_html) || 
-            name->equals(Html::globals->HTML_iframe) ||  
-            name->equals(Html::globals->HTML_img) || 
-            name->equals(Html::globals->input_element_name) || 
-            name->equals(Html::globals->HTML_isindex) || 
-            name->equals(Html::globals->HTML_li) || 
-            name->equals(Html::globals->HTML_link) || 
-            name->equals(Html::globals->HTML_listing) || 
-            name->equals(Html::globals->HTML_main) || 
-            name->equals(Html::globals->HTML_marquee) || 
-            name->equals(Html::globals->HTML_menu) || 
-            name->equals(Html::globals->HTML_menuitem) || 
-            name->equals(Html::globals->HTML_meta) || 
-            name->equals(Html::globals->HTML_nav) || 
-            name->equals(Html::globals->HTML_noembed) || 
-            name->equals(Html::globals->HTML_noframes) || 
-            name->equals(Html::globals->HTML_noscript) || 
-            name->equals(Html::globals->object_element_name) || 
-            name->equals(Html::globals->HTML_ol) || 
-            name->equals(Html::globals->HTML_p) || 
-            name->equals(Html::globals->HTML_param) || 
-            name->equals(Html::globals->HTML_plaintext) || 
-            name->equals(Html::globals->HTML_pre) || 
-            name->equals(Html::globals->HTML_script) || 
-            name->equals(Html::globals->HTML_section) || 
-            name->equals(Html::globals->select_element_name) || 
-            name->equals(Html::globals->HTML_source) || 
-            name->equals(Html::globals->HTML_style) || 
-            name->equals(Html::globals->HTML_summary) || 
-            name->equals(Html::globals->HTML_table) || 
-            name->equals(Html::globals->HTML_tbody) || 
-            name->equals(Html::globals->HTML_td) || 
-            name->equals(Html::globals->HTML_textarea) || 
-            name->equals(Html::globals->HTML_tfoot) || 
-            name->equals(Html::globals->HTML_th) || 
-            name->equals(Html::globals->HTML_thead) || 
-            name->equals(Html::globals->HTML_title) || 
-            name->equals(Html::globals->HTML_tr) || 
-            name->equals(Html::globals->HTML_track) || 
-            name->equals(Html::globals->HTML_ul) || 
-            name->equals(Html::globals->HTML_wbr) || 
-            name->equals(Html::globals->HTML_xmp) ||
-            name->equals(Html::globals->MathML_mi) ||
-            name->equals(Html::globals->MathML_mo) || 
-            name->equals(Html::globals->MathML_mn) || 
-            name->equals(Html::globals->MathML_ms) || 
-            name->equals(Html::globals->MathML_mtext) ||
-            name->equals(Html::globals->MathML_annotation_xml) ||
-            name->equals(Html::globals->SVG_foreignObject) ||
-            name->equals(Html::globals->SVG_desc) || 
-            name->equals(Html::globals->SVG_title))
+        if (name->equals(Html::globals->HTML_address.get()) ||
+            name->equals(Html::globals->HTML_applet.get()) ||
+            name->equals(Html::globals->HTML_area.get()) || 
+            name->equals(Html::globals->HTML_article.get()) || 
+            name->equals(Html::globals->HTML_aside.get()) || 
+            name->equals(Html::globals->HTML_base.get()) ||
+            name->equals(Html::globals->HTML_basefont.get()) || 
+            name->equals(Html::globals->HTML_bgsound.get()) || 
+            name->equals(Html::globals->HTML_blockquote.get()) || 
+            name->equals(Html::globals->HTML_body.get()) || 
+            name->equals(Html::globals->HTML_br.get()) || 
+            name->equals(Html::globals->button_element_name.get()) || 
+            name->equals(Html::globals->HTML_caption.get()) || 
+            name->equals(Html::globals->HTML_center.get()) || 
+            name->equals(Html::globals->HTML_col.get()) || 
+            name->equals(Html::globals->HTML_colgroup.get()) || 
+            name->equals(Html::globals->HTML_dd.get()) || 
+            name->equals(Html::globals->HTML_details.get()) || 
+            name->equals(Html::globals->HTML_dir.get()) || 
+            name->equals(Html::globals->HTML_div.get()) || 
+            name->equals(Html::globals->HTML_dl.get()) || 
+            name->equals(Html::globals->HTML_dt.get()) || 
+            name->equals(Html::globals->HTML_embed.get()) || 
+            name->equals(Html::globals->HTML_fieldset.get()) || 
+            name->equals(Html::globals->HTML_figcaption.get()) || 
+            name->equals(Html::globals->HTML_figure.get()) || 
+            name->equals(Html::globals->HTML_footer.get()) || 
+            name->equals(Html::globals->HTML_form.get()) || 
+            name->equals(Html::globals->HTML_frame.get()) || 
+            name->equals(Html::globals->HTML_frameset.get()) || 
+            name->equals(Html::globals->HTML_h1.get()) || 
+            name->equals(Html::globals->HTML_h2.get()) || 
+            name->equals(Html::globals->HTML_h3.get()) || 
+            name->equals(Html::globals->HTML_h4.get()) || 
+            name->equals(Html::globals->HTML_h5.get()) || 
+            name->equals(Html::globals->HTML_h6.get()) || 
+            name->equals(Html::globals->HTML_head.get()) || 
+            name->equals(Html::globals->HTML_header.get()) || 
+            name->equals(Html::globals->HTML_hgroup.get()) || 
+            name->equals(Html::globals->HTML_hr.get()) || 
+            name->equals(Html::globals->HTML_html.get()) || 
+            name->equals(Html::globals->HTML_iframe.get()) ||  
+            name->equals(Html::globals->HTML_img.get()) || 
+            name->equals(Html::globals->input_element_name.get()) || 
+            name->equals(Html::globals->HTML_isindex.get()) || 
+            name->equals(Html::globals->HTML_li.get()) || 
+            name->equals(Html::globals->HTML_link.get()) || 
+            name->equals(Html::globals->HTML_listing.get()) || 
+            name->equals(Html::globals->HTML_main.get()) || 
+            name->equals(Html::globals->HTML_marquee.get()) || 
+            name->equals(Html::globals->HTML_menu.get()) || 
+            name->equals(Html::globals->HTML_menuitem.get()) || 
+            name->equals(Html::globals->HTML_meta.get()) || 
+            name->equals(Html::globals->HTML_nav.get()) || 
+            name->equals(Html::globals->HTML_noembed.get()) || 
+            name->equals(Html::globals->HTML_noframes.get()) || 
+            name->equals(Html::globals->HTML_noscript.get()) || 
+            name->equals(Html::globals->object_element_name.get()) || 
+            name->equals(Html::globals->HTML_ol.get()) || 
+            name->equals(Html::globals->HTML_p.get()) || 
+            name->equals(Html::globals->HTML_param.get()) || 
+            name->equals(Html::globals->HTML_plaintext.get()) || 
+            name->equals(Html::globals->HTML_pre.get()) || 
+            name->equals(Html::globals->HTML_script.get()) || 
+            name->equals(Html::globals->HTML_section.get()) || 
+            name->equals(Html::globals->select_element_name.get()) || 
+            name->equals(Html::globals->HTML_source.get()) || 
+            name->equals(Html::globals->HTML_style.get()) || 
+            name->equals(Html::globals->HTML_summary.get()) || 
+            name->equals(Html::globals->HTML_table.get()) || 
+            name->equals(Html::globals->HTML_tbody.get()) || 
+            name->equals(Html::globals->HTML_td.get()) || 
+            name->equals(Html::globals->HTML_textarea.get()) || 
+            name->equals(Html::globals->HTML_tfoot.get()) || 
+            name->equals(Html::globals->HTML_th.get()) || 
+            name->equals(Html::globals->HTML_thead.get()) || 
+            name->equals(Html::globals->HTML_title.get()) || 
+            name->equals(Html::globals->HTML_tr.get()) || 
+            name->equals(Html::globals->HTML_track.get()) || 
+            name->equals(Html::globals->HTML_ul.get()) || 
+            name->equals(Html::globals->HTML_wbr.get()) || 
+            name->equals(Html::globals->HTML_xmp.get()) ||
+            name->equals(Html::globals->MathML_mi.get()) ||
+            name->equals(Html::globals->MathML_mo.get()) || 
+            name->equals(Html::globals->MathML_mn.get()) || 
+            name->equals(Html::globals->MathML_ms.get()) || 
+            name->equals(Html::globals->MathML_mtext.get()) ||
+            name->equals(Html::globals->MathML_annotation_xml.get()) ||
+            name->equals(Html::globals->SVG_foreignObject.get()) ||
+            name->equals(Html::globals->SVG_desc.get()) || 
+            name->equals(Html::globals->SVG_title.get()))
         {
             return true;
         }
@@ -875,16 +873,16 @@ outer_loop:
         // 4. Let the formatting element be the last element in the list of active formatting elements that:
         //     ◦ is between the end of the list and the last scope marker in the list, if any, or the start of the list otherwise, and
         //     ◦ has the same tag name as the token.
-        FormattingElement::Ref formatting_element;
+        std::shared_ptr<FormattingElement> formatting_element;
         for (uint32 counter = 0; counter < this->active_formatting_elements.size(); counter++)
         {
             int index = this->active_formatting_elements.size() - counter - 1;
-            FormattingElement::Ref last_element = this->active_formatting_elements.at(index);
+            std::shared_ptr<FormattingElement> last_element = this->active_formatting_elements.at(index);
 
             if (last_element->IsMarker())
                 break;
 
-            if (tag->HasNameOf(last_element->element->element_name))
+            if (tag->has_name_of(last_element->element->element_name.get()))
             {
                 formatting_element = last_element;
                 break;
@@ -892,7 +890,7 @@ outer_loop:
         }
 
         // If there is no such node, then abort these steps and instead act as described in the "any other end tag" entry below.
-        if (formatting_element.item() == 0)
+        if (formatting_element.get() == 0)
         {
             any_other_end_tag_in_body(tag, ignored);
             return;
@@ -915,13 +913,13 @@ outer_loop:
         if (stack_index == -1)
         {
             ParseError(tag);
-            remove_node_from_the_list_of_active_formatting_elements(formatting_element->element);
+            remove_node_from_the_list_of_active_formatting_elements(formatting_element->element.get());
             return;
         }
 
         // Otherwise, if there is such a node, and that node is also in the stack of open elements, but the element is not in scope,
         // then this is a parse error; ignore the token, and abort these steps.
-        if (!has_element_in_scope(formatting_element->element))
+        if (!has_element_in_scope(formatting_element->element.get()))
         {
             ParseError(tag);
             (*ignored) = true;
@@ -930,20 +928,20 @@ outer_loop:
 
         // Otherwise, there is a formatting element and that element is in the stack and is in scope. If the element is not the current node, 
         // this is a parse error. In any case, proceed with the algorithm as written in the following steps.
-        if (formatting_element->element.item() != this->CurrentNode())
+        if (formatting_element->element != this->CurrentNode())
             ParseError(tag);
 
         // 5. Let the furthest block be the topmost node in the stack of open elements that is lower in the stack than the formatting element, 
         // and is an element in the special category. There might not be one.
-        ElementNode::Ref furthest_block;
-        ElementNode::Ref immediately_above;
+        std::shared_ptr<ElementNode> furthest_block;
+        std::shared_ptr<ElementNode> immediately_above;
         for (int counter = 0; counter != this->open_elements.size(); counter++)
         {
             int index = this->open_elements.size() - counter - 1;
             if (this->open_elements.at(index) == formatting_element->element)
                 break;
 
-            if (is_special(this->open_elements.at(index)->element_name))
+            if (is_special(this->open_elements.at(index)->element_name.get()))
             {
                 furthest_block = this->open_elements.at(index);
                 immediately_above = this->open_elements.at(index - 1);
@@ -953,28 +951,28 @@ outer_loop:
         // 6. If there is no furthest block, then the UA must first pop all the nodes from the bottom of the stack of open elements,
         // from the current node up to and including the formatting element, then remove the formatting element from the list of active
         // formatting elements, and finally abort these steps.
-        if (furthest_block.item() == 0)
+        if (furthest_block.get() == 0)
         {
             while (true)
             {
-                ElementNode::Ref node = this->CurrentNode();
+                std::shared_ptr<ElementNode> node = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                 pop_the_current_node_off_the_stack_of_open_elements();
 
                 if (node == formatting_element->element)
                     break;
             }
 
-            remove_node_from_the_list_of_active_formatting_elements(formatting_element->element);
+            remove_node_from_the_list_of_active_formatting_elements(formatting_element->element.get());
 
             return;
         }
 
         // 7. Let the common ancestor be the element immediately above the formatting element in the stack of open elements.
-        ElementNode::Ref common_ancestor = this->open_elements.at(stack_index - 1);
+        std::shared_ptr<ElementNode> common_ancestor = this->open_elements.at(stack_index - 1);
 
         // 8. Let a bookmark note the position of the formatting element in the list of active formatting elements relative to the elements
         // on either side of it in the list.
-        FormattingElement::Ref bookmark_after;
+        std::shared_ptr<FormattingElement> bookmark_after;
         for (uint32 index = 0; index < this->active_formatting_elements.size(); index++)
         {
             if (this->active_formatting_elements.at(index) == formatting_element)
@@ -985,8 +983,8 @@ outer_loop:
         }
 
         // 9. Let node and last node be the furthest block. Follow these steps:
-        ElementNode::Ref node = furthest_block;
-        ElementNode::Ref last_node = furthest_block;
+        std::shared_ptr<ElementNode> node = furthest_block;
+        std::shared_ptr<ElementNode> last_node = furthest_block;
 
         // 9.1. Let inner loop counter be zero.
         int inner_loop_counter = 0;
@@ -1006,9 +1004,9 @@ inner_loop:
 
         // 9.5. If node is not in the list of active formatting elements, then remove node from the stack of open elements and then go back 
         // to the step labeled inner loop.
-        if (!is_in_the_list_of_active_formatting_elements(node))
+        if (!is_in_the_list_of_active_formatting_elements(node.get()))
         {
-            remove_node_from_the_stack_of_open_elements(node);
+            remove_node_from_the_stack_of_open_elements(node.get());
             goto inner_loop;
         }
 
@@ -1021,12 +1019,12 @@ inner_loop:
         // for the new element, and let node be the new element.
         for (uint32 index = 0; index < this->active_formatting_elements.size(); index++)
         {
-            FormattingElement::Ref list_entry = this->active_formatting_elements.at(index);
+            std::shared_ptr<FormattingElement> list_entry = this->active_formatting_elements.at(index);
 
             if (list_entry->element == node)
             {
-                ElementNode::Ref new_element;
-                create_an_element_for_a_token(list_entry->token, node->element_name->name_space, &new_element);
+                std::shared_ptr<ElementNode> new_element;
+                create_an_element_for_a_token(list_entry->token.get(), node->element_name->name_space, &new_element);
 
                 list_entry->element = new_element;
 
@@ -1060,14 +1058,14 @@ inner_loop:
 step_10:
         // 10. If the common ancestor node is a table, tbody, tfoot, thead, or tr element, then, foster parent whatever last node ended up 
         // being in the previous step, first removing it from its previous parent node if any.
-        if (common_ancestor->has_element_name(Html::globals->HTML_table) ||
-            common_ancestor->has_element_name(Html::globals->HTML_tbody) ||
-            common_ancestor->has_element_name(Html::globals->HTML_tfoot) ||
-            common_ancestor->has_element_name(Html::globals->HTML_thead) ||
-            common_ancestor->has_element_name(Html::globals->HTML_tr))
+        if (common_ancestor->has_element_name(Html::globals->HTML_table.get()) ||
+            common_ancestor->has_element_name(Html::globals->HTML_tbody.get()) ||
+            common_ancestor->has_element_name(Html::globals->HTML_tfoot.get()) ||
+            common_ancestor->has_element_name(Html::globals->HTML_thead.get()) ||
+            common_ancestor->has_element_name(Html::globals->HTML_tr.get()))
         {
             last_node->remove_from_parent();
-            foster_parent(last_node);
+            foster_parent(last_node.get());
         }
         else
         {
@@ -1078,20 +1076,20 @@ step_10:
         }
 
         // 11. Create an element for the token for which the formatting element was created.
-        ElementNode::Ref new_element;
-        create_an_element_for_a_token(formatting_element->token, formatting_element->element->element_name->name_space, &new_element);
+        std::shared_ptr<ElementNode> new_element;
+        create_an_element_for_a_token(formatting_element->token.get(), formatting_element->element->element_name->name_space, &new_element);
 
         // 12. Take all of the child nodes of the furthest block and append them to the element created in the last step.
-        new_element->take_all_child_nodes_of(furthest_block);
+        new_element->take_all_child_nodes_of(furthest_block.get());
 
         // 13. Append that new element to the furthest block.
         furthest_block->Append(new_element);
 
         // 14. Remove the formatting element from the list of active formatting elements, and insert the new element into the list of 
         // active formatting elements at the position of the aforementioned bookmark.
-        remove_node_from_the_list_of_active_formatting_elements(formatting_element->element);
+        remove_node_from_the_list_of_active_formatting_elements(formatting_element->element.get());
 
-        FormattingElement::Ref new_formatting_element = New<FormattingElement>();
+        std::shared_ptr<FormattingElement> new_formatting_element = std::make_shared<FormattingElement>();
         new_formatting_element->Initialize(new_element, formatting_element->token);
 
         for (uint32 index = 0; index < this->active_formatting_elements.size(); index++)
@@ -1102,7 +1100,7 @@ step_10:
 
         // 15. Remove the formatting element from the stack of open elements, and insert the new element into the stack of open elements 
         // immediately below the position of the furthest block in that stack.
-        remove_node_from_the_stack_of_open_elements(formatting_element->element);
+        remove_node_from_the_stack_of_open_elements(formatting_element->element.get());
 
         for (uint32 index = 0; index < this->open_elements.size(); index++)
         {
@@ -1121,14 +1119,14 @@ step_10:
 
 loop:
         // 2. Loop: If node has the same tag name as the token, then:
-        ElementNode::Ref node = this->open_elements.at(node_index);
-        if (tag->HasNameOf(node->element_name))
+        std::shared_ptr<ElementNode> node = this->open_elements.at(node_index);
+        if (tag->has_name_of(node->element_name.get()))
         {
             // 2.1. Generate implied end tags, except for elements with the same tag name as the token.
             generate_implied_end_tags(tag);
 
             // 2.2. If the tag name of the end tag token does not match the tag name of the current node, this is a parse error.
-            if (!tag->HasNameOf(node->element_name))
+            if (!tag->has_name_of(node->element_name.get()))
                 ParseError(tag);
 
             // 2.3. Pop all the nodes from the current node up to node, including node, then stop these steps.
@@ -1139,7 +1137,7 @@ loop:
         }
 
         // 3. Otherwise, if node is in the special category, then this is a parse error; ignore the token, and abort these steps.
-        if (is_special(node->element_name))
+        if (is_special(node->element_name.get()))
         {
             ParseError(tag);
 
@@ -1159,23 +1157,23 @@ loop:
     {
         if (
             (
-                !doctype_token->HasNameOf(Html::globals->HTML_html) ||
-                doctype_token->public_identifier.item() != 0 ||
-                (doctype_token->system_identifier.item() != 0 && !doctype_token->system_identifier.equals<true>(Html::globals->DOCTYPE_legacy_compat))
+                !doctype_token->has_name_of(Html::globals->HTML_html.get()) ||
+                doctype_token->public_identifier.get() != 0 ||
+                (doctype_token->system_identifier.get() != 0 && !equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_legacy_compat.get()))
             )
             &&
             (
-                !(doctype_token->public_identifier.equals<true>(Html::globals->DOCTYPE_html_4_0_public_identifier) &&
-                    (doctype_token->system_identifier.item() == 0 || doctype_token->system_identifier.equals<true>(Html::globals->DOCTYPE_html_4_0_system_identifier)))
+                !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_html_4_0_public_identifier.get()) &&
+                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_0_system_identifier.get())))
                     &&
-                !(doctype_token->public_identifier.equals<true>(Html::globals->DOCTYPE_html_4_01_public_identifier) &&
-                    (doctype_token->system_identifier.item() == 0 || doctype_token->system_identifier.equals<true>(Html::globals->DOCTYPE_html_4_01_system_identifier)))
+                !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_html_4_01_public_identifier.get()) &&
+                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_01_system_identifier.get())))
                     &&
-                !(doctype_token->public_identifier.equals<true>(Html::globals->DOCTYPE_xhtml_1_0_public_identifier) &&
-                    (doctype_token->system_identifier.item() == 0 || doctype_token->system_identifier.equals<true>(Html::globals->DOCTYPE_xhtml_1_0_system_identifier)))
+                !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_xhtml_1_0_public_identifier.get()) &&
+                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_0_system_identifier.get())))
                     &&
-                !(doctype_token->public_identifier.equals<true>(Html::globals->DOCTYPE_xhtml_1_1_public_identifier) &&
-                    (doctype_token->system_identifier.item() == 0 || doctype_token->system_identifier.equals<true>(Html::globals->DOCTYPE_xhtml_1_1_system_identifier)))
+                !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_xhtml_1_1_public_identifier.get()) &&
+                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_1_system_identifier.get())))
             ))
             return false;
 
@@ -1191,7 +1189,7 @@ loop:
             return Document::Mode::quirks_mode;
 
         //• The name is set to anything other than "html" (compared case-sensitively). 
-        if (doctype_token->name.item() != 0 && !doctype_token->HasNameOf(Html::globals->HTML_html))
+        if (doctype_token->name.get() != 0 && !doctype_token->has_name_of(Html::globals->HTML_html.get()))
             return Document::Mode::quirks_mode;
 
         //• The public identifier starts with: "+//Silmaril//dtd html Pro v0r11 19970101//" 
@@ -1327,7 +1325,7 @@ loop:
         HandleError(full_error);
     }
 
-    void TreeConstruction::ParseError(TokenPointer token)
+    void TreeConstruction::ParseError(const Token* token)
     {
         char token_string[0x40];
         token->GetDebugString(token_string, _countof(token_string));
@@ -1338,7 +1336,7 @@ loop:
         ParseError(full_error);
     }
 
-    void TreeConstruction::ParseError(TokenPointer token, const char* error)
+    void TreeConstruction::ParseError(const Token* token, const char* error)
     {
         char token_string[0x40];
         token->GetDebugString(token_string, _countof(token_string));
@@ -1349,7 +1347,7 @@ loop:
         ParseError(full_error);
     }
 
-    void TreeConstruction::HandleNyi(TokenPointer token, bool log)
+    void TreeConstruction::HandleNyi(const Token* token, bool log)
     {
         char token_string[0x40];
         token->GetDebugString(token_string, _countof(token_string));
@@ -1442,7 +1440,7 @@ loop:
 
     void TreeConstruction::act_as_if_a_start_tag_token_had_been_seen(ElementName* name)
     {
-        StartTagToken::Ref tag = New<StartTagToken>();
+        std::shared_ptr<StartTagToken> tag = std::make_shared<StartTagToken>();
         tag->name = name->name;
 
         tree_construction_dispatcher(tag, 0);
@@ -1450,7 +1448,7 @@ loop:
 
     void TreeConstruction::act_as_if_an_end_tag_token_had_been_seen(ElementName* name, bool* ignored)
     {
-        EndTagToken::Ref tag = New<EndTagToken>();
+        std::shared_ptr<EndTagToken> tag = std::make_shared<EndTagToken>();
         tag->name = name->name;
 
         tree_construction_dispatcher(tag, ignored);
@@ -1458,35 +1456,31 @@ loop:
 
     void TreeConstruction::close_a_p_element()
     {
-        generate_implied_end_tags(Html::globals->HTML_p);
+        generate_implied_end_tags(Html::globals->HTML_p.get());
 
-        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_p) == false)
+        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_p.get()) == false)
             ParseError("close_a_p_element");
 
         while (true)
         {
-            ElementNode::Ref popped = this->CurrentNode();
+            std::shared_ptr<ElementNode> popped = std::static_pointer_cast<ElementNode>(this->CurrentNode());
             pop_the_current_node_off_the_stack_of_open_elements();
 
-            if (this->CurrentNode()->element_name->equals(Html::globals->HTML_p))
+            if (this->CurrentNode()->element_name->equals(Html::globals->HTML_p.get()))
                 break;
         }
     }
 
-    void TreeConstruction::Write(const TokenPointer* elements, uint32 count)
+    void TreeConstruction::write_element(TokenRef element)
     {
-        for (uint32 i = 0; i < count; i++)
-        {
-            TokenPointer token = elements[i];
-            tree_construction_dispatcher(token, 0);
-        }
+        tree_construction_dispatcher(element, 0);
     }
 
-    void TreeConstruction::tree_construction_dispatcher(TokenPointer token, bool* ignored)
+    void TreeConstruction::tree_construction_dispatcher(TokenRef token, bool* ignored)
     {
         bool reprocess;
 
-        if (InForeignContent(token))
+        if (InForeignContent(token.get()))
             apply_the_rules_for_parsing_tokens_in_foreign_content(token, ignored, &reprocess);
         else
             apply_the_rules_for(this->insertion_mode, token, ignored, &reprocess);
@@ -1495,7 +1489,7 @@ loop:
             tree_construction_dispatcher(token, ignored);
     }
 
-    void TreeConstruction::apply_the_rules_for(InsertionMode insertion_mode, TokenPointer token, bool* ignored, bool* reprocess)
+    void TreeConstruction::apply_the_rules_for(InsertionMode insertion_mode, TokenRef token, bool* ignored, bool* reprocess)
     {
         bool local_reprocess;
 
@@ -1520,7 +1514,7 @@ loop:
 
             if (token->type == Token::Type::character_token)
             {
-                CharacterToken* character_token = (CharacterToken*)token;
+                CharacterToken* character_token = (CharacterToken*)token.get();
 
                 if (character_token->data == 0x000A)
                 {
@@ -1540,7 +1534,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -1561,9 +1555,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->document->Append(comment_node);
@@ -1572,15 +1566,15 @@ loop:
 
                 case Token::Type::DOCTYPE_token:
                     {
-                        DocTypeToken* doctype_token = (DocTypeToken*)token;
+                        DocTypeToken* doctype_token = (DocTypeToken*)token.get();
 
                         if (!IsValidDocType(doctype_token))
                             ParseError("!IsValidDocType(doctype_token)");
 
-                        DocumentTypeNode::Ref doctype_node = New<DocumentTypeNode>();
-                        doctype_node->name = doctype_token->name.item() == 0 ? New<UnicodeString>() : doctype_token->name;
-                        doctype_node->publicId = doctype_token->public_identifier.item() == 0 ? New<UnicodeString>() : doctype_token->public_identifier;
-                        doctype_node->systemId = doctype_token->system_identifier.item() == 0 ? New<UnicodeString>() : doctype_token->system_identifier;
+                        std::shared_ptr<DocumentTypeNode> doctype_node = std::make_shared<DocumentTypeNode>();
+                        doctype_node->name = doctype_token->name.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->name;
+                        doctype_node->publicId = doctype_token->public_identifier.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->public_identifier;
+                        doctype_node->systemId = doctype_token->system_identifier.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->system_identifier;
 
                         // and the other attributes specific to DocumentType objects set to null and empty lists as appropriate.
 
@@ -1600,7 +1594,7 @@ loop:
                 if (anything_else)
                 {
                     // If the document is not an iframe srcdoc document, then this is a parse error; set the Document to quirks mode.
-                    HandleNyi(token, true); // $ NYI
+                    HandleNyi(token.get(), true); // $ NYI
 
                     // In any case, switch the insertion mode to "before html", then reprocess the current token.
                     switch_the_insertion_mode(InsertionMode::before_html_insertion_mode);
@@ -1616,15 +1610,15 @@ loop:
                 switch(token->type)
                 {
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->document->Append(comment_node);
@@ -1633,7 +1627,7 @@ loop:
 
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -1654,11 +1648,11 @@ loop:
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             create_an_element_for_a_token(tag, Html::globals->Namespace_HTML, &element);
 
                             this->document->Append(element);
@@ -1671,7 +1665,7 @@ loop:
                             // serializer algorithm to the resulting parsed URL with the exclude fragment flag set; otherwise, if
                             // there is no such attribute, or its value is the empty string, or resolving its value fails, run the
                             // application cache selection algorithm with no manifest. The algorithm must be passed the Document object.
-                            HandleNyi(token, false); // $ NYI
+                            HandleNyi(token.get(), false); // $ NYI
 
                             switch_the_insertion_mode(InsertionMode::before_head_insertion_mode);
                         }
@@ -1684,18 +1678,18 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_head) ||
-                            tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_br))
+                        if (tag->has_name_of(Html::globals->HTML_head.get()) ||
+                            tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_br.get()))
                         {
                             anything_else = true;
                         }
                         else
                         {
-                            ParseError(token, "not head, body, html, or br");
+                            ParseError(token.get(), "not head, body, html, or br");
                             (*ignored) = true;
                         }
                     }
@@ -1708,14 +1702,14 @@ loop:
 
                 if (anything_else)
                 {
-                    ElementNode::Ref element = New<ElementNode>();
-                    element->Initialize(Html::globals->HTML_html, New<StringMap>());
+                    std::shared_ptr<ElementNode> element = std::make_shared<ElementNode>();
+                    element->Initialize(Html::globals->HTML_html, std::make_shared<StringMap>());
 
                     push_onto_the_stack_of_open_elements(element);
 
                     // If the Document is being loaded as part of navigation of a browsing context, then: run the application 
                     // cache selection algorithm with no manifest, passing it the Document object.
-                    HandleNyi(token, true); // $ NYI
+                    HandleNyi(token.get(), true); // $ NYI
 
                     switch_the_insertion_mode(InsertionMode::before_head_insertion_mode);
 
@@ -1732,7 +1726,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -1753,9 +1747,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -1763,21 +1757,21 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_head))
+                        else if (tag->has_name_of(Html::globals->HTML_head.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             insert_an_HTML_element(tag, &element);
 
                             this->head_element = element;
@@ -1793,18 +1787,18 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_head) ||
-                            tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_br))
+                        if (tag->has_name_of(Html::globals->HTML_head.get()) ||
+                            tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_br.get()))
                         {
                             anything_else = true;
                         }
                         else
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                     }
@@ -1817,7 +1811,7 @@ loop:
 
                 if (anything_else)
                 {
-                    act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_head);
+                    act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_head.get());
 
                     (*reprocess) = true;
                 }
@@ -1832,7 +1826,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -1853,9 +1847,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -1863,24 +1857,24 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_base) ||
-                            tag->HasNameOf(Html::globals->HTML_basefont) ||
-                            tag->HasNameOf(Html::globals->HTML_bgsound) ||
-                            tag->HasNameOf(Html::globals->HTML_link))
+                        else if (tag->has_name_of(Html::globals->HTML_base.get()) ||
+                            tag->has_name_of(Html::globals->HTML_basefont.get()) ||
+                            tag->has_name_of(Html::globals->HTML_bgsound.get()) ||
+                            tag->has_name_of(Html::globals->HTML_link.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             insert_an_HTML_element(tag, &element);
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -1890,9 +1884,9 @@ loop:
                                 tag->acknowledged = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_meta))
+                        else if (tag->has_name_of(Html::globals->HTML_meta.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             insert_an_HTML_element(tag, &element);
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -1911,26 +1905,26 @@ loop:
                             // extracting a character encoding from a meta element to that attribute's value returns a supported 
                             // ASCII-compatible character encoding or a UTF-16 encoding, and the confidence is currently tentative, 
                             // then change the encoding to the extracted encoding.
-                            HandleNyi(token, false); // $ NYI
+                            HandleNyi(token.get(), false); // $ NYI
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_title))
+                        else if (tag->has_name_of(Html::globals->HTML_title.get()))
                         {
                             generic_RCDATA_element_parsing_algorithm(tag);
                         }
-                        else if ((tag->HasNameOf(Html::globals->HTML_noscript) && this->scripting_flag) ||
-                            tag->HasNameOf(Html::globals->HTML_noframes) ||
-                            tag->HasNameOf(Html::globals->HTML_style))
+                        else if ((tag->has_name_of(Html::globals->HTML_noscript.get()) && this->scripting_flag) ||
+                            tag->has_name_of(Html::globals->HTML_noframes.get()) ||
+                            tag->has_name_of(Html::globals->HTML_style.get()))
                         {
                             generic_raw_text_element_parsing_algorithm(tag);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_noscript) && !this->scripting_flag)
+                        else if (tag->has_name_of(Html::globals->HTML_noscript.get()) && !this->scripting_flag)
                         {
                             insert_an_HTML_element(tag, 0);
                             switch_the_insertion_mode(InsertionMode::in_head_noscript_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_script))
+                        else if (tag->has_name_of(Html::globals->HTML_script.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             create_an_element_for_a_token(tag, Html::globals->Namespace_HTML, &element);
 
                             // 2. Mark the element as being "parser-inserted" and unset the element's "force-async" flag.
@@ -1943,7 +1937,7 @@ loop:
                             //
                             // 3. If the parser was originally created for the HTML fragment parsing algorithm, then mark the script element 
                             // as "already started". (fragment case)
-                            HandleNyi(token, false); // $ NYI
+                            HandleNyi(token.get(), false); // $ NYI
 
                             this->CurrentNode()->Append(element);
                             push_onto_the_stack_of_open_elements(element);
@@ -1952,9 +1946,9 @@ loop:
                             this->original_insertion_mode = this->insertion_mode;
                             this->insertion_mode = InsertionMode::text_insertion_mode;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_head))
+                        else if (tag->has_name_of(Html::globals->HTML_head.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                         else
@@ -1966,22 +1960,22 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_head))
+                        if (tag->has_name_of(Html::globals->HTML_head.get()))
                         {
                             pop_the_current_node_off_the_stack_of_open_elements();
                             switch_the_insertion_mode(InsertionMode::after_head_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_br))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_br.get()))
                         {
                             anything_else = true;
                         }
                         else
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                     }
@@ -1994,7 +1988,7 @@ loop:
 
                 if (anything_else)
                 {
-                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_head, 0);
+                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_head.get(), 0);
 
                     (*reprocess) = true;
                 }
@@ -2008,31 +2002,31 @@ loop:
                 switch (token->type)
                 {
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_basefont) ||
-                            tag->HasNameOf(Html::globals->HTML_bgsound) ||
-                            tag->HasNameOf(Html::globals->HTML_link) ||
-                            tag->HasNameOf(Html::globals->HTML_meta) ||
-                            tag->HasNameOf(Html::globals->HTML_noframes) ||
-                            tag->HasNameOf(Html::globals->HTML_style))
+                        else if (tag->has_name_of(Html::globals->HTML_basefont.get()) ||
+                            tag->has_name_of(Html::globals->HTML_bgsound.get()) ||
+                            tag->has_name_of(Html::globals->HTML_link.get()) ||
+                            tag->has_name_of(Html::globals->HTML_meta.get()) ||
+                            tag->has_name_of(Html::globals->HTML_noframes.get()) ||
+                            tag->has_name_of(Html::globals->HTML_style.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_head) ||
-                            tag->HasNameOf(Html::globals->HTML_noscript))
+                        else if (tag->has_name_of(Html::globals->HTML_head.get()) ||
+                            tag->has_name_of(Html::globals->HTML_noscript.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                         else
@@ -2044,20 +2038,20 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_noscript))
+                        if (tag->has_name_of(Html::globals->HTML_noscript.get()))
                         {
                             pop_the_current_node_off_the_stack_of_open_elements();
                             switch_the_insertion_mode(InsertionMode::in_head_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_br))
+                        else if (tag->has_name_of(Html::globals->HTML_br.get()))
                         {
                             anything_else = true;
                         }
                         else
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                     }
@@ -2065,7 +2059,7 @@ loop:
 
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -2095,7 +2089,7 @@ loop:
 
                 if (anything_else)
                 {
-                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_noscript, 0);
+                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_noscript.get(), 0);
 
                     (*reprocess) = true;
                 }
@@ -2110,7 +2104,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -2131,9 +2125,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -2141,55 +2135,55 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             insert_an_HTML_element(tag, &element);
 
                             this->frameset_ok = false;
 
                             switch_the_insertion_mode(InsertionMode::in_body_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_frameset))
+                        else if (tag->has_name_of(Html::globals->HTML_frameset.get()))
                         {
-                            ElementNode::Ref element;
+                            std::shared_ptr<ElementNode> element;
                             insert_an_HTML_element(tag, &element);
 
                             switch_the_insertion_mode(InsertionMode::in_frameset_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_base) ||
-                            tag->HasNameOf(Html::globals->HTML_basefont) ||
-                            tag->HasNameOf(Html::globals->HTML_bgsound) ||
-                            tag->HasNameOf(Html::globals->HTML_link) ||
-                            tag->HasNameOf(Html::globals->HTML_meta) ||
-                            tag->HasNameOf(Html::globals->HTML_noframes) ||
-                            tag->HasNameOf(Html::globals->HTML_script) ||
-                            tag->HasNameOf(Html::globals->HTML_style) ||
-                            tag->HasNameOf(Html::globals->HTML_title))
+                        else if (tag->has_name_of(Html::globals->HTML_base.get()) ||
+                            tag->has_name_of(Html::globals->HTML_basefont.get()) ||
+                            tag->has_name_of(Html::globals->HTML_bgsound.get()) ||
+                            tag->has_name_of(Html::globals->HTML_link.get()) ||
+                            tag->has_name_of(Html::globals->HTML_meta.get()) ||
+                            tag->has_name_of(Html::globals->HTML_noframes.get()) ||
+                            tag->has_name_of(Html::globals->HTML_script.get()) ||
+                            tag->has_name_of(Html::globals->HTML_style.get()) ||
+                            tag->has_name_of(Html::globals->HTML_title.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             push_onto_the_stack_of_open_elements(this->head_element);
 
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
 
-                            remove_node_from_the_stack_of_open_elements(this->head_element);
+                            remove_node_from_the_stack_of_open_elements(this->head_element.get());
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_head))
+                        else if (tag->has_name_of(Html::globals->HTML_head.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                         else
@@ -2201,17 +2195,17 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_br))
+                        if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_br.get()))
                         {
                             anything_else = true;
                         }
                         else
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                     }
@@ -2224,7 +2218,7 @@ loop:
 
                 if (anything_else)
                 {
-                    act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_body);
+                    act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_body.get());
 
                     this->frameset_ok = true;
 
@@ -2239,12 +2233,12 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
                         case 0x0000:
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                             break;
 
@@ -2268,9 +2262,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -2278,39 +2272,39 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        std::shared_ptr<StartTagToken> tag = std::static_pointer_cast<StartTagToken>(token);
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             // For each attribute on the token, check to see if the attribute is already present on the top element of 
                             // the stack of open elements. If it is not, add the attribute and its corresponding value to that element.
-                            HandleNyi(token, true); // $ NYI
+                            HandleNyi(token.get(), true); // $ NYI
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_base) ||
-                            tag->HasNameOf(Html::globals->HTML_basefont) ||
-                            tag->HasNameOf(Html::globals->HTML_bgsound) ||
-                            tag->HasNameOf(Html::globals->HTML_link) ||
-                            tag->HasNameOf(Html::globals->HTML_meta) ||
-                            tag->HasNameOf(Html::globals->HTML_noframes) ||
-                            tag->HasNameOf(Html::globals->HTML_script) ||
-                            tag->HasNameOf(Html::globals->HTML_style) ||
-                            tag->HasNameOf(Html::globals->HTML_title))
+                        else if (tag->has_name_of(Html::globals->HTML_base.get()) ||
+                            tag->has_name_of(Html::globals->HTML_basefont.get()) ||
+                            tag->has_name_of(Html::globals->HTML_bgsound.get()) ||
+                            tag->has_name_of(Html::globals->HTML_link.get()) ||
+                            tag->has_name_of(Html::globals->HTML_meta.get()) ||
+                            tag->has_name_of(Html::globals->HTML_noframes.get()) ||
+                            tag->has_name_of(Html::globals->HTML_script.get()) ||
+                            tag->has_name_of(Html::globals->HTML_style.get()) ||
+                            tag->has_name_of(Html::globals->HTML_title.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            if (this->open_elements.size() == 1 || !this->open_elements[1]->has_element_name(Html::globals->HTML_body))
+                            if (this->open_elements.size() == 1 || !this->open_elements[1]->has_element_name(Html::globals->HTML_body.get()))
                             {
                                 // fragment case
                                 (*ignored) = true;
@@ -2319,19 +2313,19 @@ loop:
                             {
                                 this->frameset_ok = false;
 
-                                ElementNode::Ref element = this->open_elements[1];
+                                std::shared_ptr<ElementNode> element = this->open_elements[1];
 
                                 // for each attribute on the token, check to see if the attribute is already present on the body 
                                 // (the second element) on the stack of open elements, and if it is not, add the attribute and its 
                                 // corresponding value to that element.
-                                HandleNyi(token, false); // $ NYI
+                                HandleNyi(token.get(), false); // $ NYI
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_frameset))
+                        else if (tag->has_name_of(Html::globals->HTML_frameset.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            if (this->open_elements.size() == 1 || !this->open_elements[1]->has_element_name(Html::globals->HTML_body))
+                            if (this->open_elements.size() == 1 || !this->open_elements[1]->has_element_name(Html::globals->HTML_body.get()))
                             {
                                 // fragment case
                                 (*ignored) = true;
@@ -2350,75 +2344,75 @@ loop:
                                 // 3. Insert an HTML element for the token.
                                 //
                                 // 4. Switch the insertion mode to "in frameset".
-                                HandleNyi(token, true); // $ NYI
+                                HandleNyi(token.get(), true); // $ NYI
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_address) ||
-                            tag->HasNameOf(Html::globals->HTML_article) ||
-                            tag->HasNameOf(Html::globals->HTML_aside) ||
-                            tag->HasNameOf(Html::globals->HTML_blockquote) ||
-                            tag->HasNameOf(Html::globals->HTML_center) ||
-                            tag->HasNameOf(Html::globals->HTML_details) ||
-                            tag->HasNameOf(Html::globals->HTML_dialog) ||
-                            tag->HasNameOf(Html::globals->HTML_dir) ||
-                            tag->HasNameOf(Html::globals->HTML_div) ||
-                            tag->HasNameOf(Html::globals->HTML_dl) ||
-                            tag->HasNameOf(Html::globals->HTML_fieldset) ||
-                            tag->HasNameOf(Html::globals->HTML_figcaption) ||
-                            tag->HasNameOf(Html::globals->HTML_figure) ||
-                            tag->HasNameOf(Html::globals->HTML_footer) ||
-                            tag->HasNameOf(Html::globals->HTML_header) ||
-                            tag->HasNameOf(Html::globals->HTML_hgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_main) ||
-                            tag->HasNameOf(Html::globals->HTML_menu) ||
-                            tag->HasNameOf(Html::globals->HTML_nav) ||
-                            tag->HasNameOf(Html::globals->HTML_ol) ||
-                            tag->HasNameOf(Html::globals->HTML_p) ||
-                            tag->HasNameOf(Html::globals->HTML_section) ||
-                            tag->HasNameOf(Html::globals->HTML_summary) ||
-                            tag->HasNameOf(Html::globals->HTML_ul))
+                        else if (tag->has_name_of(Html::globals->HTML_address.get()) ||
+                            tag->has_name_of(Html::globals->HTML_article.get()) ||
+                            tag->has_name_of(Html::globals->HTML_aside.get()) ||
+                            tag->has_name_of(Html::globals->HTML_blockquote.get()) ||
+                            tag->has_name_of(Html::globals->HTML_center.get()) ||
+                            tag->has_name_of(Html::globals->HTML_details.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dialog.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dir.get()) ||
+                            tag->has_name_of(Html::globals->HTML_div.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dl.get()) ||
+                            tag->has_name_of(Html::globals->HTML_fieldset.get()) ||
+                            tag->has_name_of(Html::globals->HTML_figcaption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_figure.get()) ||
+                            tag->has_name_of(Html::globals->HTML_footer.get()) ||
+                            tag->has_name_of(Html::globals->HTML_header.get()) ||
+                            tag->has_name_of(Html::globals->HTML_hgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_main.get()) ||
+                            tag->has_name_of(Html::globals->HTML_menu.get()) ||
+                            tag->has_name_of(Html::globals->HTML_nav.get()) ||
+                            tag->has_name_of(Html::globals->HTML_ol.get()) ||
+                            tag->has_name_of(Html::globals->HTML_p.get()) ||
+                            tag->has_name_of(Html::globals->HTML_section.get()) ||
+                            tag->has_name_of(Html::globals->HTML_summary.get()) ||
+                            tag->has_name_of(Html::globals->HTML_ul.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_h1) ||
-                            tag->HasNameOf(Html::globals->HTML_h2) ||
-                            tag->HasNameOf(Html::globals->HTML_h3) ||
-                            tag->HasNameOf(Html::globals->HTML_h4) ||
-                            tag->HasNameOf(Html::globals->HTML_h5) ||
-                            tag->HasNameOf(Html::globals->HTML_h6))
+                        else if (tag->has_name_of(Html::globals->HTML_h1.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h2.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h3.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h4.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h5.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h6.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_h1) ||
-                                this->CurrentNode()->has_element_name(Html::globals->HTML_h2) ||
-                                this->CurrentNode()->has_element_name(Html::globals->HTML_h3) ||
-                                this->CurrentNode()->has_element_name(Html::globals->HTML_h4) ||
-                                this->CurrentNode()->has_element_name(Html::globals->HTML_h5) ||
-                                this->CurrentNode()->has_element_name(Html::globals->HTML_h6))
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_h1.get()) ||
+                                this->CurrentNode()->has_element_name(Html::globals->HTML_h2.get()) ||
+                                this->CurrentNode()->has_element_name(Html::globals->HTML_h3.get()) ||
+                                this->CurrentNode()->has_element_name(Html::globals->HTML_h4.get()) ||
+                                this->CurrentNode()->has_element_name(Html::globals->HTML_h5.get()) ||
+                                this->CurrentNode()->has_element_name(Html::globals->HTML_h6.get()))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_pre) ||
-                            tag->HasNameOf(Html::globals->HTML_listing))
+                        else if (tag->has_name_of(Html::globals->HTML_pre.get()) ||
+                            tag->has_name_of(Html::globals->HTML_listing.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             // If the next token is a U+000A LINE FEED (LF) character token, then ignore that token and move on to the
                             // next one. (Newlines at the start of pre blocks are ignore as an authoring convenience.)
@@ -2426,27 +2420,27 @@ loop:
 
                             this->frameset_ok = false;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_form))
+                        else if (tag->has_name_of(Html::globals->HTML_form.get()))
                         {
-                            if (this->form_element.item() != 0)
+                            if (this->form_element.get() != 0)
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                             else
                             {
-                                if (has_element_in_button_scope(Html::globals->HTML_p))
+                                if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                                 {
-                                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                                 }
 
-                                ElementNode::Ref element;
-                                insert_an_HTML_element(tag, &element);
+                                std::shared_ptr<ElementNode> element;
+                                insert_an_HTML_element(tag.get(), &element);
 
                                 this->form_element = element;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_li))
+                        else if (tag->has_name_of(Html::globals->HTML_li.get()))
                         {
                             // 1. Set the frameset-ok flag to "not ok".
                             this->frameset_ok = false;
@@ -2454,19 +2448,19 @@ loop:
                             // 2. Initialize node to be the current node (the bottommost node of the stack).
                             for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
                             {
-                                ElementNode::Ref node = (*it);
+                                std::shared_ptr<ElementNode> node = (*it);
 
                                 // 3. Loop: If node is an li element, then act as if an end tag with the tag name "li" had been seen, then jump to the last step.
-                                if (node->has_element_name(Html::globals->HTML_li))
+                                if (node->has_element_name(Html::globals->HTML_li.get()))
                                 {
-                                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_li, 0);
+                                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_li.get(), 0);
                                     break;
                                 }
 
-                                if (is_special(node->element_name) &&
-                                    !(node->has_element_name(Html::globals->HTML_address) ||
-                                    node->has_element_name(Html::globals->HTML_div) ||
-                                    node->has_element_name(Html::globals->HTML_p)))
+                                if (is_special(node->element_name.get()) &&
+                                    !(node->has_element_name(Html::globals->HTML_address.get()) ||
+                                    node->has_element_name(Html::globals->HTML_div.get()) ||
+                                    node->has_element_name(Html::globals->HTML_p.get())))
                                 {
                                     // 4. If node is in the special category, but is not an address, div, or p element, then jump to the last step.
                                     break;
@@ -2475,54 +2469,54 @@ loop:
                                 // 5. Otherwise, set node to the previous entry in the stack of open elements and return to the step labeled loop.                            }
                             }
 
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_dd) ||
-                            tag->HasNameOf(Html::globals->HTML_dt))
+                        else if (tag->has_name_of(Html::globals->HTML_dd.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dt.get()))
                         {
                             this->frameset_ok = false;
 
                             for (ElementList::reverse_iterator it = this->open_elements.rbegin(); it != this->open_elements.rend(); it++)
                             {
-                                ElementNode::Ref node = (*it);
+                                std::shared_ptr<ElementNode> node = (*it);
 
-                                if (node->has_element_name(Html::globals->HTML_dd))
+                                if (node->has_element_name(Html::globals->HTML_dd.get()))
                                 {
-                                    generate_implied_end_tags(Html::globals->HTML_dd);
+                                    generate_implied_end_tags(Html::globals->HTML_dd.get());
 
-                                    if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dd) == false)
-                                        ParseError(tag);
+                                    if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dd.get()) == false)
+                                        ParseError(tag.get());
 
                                     while (true)
                                     {
-                                        ElementNode::Ref popped = this->CurrentNode();
+                                        std::shared_ptr<ElementNode> popped = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                                         pop_the_current_node_off_the_stack_of_open_elements();
 
-                                        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dd))
+                                        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dd.get()))
                                             break;
                                     }
 
                                     break;
                                 }
 
-                                if (node->has_element_name(Html::globals->HTML_dt))
+                                if (node->has_element_name(Html::globals->HTML_dt.get()))
                                 {
-                                    generate_implied_end_tags(Html::globals->HTML_dt);
+                                    generate_implied_end_tags(Html::globals->HTML_dt.get());
 
-                                    if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dt) == false)
-                                        ParseError(tag);
+                                    if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dt.get()) == false)
+                                        ParseError(tag.get());
 
                                     while (true)
                                     {
-                                        ElementNode::Ref popped = this->CurrentNode();
+                                        std::shared_ptr<ElementNode> popped = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                                         pop_the_current_node_off_the_stack_of_open_elements();
 
-                                        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dt))
+                                        if (this->CurrentNode()->element_name->equals(Html::globals->HTML_dt.get()))
                                             break;
                                     }
 
@@ -2530,30 +2524,30 @@ loop:
                                 }
 
                                 // 4. If node is in the special category, but is not an address, div, or p element, then jump to the last step.
-                                if (is_special(node->element_name) &&
-                                    !node->element_name->equals(Html::globals->HTML_address) &&
-                                    !node->element_name->equals(Html::globals->HTML_div) &&
-                                    !node->element_name->equals(Html::globals->HTML_p))
+                                if (is_special(node->element_name.get()) &&
+                                    !node->element_name->equals(Html::globals->HTML_address.get()) &&
+                                    !node->element_name->equals(Html::globals->HTML_div.get()) &&
+                                    !node->element_name->equals(Html::globals->HTML_p.get()))
                                 {
                                     break;
                                 }
                             }
 
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
                                 close_a_p_element();
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_plaintext))
+                        else if (tag->has_name_of(Html::globals->HTML_plaintext.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             this->parser->tokenizer->SwitchToState(TokenizerState::PLAINTEXT_state);
 
@@ -2561,24 +2555,24 @@ loop:
                             // seen other than character tokens (and the end-of-file token), because there is no way to switch out of
                             // the PLAINTEXT state.
                         }
-                        else if (tag->HasNameOf(Html::globals->button_element_name))
+                        else if (tag->has_name_of(Html::globals->button_element_name.get()))
                         {
-                            if (has_element_in_scope(Html::globals->button_element_name))
+                            if (has_element_in_scope(Html::globals->button_element_name.get()))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->button_element_name, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->button_element_name.get(), 0);
 
                                 (*reprocess = true);
                             }
                             else
                             {
                                 reconstruct_the_active_formatting_elements();
-                                insert_an_HTML_element(tag, 0);
+                                insert_an_HTML_element(tag.get(), 0);
                                 this->frameset_ok = false;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_a))
+                        else if (tag->has_name_of(Html::globals->HTML_a.get()))
                         {
                             // If the list of active formatting elements contains an element whose tag name is "a" between the end of 
                             // the list and the last marker on the list (or the start of the list if there is no marker on the list), 
@@ -2587,19 +2581,19 @@ loop:
                             // already remove it (it might not have if the element is not in table scope).
 
                             int formatting_element_index = this->active_formatting_elements.size() - 1;
-                            FormattingElement::Ref formatting_element;
+                            std::shared_ptr<FormattingElement> formatting_element;
 
                             while (true)
                             {
                                 if (formatting_element_index == -1)
                                     break;
 
-                                FormattingElement::Ref item = this->active_formatting_elements.at(formatting_element_index);
+                                std::shared_ptr<FormattingElement> item = this->active_formatting_elements.at(formatting_element_index);
 
                                 if (item->IsMarker())
                                     break;
 
-                                if (item->element->has_element_name(Html::globals->HTML_a))
+                                if (item->element->has_element_name(Html::globals->HTML_a.get()))
                                 {
                                     formatting_element = item;
                                     break;
@@ -2608,97 +2602,97 @@ loop:
                                 formatting_element_index--;
                             }
 
-                            if (formatting_element.item() != 0)
+                            if (formatting_element.get() != 0)
                             {
-                                ParseError(tag);
+                                ParseError(tag.get());
 
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_a, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_a.get(), 0);
 
-                                remove_node_from_the_list_of_active_formatting_elements(formatting_element->element);
-                                remove_node_from_the_stack_of_open_elements(formatting_element->element);
+                                remove_node_from_the_list_of_active_formatting_elements(formatting_element->element.get());
+                                remove_node_from_the_stack_of_open_elements(formatting_element->element.get());
                             }
 
                             reconstruct_the_active_formatting_elements();
 
-                            ElementNode::Ref element;
-                            insert_an_HTML_element(tag, &element);
+                            std::shared_ptr<ElementNode> element;
+                            insert_an_HTML_element(tag.get(), &element);
 
                             push_onto_the_list_of_active_formatting_elements(element, tag);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_b) ||
-                            tag->HasNameOf(Html::globals->HTML_big) ||
-                            tag->HasNameOf(Html::globals->HTML_code) ||
-                            tag->HasNameOf(Html::globals->HTML_em) ||
-                            tag->HasNameOf(Html::globals->HTML_font) ||
-                            tag->HasNameOf(Html::globals->HTML_i) ||
-                            tag->HasNameOf(Html::globals->HTML_s) ||
-                            tag->HasNameOf(Html::globals->HTML_small) ||
-                            tag->HasNameOf(Html::globals->HTML_strike) ||
-                            tag->HasNameOf(Html::globals->HTML_strong) ||
-                            tag->HasNameOf(Html::globals->HTML_tt) ||
-                            tag->HasNameOf(Html::globals->HTML_u))
+                        else if (tag->has_name_of(Html::globals->HTML_b.get()) ||
+                            tag->has_name_of(Html::globals->HTML_big.get()) ||
+                            tag->has_name_of(Html::globals->HTML_code.get()) ||
+                            tag->has_name_of(Html::globals->HTML_em.get()) ||
+                            tag->has_name_of(Html::globals->HTML_font.get()) ||
+                            tag->has_name_of(Html::globals->HTML_i.get()) ||
+                            tag->has_name_of(Html::globals->HTML_s.get()) ||
+                            tag->has_name_of(Html::globals->HTML_small.get()) ||
+                            tag->has_name_of(Html::globals->HTML_strike.get()) ||
+                            tag->has_name_of(Html::globals->HTML_strong.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tt.get()) ||
+                            tag->has_name_of(Html::globals->HTML_u.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            ElementNode::Ref element;
-                            insert_an_HTML_element(tag, &element);
+                            std::shared_ptr<ElementNode> element;
+                            insert_an_HTML_element(tag.get(), &element);
 
                             push_onto_the_list_of_active_formatting_elements(element, tag);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_nobr))
+                        else if (tag->has_name_of(Html::globals->HTML_nobr.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            if (has_element_in_scope(Html::globals->HTML_nobr))
+                            if (has_element_in_scope(Html::globals->HTML_nobr.get()))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_nobr, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_nobr.get(), 0);
 
                                 reconstruct_the_active_formatting_elements();
                             }
 
-                            ElementNode::Ref element;
-                            insert_an_HTML_element(tag, &element);
+                            std::shared_ptr<ElementNode> element;
+                            insert_an_HTML_element(tag.get(), &element);
 
                             push_onto_the_list_of_active_formatting_elements(element, tag);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_applet) ||
-                            tag->HasNameOf(Html::globals->HTML_marquee) ||
-                            tag->HasNameOf(Html::globals->object_element_name))
+                        else if (tag->has_name_of(Html::globals->HTML_applet.get()) ||
+                            tag->has_name_of(Html::globals->HTML_marquee.get()) ||
+                            tag->has_name_of(Html::globals->object_element_name.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             insert_a_marker_at_the_end_of_the_list_of_active_formatting_elements();
 
                             this->frameset_ok = false;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
                             if (this->document->mode != Document::quirks_mode &&
-                                has_element_in_button_scope(Html::globals->HTML_p))
+                                has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             this->frameset_ok = false;
 
                             switch_the_insertion_mode(InsertionMode::in_table_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_area) ||
-                            tag->HasNameOf(Html::globals->HTML_br) ||
-                            tag->HasNameOf(Html::globals->HTML_embed) ||
-                            tag->HasNameOf(Html::globals->HTML_img) ||
-                            tag->HasNameOf(Html::globals->HTML_keygen) ||
-                            tag->HasNameOf(Html::globals->HTML_wbr))
+                        else if (tag->has_name_of(Html::globals->HTML_area.get()) ||
+                            tag->has_name_of(Html::globals->HTML_br.get()) ||
+                            tag->has_name_of(Html::globals->HTML_embed.get()) ||
+                            tag->has_name_of(Html::globals->HTML_img.get()) ||
+                            tag->has_name_of(Html::globals->HTML_keygen.get()) ||
+                            tag->has_name_of(Html::globals->HTML_wbr.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -2710,11 +2704,11 @@ loop:
 
                             this->frameset_ok = false;
                         }
-                        else if (tag->HasNameOf(Html::globals->input_element_name))
+                        else if (tag->has_name_of(Html::globals->input_element_name.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -2724,19 +2718,19 @@ loop:
                                 tag->acknowledged = true;
                             }
 
-                            StringMap::iterator type_attribute_iterator = tag->attributes->find(Html::globals->type_attribute_name);
-                            if (type_attribute_iterator == tag->attributes->end()
-                                || type_attribute_iterator->second.equals<false>(Html::globals->hidden_type))
+                            StringMap::iterator type_attribute_iterator = tag->attributes.find(Html::globals->type_attribute_name);
+                            if (type_attribute_iterator == tag->attributes.end()
+                                || equals<UnicodeString, false>(type_attribute_iterator->second.get(), Html::globals->hidden_type.get()))
                             {
                                 this->frameset_ok = false;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_menuitem) ||
-                            tag->HasNameOf(Html::globals->HTML_param) ||
-                            tag->HasNameOf(Html::globals->HTML_source) ||
-                            tag->HasNameOf(Html::globals->HTML_track))
+                        else if (tag->has_name_of(Html::globals->HTML_menuitem.get()) ||
+                            tag->has_name_of(Html::globals->HTML_param.get()) ||
+                            tag->has_name_of(Html::globals->HTML_source.get()) ||
+                            tag->has_name_of(Html::globals->HTML_track.get()))
                         {
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -2746,14 +2740,14 @@ loop:
                                 tag->acknowledged = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_hr))
+                        else if (tag->has_name_of(Html::globals->HTML_hr.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -2765,19 +2759,19 @@ loop:
 
                             this->frameset_ok = false;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_image))
+                        else if (tag->has_name_of(Html::globals->HTML_image.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             tag->name = Html::globals->HTML_img->name;
 
                             (*reprocess) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_isindex))
+                        else if (tag->has_name_of(Html::globals->HTML_isindex.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            if (this->form_element.item() != 0)
+                            if (this->form_element.get() != 0)
                             {
                                 (*ignored) = true;
                             }
@@ -2789,31 +2783,31 @@ loop:
                                     tag->acknowledged = true;
                                 }
 
-                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_form);
+                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_form.get());
 
                                 // If the token has an attribute called "action", set the action attribute on the resulting form
                                 // element to the value of the "action" attribute of the token.
-                                HandleNyi(token, true); // $ NYI
+                                HandleNyi(token.get(), true); // $ NYI
 
-                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_hr);
-                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_label);
+                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_hr.get());
+                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_label.get());
 
                                 // Act as if a stream of character tokens had been seen (see below for what they should say).
-                                HandleNyi(token, true); // $ NYI
+                                HandleNyi(token.get(), true); // $ NYI
 
                                 // Act as if a start tag token with the tag name "input" had been seen, with all the attributes 
                                 // from the "isindex" token except "name", "action", and "prompt". Set the name attribute of the 
                                 // resulting input element to the value "isindex".
-                                HandleNyi(token, true); // $ NYI
+                                HandleNyi(token.get(), true); // $ NYI
 
                                 // Act as if a stream of character tokens had been seen (see below for what they should say).
-                                HandleNyi(token, true); // $ NYI
+                                HandleNyi(token.get(), true); // $ NYI
 
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_label, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_label.get(), 0);
 
-                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_hr);
+                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_hr.get());
 
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_form, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_form.get(), 0);
 
                                 // If the token has an attribute with the name "prompt", then the first stream of characters must 
                                 // be the same string as given in that attribute, and the second stream of characters must be empty. 
@@ -2822,9 +2816,9 @@ loop:
                                 // the user's preferred language.
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_textarea))
+                        else if (tag->has_name_of(Html::globals->HTML_textarea.get()))
                         {
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             // 2. If the next token is a U+000A LINE FEED (LF) character token, then ignore that token and move on to
                             // the next one. (Newlines at the start of textarea elements are ignored as an authoring convenience.)
@@ -2838,35 +2832,35 @@ loop:
 
                             this->insertion_mode = InsertionMode::text_insertion_mode;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_xmp))
+                        else if (tag->has_name_of(Html::globals->HTML_xmp.get()))
                         {
-                            if (has_element_in_button_scope(Html::globals->HTML_p))
+                            if (has_element_in_button_scope(Html::globals->HTML_p.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_p.get(), 0);
                             }
 
                             reconstruct_the_active_formatting_elements();
 
                             this->frameset_ok = false;
 
-                            generic_raw_text_element_parsing_algorithm(tag);
+                            generic_raw_text_element_parsing_algorithm(tag.get());
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_iframe))
+                        else if (tag->has_name_of(Html::globals->HTML_iframe.get()))
                         {
                             this->frameset_ok = false;
 
-                            generic_raw_text_element_parsing_algorithm(tag);
+                            generic_raw_text_element_parsing_algorithm(tag.get());
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_noembed) ||
-                            (tag->HasNameOf(Html::globals->HTML_noscript) && this->scripting_flag))
+                        else if (tag->has_name_of(Html::globals->HTML_noembed.get()) ||
+                            (tag->has_name_of(Html::globals->HTML_noscript.get()) && this->scripting_flag))
                         {
-                            generic_raw_text_element_parsing_algorithm(tag);
+                            generic_raw_text_element_parsing_algorithm(tag.get());
                         }
-                        else if (tag->HasNameOf(Html::globals->select_element_name))
+                        else if (tag->has_name_of(Html::globals->select_element_name.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             this->frameset_ok = false;
 
@@ -2883,40 +2877,40 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_select_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_optgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_option))
+                        else if (tag->has_name_of(Html::globals->HTML_optgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_option.get()))
                         {
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option))
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option.get(), 0);
                             }
 
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_rp) ||
-                            tag->HasNameOf(Html::globals->HTML_rt))
+                        else if (tag->has_name_of(Html::globals->HTML_rp.get()) ||
+                            tag->has_name_of(Html::globals->HTML_rt.get()))
                         {
-                            if (has_element_in_scope(Html::globals->HTML_ruby))
+                            if (has_element_in_scope(Html::globals->HTML_ruby.get()))
                             {
                                 generate_implied_end_tags();
 
-                                if (!this->CurrentNode()->has_element_name(Html::globals->HTML_ruby))
-                                    ParseError(token);
+                                if (!this->CurrentNode()->has_element_name(Html::globals->HTML_ruby.get()))
+                                    ParseError(token.get());
                             }
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->MathML_math))
+                        else if (tag->has_name_of(Html::globals->MathML_math.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            adjust_MathML_attributes(tag);
+                            adjust_MathML_attributes(tag.get());
 
-                            adjust_foreign_attributes(tag);
+                            adjust_foreign_attributes(tag.get());
 
-                            insert_a_foreign_element(tag, Html::globals->Namespace_MathML);
+                            insert_a_foreign_element(tag.get(), Html::globals->Namespace_MathML.get());
 
                             if (tag->self_closing)
                             {
@@ -2926,15 +2920,15 @@ loop:
                                 tag->acknowledged = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->SVG_svg))
+                        else if (tag->has_name_of(Html::globals->SVG_svg.get()))
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            adjust_SVG_attributes(tag);
+                            adjust_SVG_attributes(tag.get());
 
-                            adjust_foreign_attributes(tag);
+                            adjust_foreign_attributes(tag.get());
 
-                            insert_a_foreign_element(tag, Html::globals->Namespace_SVG);
+                            insert_a_foreign_element(tag.get(), Html::globals->Namespace_SVG.get());
 
                             if (tag->self_closing)
                             {
@@ -2944,26 +2938,26 @@ loop:
                                 tag->acknowledged = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_frame) ||
-                            tag->HasNameOf(Html::globals->HTML_head) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_frame.get()) ||
+                            tag->has_name_of(Html::globals->HTML_head.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                         else
                         {
                             reconstruct_the_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             // Note: This element will be an ordinary element.
                         }
@@ -2978,23 +2972,23 @@ loop:
 
                         for (ElementList::iterator it = this->open_elements.begin(); it != this->open_elements.end(); it++)
                         {
-                            if ((*it)->has_element_name(Html::globals->HTML_dd) ||
-                                (*it)->has_element_name(Html::globals->HTML_dt) ||
-                                (*it)->has_element_name(Html::globals->HTML_li) ||
-                                (*it)->has_element_name(Html::globals->HTML_p) ||
-                                (*it)->has_element_name(Html::globals->HTML_tbody) ||
-                                (*it)->has_element_name(Html::globals->HTML_td) ||
-                                (*it)->has_element_name(Html::globals->HTML_tfoot) ||
-                                (*it)->has_element_name(Html::globals->HTML_th) ||
-                                (*it)->has_element_name(Html::globals->HTML_thead) ||
-                                (*it)->has_element_name(Html::globals->HTML_tr) ||
-                                (*it)->has_element_name(Html::globals->HTML_body) ||
-                                (*it)->has_element_name(Html::globals->HTML_html))
+                            if ((*it)->has_element_name(Html::globals->HTML_dd.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_dt.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_li.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_p.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_tbody.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_td.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_tfoot.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_th.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_thead.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_tr.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_body.get()) ||
+                                (*it)->has_element_name(Html::globals->HTML_html.get()))
                             {
                                 continue;
                             }
 
-                            ParseError(token);
+                            ParseError(token.get());
                             break;
                         }
 
@@ -3004,13 +2998,13 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_body))
+                        if (tag->has_name_of(Html::globals->HTML_body.get()))
                         {
-                            if (!has_element_in_scope(Html::globals->HTML_body))
+                            if (!has_element_in_scope(Html::globals->HTML_body.get()))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                             }
                             else
                             {
@@ -3021,99 +3015,99 @@ loop:
 
                                 for (ElementList::iterator it = this->open_elements.begin(); it != this->open_elements.end(); it++)
                                 {
-                                    if ((*it)->has_element_name(Html::globals->HTML_dd) ||
-                                        (*it)->has_element_name(Html::globals->HTML_dt) ||
-                                        (*it)->has_element_name(Html::globals->HTML_li) ||
-                                        (*it)->has_element_name(Html::globals->HTML_optgroup) ||
-                                        (*it)->has_element_name(Html::globals->HTML_option) ||
-                                        (*it)->has_element_name(Html::globals->HTML_p) ||
-                                        (*it)->has_element_name(Html::globals->HTML_rp) ||
-                                        (*it)->has_element_name(Html::globals->HTML_rt) ||
-                                        (*it)->has_element_name(Html::globals->HTML_tbody) ||
-                                        (*it)->has_element_name(Html::globals->HTML_td) ||
-                                        (*it)->has_element_name(Html::globals->HTML_tfoot) ||
-                                        (*it)->has_element_name(Html::globals->HTML_th) ||
-                                        (*it)->has_element_name(Html::globals->HTML_thead) ||
-                                        (*it)->has_element_name(Html::globals->HTML_tr) ||
-                                        (*it)->has_element_name(Html::globals->HTML_body) ||
-                                        (*it)->has_element_name(Html::globals->HTML_html))
+                                    if ((*it)->has_element_name(Html::globals->HTML_dd.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_dt.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_li.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_optgroup.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_option.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_p.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_rp.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_rt.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_tbody.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_td.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_tfoot.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_th.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_thead.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_tr.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_body.get()) ||
+                                        (*it)->has_element_name(Html::globals->HTML_html.get()))
                                     {
                                         continue;
                                     }
 
-                                    ParseError(token);
+                                    ParseError(token.get());
                                     break;
                                 }
                             }
 
                             switch_the_insertion_mode(InsertionMode::after_body_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_html))
+                        else if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_body, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_body.get(), &ignored);
 
                             if (!ignored)
                                 (*reprocess) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_address) ||
-                            tag->HasNameOf(Html::globals->HTML_article) ||
-                            tag->HasNameOf(Html::globals->HTML_aside) ||
-                            tag->HasNameOf(Html::globals->HTML_blockquote) ||
-                            tag->HasNameOf(Html::globals->button_element_name) ||
-                            tag->HasNameOf(Html::globals->HTML_center) ||
-                            tag->HasNameOf(Html::globals->HTML_details) ||
-                            tag->HasNameOf(Html::globals->HTML_dialog) ||
-                            tag->HasNameOf(Html::globals->HTML_dir) ||
-                            tag->HasNameOf(Html::globals->HTML_div) ||
-                            tag->HasNameOf(Html::globals->HTML_dl) ||
-                            tag->HasNameOf(Html::globals->HTML_fieldset) ||
-                            tag->HasNameOf(Html::globals->HTML_figcaption) ||
-                            tag->HasNameOf(Html::globals->HTML_figure) ||
-                            tag->HasNameOf(Html::globals->HTML_footer) ||
-                            tag->HasNameOf(Html::globals->HTML_header) ||
-                            tag->HasNameOf(Html::globals->HTML_hgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_listing) ||
-                            tag->HasNameOf(Html::globals->HTML_main) ||
-                            tag->HasNameOf(Html::globals->HTML_menu) ||
-                            tag->HasNameOf(Html::globals->HTML_nav) ||
-                            tag->HasNameOf(Html::globals->HTML_ol) ||
-                            tag->HasNameOf(Html::globals->HTML_pre) ||
-                            tag->HasNameOf(Html::globals->HTML_section) ||
-                            tag->HasNameOf(Html::globals->HTML_summary) ||
-                            tag->HasNameOf(Html::globals->HTML_ul))
+                        else if (tag->has_name_of(Html::globals->HTML_address.get()) ||
+                            tag->has_name_of(Html::globals->HTML_article.get()) ||
+                            tag->has_name_of(Html::globals->HTML_aside.get()) ||
+                            tag->has_name_of(Html::globals->HTML_blockquote.get()) ||
+                            tag->has_name_of(Html::globals->button_element_name.get()) ||
+                            tag->has_name_of(Html::globals->HTML_center.get()) ||
+                            tag->has_name_of(Html::globals->HTML_details.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dialog.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dir.get()) ||
+                            tag->has_name_of(Html::globals->HTML_div.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dl.get()) ||
+                            tag->has_name_of(Html::globals->HTML_fieldset.get()) ||
+                            tag->has_name_of(Html::globals->HTML_figcaption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_figure.get()) ||
+                            tag->has_name_of(Html::globals->HTML_footer.get()) ||
+                            tag->has_name_of(Html::globals->HTML_header.get()) ||
+                            tag->has_name_of(Html::globals->HTML_hgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_listing.get()) ||
+                            tag->has_name_of(Html::globals->HTML_main.get()) ||
+                            tag->has_name_of(Html::globals->HTML_menu.get()) ||
+                            tag->has_name_of(Html::globals->HTML_nav.get()) ||
+                            tag->has_name_of(Html::globals->HTML_ol.get()) ||
+                            tag->has_name_of(Html::globals->HTML_pre.get()) ||
+                            tag->has_name_of(Html::globals->HTML_section.get()) ||
+                            tag->has_name_of(Html::globals->HTML_summary.get()) ||
+                            tag->has_name_of(Html::globals->HTML_ul.get()))
                         {
                             if (!has_element_in_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                             else
                             {
                                 generate_implied_end_tags();
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_form))
+                        else if (tag->has_name_of(Html::globals->HTML_form.get()))
                         {
-                            ElementNode::Ref node = this->form_element;
+                            std::shared_ptr<ElementNode> node = this->form_element;
                             this->form_element = 0;
 
-                            if (node.item() == 0 || !has_element_in_scope(node))
+                            if (node.get() == 0 || !has_element_in_scope(node.get()))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                             else
@@ -3121,18 +3115,18 @@ loop:
                                 generate_implied_end_tags();
 
                                 if (this->CurrentNode() != node)
-                                    ParseError(token);
+                                    ParseError(token.get());
 
-                                remove_node_from_the_stack_of_open_elements(node);
+                                remove_node_from_the_stack_of_open_elements(node.get());
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_p))
+                        else if (tag->has_name_of(Html::globals->HTML_p.get()))
                         {
                             if (!has_element_in_button_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
-                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_p);
+                                act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_p.get());
 
                                 (*reprocess) = true;
                             }
@@ -3141,24 +3135,24 @@ loop:
                                 // 1. Generate implied end tags, except for elements with the same tag name as the token.
                                 generate_implied_end_tags(tag);
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_li))
+                        else if (tag->has_name_of(Html::globals->HTML_li.get()))
                         {
                             if (!has_element_in_list_item_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -3167,25 +3161,25 @@ loop:
                                 // 1. Generate implied end tags, except for elements with the same tag name as the token.
                                 generate_implied_end_tags(tag);
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = std::static_pointer_cast<ElementNode>(this->CurrentNode());
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_dd) ||
-                            tag->HasNameOf(Html::globals->HTML_dt))
+                        else if (tag->has_name_of(Html::globals->HTML_dd.get()) ||
+                            tag->has_name_of(Html::globals->HTML_dt.get()))
                         {
                             if (!has_element_in_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -3194,34 +3188,34 @@ loop:
                                 // 1. Generate implied end tags, except for elements with the same tag name as the token.
                                 generate_implied_end_tags(tag);
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_h1) ||
-                            tag->HasNameOf(Html::globals->HTML_h2) ||
-                            tag->HasNameOf(Html::globals->HTML_h3) ||
-                            tag->HasNameOf(Html::globals->HTML_h4) ||
-                            tag->HasNameOf(Html::globals->HTML_h5) ||
-                            tag->HasNameOf(Html::globals->HTML_h6))
+                        else if (tag->has_name_of(Html::globals->HTML_h1.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h2.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h3.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h4.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h5.get()) ||
+                            tag->has_name_of(Html::globals->HTML_h6.get()))
                         {
-                            if (!(has_element_in_scope(Html::globals->HTML_h1) ||
-                                has_element_in_scope(Html::globals->HTML_h2) ||
-                                has_element_in_scope(Html::globals->HTML_h3) ||
-                                has_element_in_scope(Html::globals->HTML_h4) ||
-                                has_element_in_scope(Html::globals->HTML_h5) ||
-                                has_element_in_scope(Html::globals->HTML_h6)))
+                            if (!(has_element_in_scope(Html::globals->HTML_h1.get()) ||
+                                has_element_in_scope(Html::globals->HTML_h2.get()) ||
+                                has_element_in_scope(Html::globals->HTML_h3.get()) ||
+                                has_element_in_scope(Html::globals->HTML_h4.get()) ||
+                                has_element_in_scope(Html::globals->HTML_h5.get()) ||
+                                has_element_in_scope(Html::globals->HTML_h6.get())))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -3229,74 +3223,74 @@ loop:
                             {
                                 generate_implied_end_tags();
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (element->has_element_name(Html::globals->HTML_h1) ||
-                                        element->has_element_name(Html::globals->HTML_h2) ||
-                                        element->has_element_name(Html::globals->HTML_h3) ||
-                                        element->has_element_name(Html::globals->HTML_h4) ||
-                                        element->has_element_name(Html::globals->HTML_h5) ||
-                                        element->has_element_name(Html::globals->HTML_h6))
+                                    if (element->has_element_name(Html::globals->HTML_h1.get()) ||
+                                        element->has_element_name(Html::globals->HTML_h2.get()) ||
+                                        element->has_element_name(Html::globals->HTML_h3.get()) ||
+                                        element->has_element_name(Html::globals->HTML_h4.get()) ||
+                                        element->has_element_name(Html::globals->HTML_h5.get()) ||
+                                        element->has_element_name(Html::globals->HTML_h6.get()))
                                         break;
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_a) ||
-                            tag->HasNameOf(Html::globals->HTML_b) ||
-                            tag->HasNameOf(Html::globals->HTML_big) ||
-                            tag->HasNameOf(Html::globals->HTML_code) ||
-                            tag->HasNameOf(Html::globals->HTML_em) ||
-                            tag->HasNameOf(Html::globals->HTML_font) ||
-                            tag->HasNameOf(Html::globals->HTML_i) ||
-                            tag->HasNameOf(Html::globals->HTML_nobr) ||
-                            tag->HasNameOf(Html::globals->HTML_s) ||
-                            tag->HasNameOf(Html::globals->HTML_small) ||
-                            tag->HasNameOf(Html::globals->HTML_strike) ||
-                            tag->HasNameOf(Html::globals->HTML_strong) ||
-                            tag->HasNameOf(Html::globals->HTML_tt) ||
-                            tag->HasNameOf(Html::globals->HTML_u))
+                        else if (tag->has_name_of(Html::globals->HTML_a.get()) ||
+                            tag->has_name_of(Html::globals->HTML_b.get()) ||
+                            tag->has_name_of(Html::globals->HTML_big.get()) ||
+                            tag->has_name_of(Html::globals->HTML_code.get()) ||
+                            tag->has_name_of(Html::globals->HTML_em.get()) ||
+                            tag->has_name_of(Html::globals->HTML_font.get()) ||
+                            tag->has_name_of(Html::globals->HTML_i.get()) ||
+                            tag->has_name_of(Html::globals->HTML_nobr.get()) ||
+                            tag->has_name_of(Html::globals->HTML_s.get()) ||
+                            tag->has_name_of(Html::globals->HTML_small.get()) ||
+                            tag->has_name_of(Html::globals->HTML_strike.get()) ||
+                            tag->has_name_of(Html::globals->HTML_strong.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tt.get()) ||
+                            tag->has_name_of(Html::globals->HTML_u.get()))
                         {
                             adoption_agency_algorithm(tag, ignored);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_applet) ||
-                            tag->HasNameOf(Html::globals->HTML_marquee) ||
-                            tag->HasNameOf(Html::globals->object_element_name))
+                        else if (tag->has_name_of(Html::globals->HTML_applet.get()) ||
+                            tag->has_name_of(Html::globals->HTML_marquee.get()) ||
+                            tag->has_name_of(Html::globals->object_element_name.get()))
                         {
                             if (!has_element_in_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                             else
                             {
                                 generate_implied_end_tags();
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
-                                    ParseError(token);
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
+                                    ParseError(token.get());
 
                                 while(true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
 
                                 clear_the_list_of_active_formatting_elements_up_to_the_last_marker();
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_br))
+                        else if (tag->has_name_of(Html::globals->HTML_br.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_br);
+                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_br.get());
 
                             (*ignored) = true;
                         }
@@ -3320,19 +3314,19 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
                         this->CurrentNode()->Insert(character_token->data);
                     }
                     break;
 
                 case Token::Type::end_of_file_token:
                     {
-                        ParseError(token);
+                        ParseError(token.get());
 
-                        if (this->CurrentNode()->has_element_name(Html::globals->HTML_script))
+                        if (this->CurrentNode()->has_element_name(Html::globals->HTML_script.get()))
                         {
                             // mark the script element as "already started".
-                            HandleNyi(token, true); // $ NYI
+                            HandleNyi(token.get(), true); // $ NYI
                         }
 
                         pop_the_current_node_off_the_stack_of_open_elements();
@@ -3345,15 +3339,15 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_script))
+                        if (tag->has_name_of(Html::globals->HTML_script.get()))
                         {
                             perform_a_microtask_checkpoint();
 
                             provide_a_stable_state();
 
-                            ElementNode::Ref script = this->CurrentNode();
+                            std::shared_ptr<ElementNode> script = this->CurrentNode();
 
                             pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -3385,11 +3379,11 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        if (this->CurrentNode()->has_element_name(Html::globals->HTML_table) ||
-                            this->CurrentNode()->has_element_name(Html::globals->HTML_tbody) ||
-                            this->CurrentNode()->has_element_name(Html::globals->HTML_tfoot) ||
-                            this->CurrentNode()->has_element_name(Html::globals->HTML_thead) ||
-                            this->CurrentNode()->has_element_name(Html::globals->HTML_tr))
+                        if (this->CurrentNode()->has_element_name(Html::globals->HTML_table.get()) ||
+                            this->CurrentNode()->has_element_name(Html::globals->HTML_tbody.get()) ||
+                            this->CurrentNode()->has_element_name(Html::globals->HTML_tfoot.get()) ||
+                            this->CurrentNode()->has_element_name(Html::globals->HTML_thead.get()) ||
+                            this->CurrentNode()->has_element_name(Html::globals->HTML_tr.get()))
                         {
                             this->pending_table_character_tokens.clear();
 
@@ -3408,9 +3402,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -3418,63 +3412,63 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        std::shared_ptr<StartTagToken> tag = std::static_pointer_cast<StartTagToken>(token);
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()))
                         {
                             clear_the_stack_back_to_a_table_context();
 
                             insert_a_marker_at_the_end_of_the_list_of_active_formatting_elements();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             switch_the_insertion_mode(InsertionMode::in_caption_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_colgroup))
+                        else if (tag->has_name_of(Html::globals->HTML_colgroup.get()))
                         {
                             clear_the_stack_back_to_a_table_context();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             switch_the_insertion_mode(InsertionMode::in_column_group_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_col))
+                        else if (tag->has_name_of(Html::globals->HTML_col.get()))
                         {
-                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_colgroup);
+                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_colgroup.get());
 
                             (*reprocess) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead))
+                        else if (tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()))
                         {
                             clear_the_stack_back_to_a_table_context();
 
-                            insert_an_HTML_element(tag, 0);
+                            insert_an_HTML_element(tag.get(), 0);
 
                             switch_the_insertion_mode(InsertionMode::in_table_body_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_tbody);
+                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_tbody.get());
 
                             (*reprocess) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_table, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_table.get(), &ignored);
 
                             if (!ignored)
                             {
@@ -3482,26 +3476,26 @@ loop:
                                 (*reprocess) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_style) ||
-                            tag->HasNameOf(Html::globals->HTML_script))
+                        else if (tag->has_name_of(Html::globals->HTML_style.get()) ||
+                            tag->has_name_of(Html::globals->HTML_script.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, tag, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->input_element_name))
+                        else if (tag->has_name_of(Html::globals->input_element_name.get()))
                         {
                             // If the token does not have an attribute with the name "type", or if it does, but that attribute's 
                             // value is not an ASCII case-insensitive match for the string "hidden", then: act as described in 
                             // the "anything else" entry below.
-                            HandleNyi(token, true); // $ NYI
+                            HandleNyi(token.get(), true); // $ NYI
 
                             if (false) // $
                             {
                             }
                             else
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
-                                insert_an_HTML_element(tag, 0);
+                                insert_an_HTML_element(tag.get(), 0);
 
                                 pop_the_current_node_off_the_stack_of_open_elements();
 
@@ -3512,17 +3506,17 @@ loop:
                                 }
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_form))
+                        else if (tag->has_name_of(Html::globals->HTML_form.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            if (this->form_element.item() != 0)
+                            if (this->form_element.get() != 0)
                             {
                                 (*ignored) = true;
                             }
                             else
                             {
-                                insert_an_HTML_element(tag, &this->form_element);
+                                insert_an_HTML_element(tag.get(), &this->form_element);
 
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
@@ -3536,43 +3530,43 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_table))
+                        if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
                                 // fragment case
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                             else
                             {
                                 while (true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (element->has_element_name(Html::globals->HTML_table))
+                                    if (element->has_element_name(Html::globals->HTML_table.get()))
                                         break;
                                 }
 
                                 reset_the_insertion_mode_appropriately();
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                         }
                         else
@@ -3585,7 +3579,7 @@ loop:
                 case Token::Type::end_of_file_token:
                     {
                         if (this->CurrentNode() != this->open_elements.front())
-                            ParseError(token);
+                            ParseError(token.get());
 
                         // Note: The current node can only be the root html element in the fragment case.
 
@@ -3600,7 +3594,7 @@ loop:
 
                 if (anything_else)
                 {
-                    in_table_insertion_mode_anything_else(token);
+                    in_table_insertion_mode_anything_else(token.get());
                 }
             }
             break;
@@ -3613,12 +3607,12 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        std::shared_ptr<CharacterToken> character_token = std::static_pointer_cast<CharacterToken>(token);
 
                         switch (character_token->data)
                         {
                         case 0x0000:
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                             break;
 
@@ -3638,7 +3632,7 @@ loop:
                 {
                     bool reprocess_pending = false;
 
-                    for (std::vector<CharacterToken::Ref>::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
+                    for (std::vector<std::shared_ptr<CharacterToken> >::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
                     {
                         if (!((*it)->data == 0x0020 ||
                             (*it)->data == 0x0009 ||
@@ -3652,14 +3646,14 @@ loop:
 
                     if (reprocess_pending)
                     {
-                        for (std::vector<CharacterToken::Ref>::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
+                        for (std::vector<std::shared_ptr<CharacterToken> >::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
                         {
-                            in_table_insertion_mode_anything_else(*it);
+                            in_table_insertion_mode_anything_else(it->get());
                         }
                     }
                     else
                     {
-                        for (std::vector<CharacterToken::Ref>::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
+                        for (std::vector<std::shared_ptr<CharacterToken> >::iterator it = this->pending_table_character_tokens.begin(); it != this->pending_table_character_tokens.end(); it++)
                         {
                             this->CurrentNode()->Insert((*it)->data);
                         }
@@ -3680,13 +3674,13 @@ loop:
                 {
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -3696,15 +3690,15 @@ loop:
                             {
                                 generate_implied_end_tags();
 
-                                if (!this->CurrentNode()->has_element_name(Html::globals->HTML_caption))
-                                    ParseError(token);
+                                if (!this->CurrentNode()->has_element_name(Html::globals->HTML_caption.get()))
+                                    ParseError(token.get());
 
                                 while (true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (element->has_element_name(Html::globals->HTML_caption))
+                                    if (element->has_element_name(Html::globals->HTML_caption.get()))
                                         break;
                                 }
 
@@ -3713,31 +3707,31 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_table_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_caption, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_caption.get(), &ignored);
 
                             if (!ignored)
                                 (*reprocess) = true;
 
                             // Note: The fake end tag token here can only be ignored in the fragment case.
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             (*ignored) = true;
                         }
@@ -3750,23 +3744,23 @@ loop:
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_caption, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_caption.get(), &ignored);
 
                             if (!ignored)
                                 (*reprocess) = true;
@@ -3800,7 +3794,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -3821,9 +3815,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -3831,19 +3825,19 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_col))
+                        else if (tag->has_name_of(Html::globals->HTML_col.get()))
                         {
                             insert_an_HTML_element(tag, 0);
 
@@ -3864,13 +3858,13 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_colgroup))
+                        if (tag->has_name_of(Html::globals->HTML_colgroup.get()))
                         {
-                            if (this->CurrentNode() == this->open_elements.front().item())
+                            if (this->CurrentNode() == this->open_elements.front())
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -3883,9 +3877,9 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_table_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_col))
+                        else if (tag->has_name_of(Html::globals->HTML_col.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             (*ignored) = true;
                         }
@@ -3898,7 +3892,7 @@ loop:
 
                 case Token::Type::end_of_file_token:
                     {
-                        if (this->CurrentNode() == this->open_elements.front().item())
+                        if (this->CurrentNode() == this->open_elements.front())
                         {
                             stop_parsing();
 
@@ -3920,7 +3914,7 @@ loop:
                 {
                     bool ignored = false;
 
-                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_colgroup, &ignored);
+                    act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_colgroup.get(), &ignored);
 
                     if (!ignored)
                         (*reprocess) = true;
@@ -3938,9 +3932,9 @@ loop:
                 {
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_tr))
+                        if (tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
                             clear_the_stack_back_to_a_table_body_context();
 
@@ -3948,27 +3942,27 @@ loop:
 
                             switch_the_insertion_mode(InsertionMode::in_row_insertion_mode);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_td))
+                        else if (tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_tr);
+                            act_as_if_a_start_tag_token_had_been_seen(Html::globals->HTML_tr.get());
 
                             (*reprocess) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead))
+                        else if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()))
                         {
-                            if (!(has_element_in_table_scope(Html::globals->HTML_tbody) ||
-                                has_element_in_table_scope(Html::globals->HTML_thead) ||
-                                has_element_in_table_scope(Html::globals->HTML_tfoot)))
+                            if (!(has_element_in_table_scope(Html::globals->HTML_tbody.get()) ||
+                                has_element_in_table_scope(Html::globals->HTML_thead.get()) ||
+                                has_element_in_table_scope(Html::globals->HTML_tfoot.get())))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -3978,7 +3972,7 @@ loop:
                             {
                                 clear_the_stack_back_to_a_table_body_context();
 
-                                act_as_if_an_end_tag_token_had_been_seen(this->CurrentNode()->element_name, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(this->CurrentNode()->element_name.get(), 0);
 
                                 (*reprocess) = true;
                             }
@@ -3992,15 +3986,15 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead))
+                        if (tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -4013,13 +4007,13 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_table_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
-                            if (!(has_element_in_table_scope(Html::globals->HTML_tbody) ||
-                                has_element_in_table_scope(Html::globals->HTML_thead) ||
-                                has_element_in_table_scope(Html::globals->HTML_tfoot)))
+                            if (!(has_element_in_table_scope(Html::globals->HTML_tbody.get()) ||
+                                has_element_in_table_scope(Html::globals->HTML_thead.get()) ||
+                                has_element_in_table_scope(Html::globals->HTML_tfoot.get())))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -4029,21 +4023,21 @@ loop:
                             {
                                 clear_the_stack_back_to_a_table_body_context();
 
-                                act_as_if_an_end_tag_token_had_been_seen(this->CurrentNode()->element_name, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(this->CurrentNode()->element_name.get(), 0);
 
                                 (*reprocess) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             (*ignored) = true;
                         }
@@ -4074,10 +4068,10 @@ loop:
                 {
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_td))
+                        if (tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()))
                         {
                             clear_the_stack_back_to_a_table_row_context();
 
@@ -4087,17 +4081,17 @@ loop:
 
                             insert_a_marker_at_the_end_of_the_list_of_active_formatting_elements();
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr.get(), &ignored);
 
                             if (!ignored)
                                 (*reprocess) = true;
@@ -4113,13 +4107,13 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_tr))
+                        if (tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -4134,43 +4128,43 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_table_body_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()))
                         {
                             bool ignored = false;
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr, &ignored);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr.get(), &ignored);
 
                             if (!ignored)
                                 (*reprocess) = true;
 
                             // Note: The fake end tag token here can only be ignored in the fragment case.
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead))
+                        else if (tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
                             else
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_tr.get(), 0);
 
                                 (*reprocess) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_html) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_th))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             (*ignored) = true;
                         }
@@ -4201,22 +4195,22 @@ loop:
                 {
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
-                            if (!(has_element_in_table_scope(Html::globals->HTML_td) ||
-                                has_element_in_table_scope(Html::globals->HTML_th)))
+                            if (!(has_element_in_table_scope(Html::globals->HTML_td.get()) ||
+                                has_element_in_table_scope(Html::globals->HTML_th.get())))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -4236,14 +4230,14 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_td) ||
-                            tag->HasNameOf(Html::globals->HTML_th))
+                        if (tag->has_name_of(Html::globals->HTML_td.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -4251,15 +4245,15 @@ loop:
                             {
                                 generate_implied_end_tags();
 
-                                if (!tag->HasNameOf(this->CurrentNode()->element_name))
+                                if (!tag->has_name_of(this->CurrentNode()->element_name.get()))
                                     ParseError(tag);
 
                                 while (true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (tag->HasNameOf(element->element_name))
+                                    if (tag->has_name_of(element->element_name.get()))
                                         break;
                                 }
 
@@ -4268,25 +4262,25 @@ loop:
                                 switch_the_insertion_mode(InsertionMode::in_row_insertion_mode);
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_body) ||
-                            tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_col) ||
-                            tag->HasNameOf(Html::globals->HTML_colgroup) ||
-                            tag->HasNameOf(Html::globals->HTML_html))
+                        else if (tag->has_name_of(Html::globals->HTML_body.get()) ||
+                            tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_col.get()) ||
+                            tag->has_name_of(Html::globals->HTML_colgroup.get()) ||
+                            tag->has_name_of(Html::globals->HTML_html.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             (*ignored) = true;
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_table) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr))
+                        else if (tag->has_name_of(Html::globals->HTML_table.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()))
                         {
                             if (!has_element_in_table_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
                             }
@@ -4324,12 +4318,12 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
                         case 0x0000:
-                            ParseError(token);
+                            ParseError(token.get());
                             (*ignored) = true;
                             break;
 
@@ -4342,9 +4336,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -4352,59 +4346,59 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_option))
+                        else if (tag->has_name_of(Html::globals->HTML_option.get()))
                         {
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option))
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option, 0);
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()))
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option.get(), 0);
 
                             insert_an_HTML_element(tag, 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_optgroup))
+                        else if (tag->has_name_of(Html::globals->HTML_optgroup.get()))
                         {
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option))
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option, 0);
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()))
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option.get(), 0);
 
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup))
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_optgroup, 0);
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup.get()))
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_optgroup.get(), 0);
 
                             insert_an_HTML_element(tag, 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->select_element_name))
+                        else if (tag->has_name_of(Html::globals->select_element_name.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name, 0);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name.get(), 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->input_element_name) ||
-                            tag->HasNameOf(Html::globals->HTML_keygen) ||
-                            tag->HasNameOf(Html::globals->HTML_textarea))
+                        else if (tag->has_name_of(Html::globals->input_element_name.get()) ||
+                            tag->has_name_of(Html::globals->HTML_keygen.get()) ||
+                            tag->has_name_of(Html::globals->HTML_textarea.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            if (!has_element_in_select_scope(Html::globals->select_element_name))
+                            if (!has_element_in_select_scope(Html::globals->select_element_name.get()))
                             {
                                 (*ignored) = true;
                                 // fragment case
                             }
                             else
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name.get(), 0);
                                 (*reprocess) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_script))
+                        else if (tag->has_name_of(Html::globals->HTML_script.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
@@ -4417,43 +4411,43 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_optgroup))
+                        if (tag->has_name_of(Html::globals->HTML_optgroup.get()))
                         {
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option) &&
-                                this->open_elements[this->open_elements.size() - 2]->has_element_name(Html::globals->HTML_optgroup))
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()) &&
+                                this->open_elements[this->open_elements.size() - 2]->has_element_name(Html::globals->HTML_optgroup.get()))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->HTML_option.get(), 0);
                             }
 
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup))
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_optgroup.get()))
                             {
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
                             else
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_option))
+                        else if (tag->has_name_of(Html::globals->HTML_option.get()))
                         {
-                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option))
+                            if (this->CurrentNode()->has_element_name(Html::globals->HTML_option.get()))
                             {
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
                             else
                             {
-                                ParseError(token);
+                                ParseError(token.get());
                                 (*ignored) = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->select_element_name))
+                        else if (tag->has_name_of(Html::globals->select_element_name.get()))
                         {
                             if (!has_element_in_select_scope(tag))
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -4463,10 +4457,10 @@ loop:
                             {
                                 while (true)
                                 {
-                                    ElementNode::Ref element = this->CurrentNode();
+                                    std::shared_ptr<ElementNode> element = this->CurrentNode();
                                     pop_the_current_node_off_the_stack_of_open_elements();
 
-                                    if (element->has_element_name(Html::globals->select_element_name))
+                                    if (element->has_element_name(Html::globals->select_element_name.get()))
                                         break;
                                 }
 
@@ -4483,7 +4477,7 @@ loop:
                 case Token::Type::end_of_file_token:
                     {
                         if (this->CurrentNode() != this->open_elements.front())
-                            ParseError(token);
+                            ParseError(token.get());
 
                         // Note: The current node can only be the root html element in the fragment case.
 
@@ -4498,7 +4492,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                 }
             }
@@ -4512,20 +4506,20 @@ loop:
                 {
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_table) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_td))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_table.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
-                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name, 0);
+                            act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name.get(), 0);
 
                             (*reprocess) = true;
                         }
@@ -4538,22 +4532,22 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_caption) ||
-                            tag->HasNameOf(Html::globals->HTML_table) ||
-                            tag->HasNameOf(Html::globals->HTML_tbody) ||
-                            tag->HasNameOf(Html::globals->HTML_tfoot) ||
-                            tag->HasNameOf(Html::globals->HTML_thead) ||
-                            tag->HasNameOf(Html::globals->HTML_tr) ||
-                            tag->HasNameOf(Html::globals->HTML_th) ||
-                            tag->HasNameOf(Html::globals->HTML_td))
+                        if (tag->has_name_of(Html::globals->HTML_caption.get()) ||
+                            tag->has_name_of(Html::globals->HTML_table.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tbody.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tfoot.get()) ||
+                            tag->has_name_of(Html::globals->HTML_thead.get()) ||
+                            tag->has_name_of(Html::globals->HTML_tr.get()) ||
+                            tag->has_name_of(Html::globals->HTML_th.get()) ||
+                            tag->has_name_of(Html::globals->HTML_td.get()))
                         {
-                            ParseError(token);
+                            ParseError(token.get());
 
                             if (has_element_in_table_scope(tag))
                             {
-                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name, 0);
+                                act_as_if_an_end_tag_token_had_been_seen(Html::globals->select_element_name.get(), 0);
                                 (*reprocess) = true;
                             }
                             else
@@ -4588,7 +4582,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -4609,9 +4603,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -4619,15 +4613,15 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
@@ -4640,13 +4634,13 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
-                            if (this->fragment_context.item() != 0)
+                            if (this->fragment_context.get() != 0)
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -4675,7 +4669,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
 
                     switch_the_insertion_mode(InsertionMode::in_body_insertion_mode);
 
@@ -4692,7 +4686,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -4713,9 +4707,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -4723,23 +4717,23 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_frameset))
+                        else if (tag->has_name_of(Html::globals->HTML_frameset.get()))
                         {
                             insert_an_HTML_element(tag, 0);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_frame))
+                        else if (tag->has_name_of(Html::globals->HTML_frame.get()))
                         {
                             insert_an_HTML_element(tag, 0);
 
@@ -4751,7 +4745,7 @@ loop:
                                 tag->acknowledged = true;
                             }
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_noframes))
+                        else if (tag->has_name_of(Html::globals->HTML_noframes.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
@@ -4764,13 +4758,13 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_frameset))
+                        if (tag->has_name_of(Html::globals->HTML_frameset.get()))
                         {
-                            if (this->CurrentNode() == this->open_elements.front().item())
+                            if (this->CurrentNode() == this->open_elements.front())
                             {
-                                ParseError(token);
+                                ParseError(token.get());
 
                                 (*ignored) = true;
 
@@ -4781,8 +4775,8 @@ loop:
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
 
-                            if (this->fragment_context.item() == 0 &&
-                                !this->CurrentNode()->has_element_name(Html::globals->HTML_frameset))
+                            if (this->fragment_context.get() == 0 &&
+                                !this->CurrentNode()->has_element_name(Html::globals->HTML_frameset.get()))
                             {
                                 switch_the_insertion_mode(InsertionMode::after_frameset_insertion_mode);
                             }
@@ -4797,7 +4791,7 @@ loop:
                 case Token::Type::end_of_file_token:
                     {
                         if (this->CurrentNode() != this->open_elements.front())
-                            ParseError(token);
+                            ParseError(token.get());
 
                         // Note: The current node can only be the root html element in the fragment case.
 
@@ -4812,7 +4806,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
 
                     (*ignored) = true;
                 }
@@ -4827,7 +4821,7 @@ loop:
                 {
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -4848,9 +4842,9 @@ loop:
 
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->CurrentNode()->Append(comment_node);
@@ -4858,19 +4852,19 @@ loop:
                     break;
 
                 case Token::Type::DOCTYPE_token:
-                    ParseError(token);
+                    ParseError(token.get());
                     (*ignored) = true;
                     break;
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_noframes))
+                        else if (tag->has_name_of(Html::globals->HTML_noframes.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
@@ -4883,9 +4877,9 @@ loop:
 
                 case Token::Type::end_tag_token:
                     {
-                        EndTagToken* tag = (EndTagToken*)token;
+                        EndTagToken* tag = (EndTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             switch_the_insertion_mode(InsertionMode::after_after_frameset_insertion_mode);
                         }
@@ -4907,7 +4901,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
 
                     (*ignored) = true;
                 }
@@ -4922,9 +4916,9 @@ loop:
                 {
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->document->Append(comment_node);
@@ -4937,7 +4931,7 @@ loop:
 
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -4958,9 +4952,9 @@ loop:
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
@@ -4982,7 +4976,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
 
                     switch_the_insertion_mode(InsertionMode::in_body_insertion_mode);
 
@@ -4999,9 +4993,9 @@ loop:
                 {
                 case Token::Type::comment_token:
                     {
-                        CommentToken* comment_token = (CommentToken*)token;
+                        CommentToken* comment_token = (CommentToken*)token.get();
 
-                        CommentNode::Ref comment_node = New<CommentNode>();
+                        std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                         comment_node->data = comment_token->data;
 
                         this->document->Append(comment_node);
@@ -5014,7 +5008,7 @@ loop:
 
                 case Token::Type::character_token:
                     {
-                        CharacterToken* character_token = (CharacterToken*)token;
+                        CharacterToken* character_token = (CharacterToken*)token.get();
 
                         switch (character_token->data)
                         {
@@ -5035,13 +5029,13 @@ loop:
 
                 case Token::Type::start_tag_token:
                     {
-                        StartTagToken* tag = (StartTagToken*)token;
+                        StartTagToken* tag = (StartTagToken*)token.get();
 
-                        if (tag->HasNameOf(Html::globals->HTML_html))
+                        if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0, reprocess);
                         }
-                        else if (tag->HasNameOf(Html::globals->HTML_noframes))
+                        else if (tag->has_name_of(Html::globals->HTML_noframes.get()))
                         {
                             apply_the_rules_for(InsertionMode::in_head_insertion_mode, token, 0, reprocess);
                         }
@@ -5063,7 +5057,7 @@ loop:
 
                 if (anything_else)
                 {
-                    ParseError(token);
+                    ParseError(token.get());
 
                     (*ignored) = true;
                 }
@@ -5076,18 +5070,18 @@ loop:
         }
     }
 
-    void TreeConstruction::apply_the_rules_for_parsing_tokens_in_foreign_content(TokenPointer token, bool* ignored, bool* reprocess)
+    void TreeConstruction::apply_the_rules_for_parsing_tokens_in_foreign_content(TokenRef token, bool* ignored, bool* reprocess)
     {
         switch (token->type)
         {
         case Token::Type::character_token:
             {
-                CharacterToken* character_token = (CharacterToken*)token;
+                CharacterToken* character_token = (CharacterToken*)token.get();
 
                 switch (character_token->data)
                 {
                 case 0x0000:
-                    ParseError(token);
+                    ParseError(token.get());
                     this->CurrentNode()->Insert(0xFFFD);
                     break;
 
@@ -5109,9 +5103,9 @@ loop:
 
         case Token::Type::comment_token:
             {
-                CommentToken* comment_token = (CommentToken*)token;
+                CommentToken* comment_token = (CommentToken*)token.get();
 
-                CommentNode::Ref comment_node = New<CommentNode>();
+                std::shared_ptr<CommentNode> comment_node = std::make_shared<CommentNode>();
                 comment_node->data = comment_token->data;
 
                 this->CurrentNode()->Append(comment_node);
@@ -5119,40 +5113,40 @@ loop:
             break;
 
         case Token::Type::DOCTYPE_token:
-            ParseError(token);
+            ParseError(token.get());
             (*ignored) = true;
             break;
 
         case Token::Type::start_tag_token:
             {
-                StartTagToken* tag = (StartTagToken*)token;
+                StartTagToken* tag = (StartTagToken*)token.get();
 
-                //if (tag->HasNameOf())
+                //if (tag->has_name_of())
                 //{
                 //}
-                //else if (tag->HasNameOf())
+                //else if (tag->has_name_of())
                 //{
                 //}
                 //else
                 //{
                 //}
 
-                HandleNyi(token, true); // $ NYI
+                HandleNyi(token.get(), true); // $ NYI
             }
             break;
 
         case Token::Type::end_tag_token:
             {
-                EndTagToken* tag = (EndTagToken*)token;
+                EndTagToken* tag = (EndTagToken*)token.get();
 
-                //if (tag->HasNameOf())
+                //if (tag->has_name_of())
                 //{
                 //}
                 //else
                 //{
                 //}
 
-                HandleNyi(token, true); // $ NYI
+                HandleNyi(token.get(), true); // $ NYI
             }
             break;
         }

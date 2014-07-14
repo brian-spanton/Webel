@@ -7,58 +7,35 @@ namespace Tls
 {
     using namespace Basic;
 
-    void RandomFrame::Initialize(Random* random)
+    RandomFrame::RandomFrame(Random* random) :
+        random(random),
+        time_frame(&this->random->gmt_unix_time),
+        bytes_frame(this->random->random_bytes, sizeof(this->random->random_bytes))
     {
-        __super::Initialize();
-        this->random = random;
-        this->time_frame.Initialize(&this->random->gmt_unix_time);
-        this->bytes_frame.Initialize(this->random->random_bytes, sizeof(this->random->random_bytes));
     }
 
-    void RandomFrame::Process(IEvent* event, bool* yield)
+    void RandomFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::time_frame_pending_state:
-            if (this->time_frame.Pending())
             {
-                this->time_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->time_frame, event, State::time_frame_failed);
 
-            if (this->time_frame.Failed())
-            {
-                switch_to_state(State::time_frame_failed);
-            }
-            else if (this->time_frame.Succeeded())
-            {
                 switch_to_state(State::bytes_frame_pending_state);
             }
             break;
 
         case State::bytes_frame_pending_state:
-            if (this->bytes_frame.Pending())
             {
-                this->bytes_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->bytes_frame, event, State::bytes_frame_failed);
 
-            if (this->bytes_frame.Failed())
-            {
-                switch_to_state(State::bytes_frame_failed);
-            }
-            else if (this->bytes_frame.Succeeded())
-            {
                 switch_to_state(State::done_state);
             }
             break;
 
         default:
-            throw new Exception("Tls::RandomFrame unexpected state");
+            throw FatalError("Tls::RandomFrame unexpected state");
         }
-    }
-
-    void RandomFrame::SerializeTo(IStream<byte>* stream)
-    {
-        time_frame.SerializeTo(stream);
-        bytes_frame.SerializeTo(stream);
     }
 }

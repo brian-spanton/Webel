@@ -9,7 +9,7 @@ namespace Http
 {
     using namespace Basic;
 
-    class MediaTypeStream : public IStream<Codepoint>
+    class MediaTypeStream : public UnitStream<Codepoint>
     {
     private:
         enum State
@@ -29,17 +29,15 @@ namespace Http
 
         State state;
         MediaType* mediaType;
-        UnicodeString::Ref name; // REF
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef name;
+        UnicodeStringRef value;
 
         void ParseError(Codepoint c);
 
     public:
-        typedef Basic::Ref<MediaTypeStream, IStream<Codepoint> > Ref;
-
         void Initialize(MediaType* mediaType);
 
-        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-        virtual void IStream<Codepoint>::WriteEOF();
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
+        virtual void IStream<Codepoint>::write_eof();
     };
 }

@@ -8,18 +8,14 @@
 #include "Tls.Types.h"
 #include "Tls.RandomFrame.h"
 #include "Tls.ExtensionHeaderFrame.h"
-#include "Tls.ServerNameListFrame.h"
-#include "Tls.CipherSuitesFrame.h"
 #include "Tls.CertificateStatusRequestFrame.h"
-#include "Tls.EllipticCurveListFrame.h"
-#include "Tls.ECPointFormatListFrame.h"
 #include "Tls.HeartbeatExtensionFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class ClientHelloFrame : public Frame, public ISerializable
+    class ClientHelloFrame : public Frame
     {
     private:
         enum State
@@ -62,34 +58,77 @@ namespace Tls
         };
 
         uint32 record_frame_length;
-        uint32 extensions_length;
-        CountStream<byte>::Ref counter; // REF
+        uint16 extensions_length;
+        std::shared_ptr<CountStream<byte> > counter;
         ClientHello* clientHello;
         ExtensionHeader extension_header;
-        Inline<NumberFrame<uint16>> version_frame;
-        Inline<RandomFrame> random_frame;
-        Inline<SessionIdFrame> session_id_frame;
-        Inline<CipherSuitesFrame> cipher_suites_frame;
-        Inline<CompressionMethodsFrame> compression_methods_frame;
-        Inline<NumberFrame<uint32, sizeof(uint16)> > extensions_length_frame;
-        Inline<ExtensionHeaderFrame> extension_header_frame;
-        Inline<ServerNameListFrame> server_name_list_frame;
-        Inline<SignatureAndHashAlgorithmsFrame> supported_signature_algorithms_frame;
-        Inline<RenegotiationInfoFrame> renegotiation_info_frame;
-        Inline<CertificateStatusRequestFrame> certificate_status_request_frame;
-        Inline<EllipticCurveListFrame> elliptic_curve_list_frame;
-        Inline<ECPointFormatListFrame> ec_point_format_list_frame;
-        Inline<IgnoreFrame> unknown_extension_frame;
-        Inline<HeartbeatExtensionFrame> heartbeat_extension_frame;
+        NumberFrame<uint16> version_frame;
+        RandomFrame random_frame;
+        VectorFrame<SessionId> session_id_frame;
+        VectorFrame<CipherSuites> cipher_suites_frame;
+        VectorFrame<CompressionMethods> compression_methods_frame;
+        NumberFrame<uint16> extensions_length_frame;
+        ExtensionHeaderFrame extension_header_frame;
+        VectorFrame<ServerNameList> server_name_list_frame;
+        VectorFrame<SignatureAndHashAlgorithms> supported_signature_algorithms_frame;
+        VectorFrame<RenegotiationInfo> renegotiation_info_frame;
+        CertificateStatusRequestFrame certificate_status_request_frame;
+        VectorFrame<EllipticCurveList> elliptic_curve_list_frame;
+        VectorFrame<ECPointFormatList> ec_point_format_list_frame;
+        IgnoreFrame<byte> unknown_extension_frame;
+        HeartbeatExtensionFrame heartbeat_extension_frame;
 
         void switch_to_state(IEvent* event, State state);
-        void SerializeExtensionsTo(IStream<byte>* stream);
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ClientHelloFrame, IProcess> Ref;
+        ClientHelloFrame(ClientHello* clientHello);
 
-        void Initialize(ClientHello* clientHello, uint32 record_frame_length);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+        void set_record_frame_length(uint32 record_frame_length);
+    };
+
+    template <>
+    struct __declspec(novtable) serialize<ClientHello>
+    {
+        void operator()(const ClientHello* value, IStream<byte>* stream) const
+        {
+            CountStream<byte> count_stream;
+            SerializeExtensionsTo(value, &count_stream);
+
+            serialize<ProtocolVersion>()(&value->client_version, stream);
+            serialize<Random>()(&value->random, stream);
+            serialize<SessionId>()(&value->session_id, stream);
+            serialize<CipherSuites>()(&value->cipher_suites, stream);
+            serialize<CompressionMethods>()(&value->compression_methods, stream);
+
+            if (count_stream.count > 0xffff)
+            {
+                throw FatalError("ClientHello extensions too large");
+            }
+
+            uint16 extensions_length = (uint16)count_stream.count;
+
+            if (extensions_length > 0)
+            {
+                serialize<uint16>()(&extensions_length, stream);
+                SerializeExtensionsTo(value, stream);
+            }
+        }
+
+        void SerializeExtensionsTo(const ClientHello* value, IStream<byte>* stream) const
+        {
+            if (value->heartbeat_extension_initialized)
+            {
+                CountStream<byte> count_stream;
+                serialize<HeartbeatExtension>()(&value->heartbeat_extension, &count_stream);
+
+                ExtensionHeader extension_header;
+                extension_header.length = (uint16)count_stream.count;
+                extension_header.type = ExtensionType::heartbeat_extension_type;
+                serialize<ExtensionHeader>()(&extension_header, stream);
+
+                serialize<HeartbeatExtension>()(&value->heartbeat_extension, stream);
+            }
+        }
     };
 }

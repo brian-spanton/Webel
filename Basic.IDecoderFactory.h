@@ -6,8 +6,8 @@
 
 namespace Basic
 {
-    __interface IDecoderFactory : public IRefCounted
+    __interface IDecoderFactory
     {
-        void CreateDecoder(Ref<IDecoder>* value);
+        void CreateDecoder(std::shared_ptr<IDecoder>* value);
     };
 }

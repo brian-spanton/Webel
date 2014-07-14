@@ -5,13 +5,12 @@
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
 #include "Basic.MemoryRange.h"
-#include "Tls.NumberFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class RandomFrame : public Frame, public ISerializable
+    class RandomFrame : public Frame
     {
     private:
         enum State
@@ -24,14 +23,22 @@ namespace Tls
         };
 
         Random* random;
-        Inline<NumberFrame<uint32> > time_frame;
-        Inline<MemoryRange> bytes_frame;
+        NumberFrame<uint32> time_frame;
+        MemoryRange bytes_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<RandomFrame, IProcess> Ref;
+        RandomFrame(Random* random);
+    };
 
-        void Initialize(Random* random);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<Random>
+    {
+        void operator()(const Random* value, IStream<byte>* stream) const
+        {
+            serialize<uint32>()(&value->gmt_unix_time, stream);
+            serialize<const byte[28]>()(&value->random_bytes, stream);
+        }
     };
 }

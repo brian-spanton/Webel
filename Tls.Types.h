@@ -2,14 +2,71 @@
 
 #pragma once
 
-#include "Basic.ByteVector.h"
 #include "Basic.Event.h"
+#include "Basic.IProcess.h"
+#include "Basic.MemoryRange.h"
+#include "Basic.CountStream.h"
+#include "Basic.Frame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    typedef byte opaque;
+    ///////////////////////////////////////////////////////////////////////////
+    // Vector
+    //
+    // Allows vector types to carry serialization parameters
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename element_type, uint32 encoded_length_min, uint32 encoded_length_max = 0, uint32 length_of_encoded_length = 0>
+    struct Vector : public std::vector<element_type>, public IStream<element_type>, public IStreamWriter<element_type>, public IVector<element_type>
+    {
+        typedef element_type element_type;
+        static const uint32 encoded_length_min = encoded_length_min;
+        static const uint32 encoded_length_max = encoded_length_max;
+        static const uint32 length_of_encoded_length = length_of_encoded_length;
+
+        virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 count)
+        {
+            this->insert(this->end(), elements, elements + count);
+        }
+
+        virtual void IStream<element_type>::write_element(element_type element)
+        {
+            write_elements(&element, 1);
+        }
+
+        virtual void IStream<element_type>::write_eof()
+        {
+            // $$ let's see what turns up
+            HandleError("unexpected eof");
+        }
+
+        virtual void IStreamWriter<element_type>::write_to_stream(IStream<element_type>* stream) const
+        {
+            stream->write_elements(this->address(), this->size());
+        }
+
+        void operator = (const Vector<element_type, encoded_length_min, encoded_length_max, length_of_encoded_length>& rvalue)
+        {
+            std::vector<element_type>& lvalue(*this);
+            lvalue = (const std::vector<element_type>&)rvalue;
+        }
+
+        element_type* address() const
+        {
+            return (element_type*)&*begin();
+        }
+
+        uint32 size() const
+        {
+            return std::vector<element_type>::size();
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // enums
+    ///////////////////////////////////////////////////////////////////////////
 
     enum ConnectionEnd : uint8
     {
@@ -62,7 +119,7 @@ namespace Tls
         cm_null,
     };
 
-    enum ContentType : byte
+    enum ContentType : uint8
     {
         change_cipher_spec = 20,
         alert = 21,
@@ -531,72 +588,6 @@ namespace Tls
         cs_TLS_PSK_DHE_WITH_AES_256_CCM_8 = 0xC0AB, // [RFC6655] 
     };
 
-    typedef std::vector<opaque> OpaqueVector;
-    typedef uint16 ProtocolVersion;
-
-    struct Random
-    {
-        uint32 gmt_unix_time;
-        opaque random_bytes[28];
-    };
-
-    struct SignatureAndHashAlgorithm
-    {
-        HashAlgorithm hash;
-        SignatureAlgorithm signature;
-    };
-
-    struct ServerName
-    {
-        NameType name_type;
-        std::vector<opaque> name;
-    };
-
-    typedef std::vector<CompressionMethod> CompressionMethods;
-    typedef std::vector<SignatureAndHashAlgorithm> SignatureAndHashAlgorithms;
-    typedef std::vector<CipherSuite> CipherSuites;
-    typedef std::vector<OpaqueVector> Certificates;
-    typedef std::vector<ServerName> ServerNameList;
-
-    struct Record
-    {
-        ContentType type;
-        ProtocolVersion version;
-        uint16 length;
-        ByteVector::Ref fragment; // REF
-    };
-
-    struct Handshake
-    {
-        HandshakeType msg_type;
-        uint32 length;
-    };
-
-    struct ExtensionHeader
-    {
-        ExtensionType type;
-        uint16 length;
-    };
-
-    enum CertificateStatusType : uint8
-    {
-        ocsp = 1,
-    };
-
-    typedef std::vector<OpaqueVector> ResponderIDList;
-
-    struct OCSPStatusRequest
-    {
-        ResponderIDList responder_id_list;
-        std::vector<opaque> request_extensions;
-    };
-
-    struct CertificateStatusRequest
-    {
-        CertificateStatusType status_type;
-        OCSPStatusRequest ocsp_status_request;
-    };
-
     enum NamedCurve : uint16
     {
         sect163k1 = 1,
@@ -628,8 +619,6 @@ namespace Tls
         arbitrary_explicit_char2_curves = 0xFF02,
     };
 
-    typedef std::vector<NamedCurve> EllipticCurveList;
-
     enum ECPointFormat : uint8
     {
         uncompressed = 0,
@@ -637,58 +626,128 @@ namespace Tls
         ansiX962_compressed_char2 = 2,
     };
 
-    typedef std::vector<ECPointFormat> ECPointFormatList;
+    enum EventType
+    {
+        change_cipher_spec_event = 0x2000,
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // enum vectors
+    ///////////////////////////////////////////////////////////////////////////
+
+    typedef Vector<CompressionMethod, 1, 0xff, 1> CompressionMethods;
+    typedef Vector<CipherSuite, 2, 0xfffe, 2> CipherSuites;
+    typedef Vector<NamedCurve, 1, 0xffff, 2> EllipticCurveList;
+    typedef Vector<ECPointFormat, 1, 0xff, 1> ECPointFormatList;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // static const
+    ///////////////////////////////////////////////////////////////////////////
+
+    static const uint8 ChangeCipherSpec = 1;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // basic typedefs
+    ///////////////////////////////////////////////////////////////////////////
+
+    typedef uint16 ProtocolVersion;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // basic vectors
+    ///////////////////////////////////////////////////////////////////////////
+
+    typedef Vector<byte, 1, 0xffff, 2> ResponderID;
+    typedef Vector<byte, 1, 0xffffff, 3> Certificate;
+    typedef Vector<byte, 0, 0x20, 1> SessionId;
+    typedef Vector<byte, 1, 0xffff, 2> HostName;
+    typedef Vector<byte, 0, 0xff, 1> RenegotiationInfo;
+    typedef Vector<byte, 0, 0xffffff, 2> Extensions;
+    typedef Vector<byte, 0, 0xffff, 2> EncryptedPreMasterSecret;
+    typedef Vector<byte, 1, 0xffff, 2> DhP;
+    typedef Vector<byte, 1, 0xffff, 2> DhG;
+    typedef Vector<byte, 1, 0xffff, 2> DhYs;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // vectors of vectors
+    ///////////////////////////////////////////////////////////////////////////
+
+    typedef Vector<ResponderID, 0, 0xffff, 2> ResponderIDList;
+    typedef Vector<Certificate, 0, 0xffffff, 3> Certificates;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // complex types
+    ///////////////////////////////////////////////////////////////////////////
+
+    struct Random
+    {
+        uint32 gmt_unix_time;
+        byte random_bytes[28];
+    };
+
+    struct SignatureAndHashAlgorithm
+    {
+        HashAlgorithm hash;
+        SignatureAlgorithm signature;
+    };
+
+    struct ServerName
+    {
+        NameType name_type;
+        HostName name;
+    };
+
+    struct Record
+    {
+        ContentType type;
+        ProtocolVersion version;
+        uint16 length;
+        std::shared_ptr<ByteString> fragment;
+    };
+
+    struct Handshake
+    {
+        HandshakeType msg_type;
+        uint32 length;
+    };
+
+    struct ExtensionHeader
+    {
+        ExtensionType type;
+        uint16 length;
+    };
+
+    enum CertificateStatusType : uint8
+    {
+        ocsp = 1,
+    };
+
+    struct OCSPStatusRequest
+    {
+        ResponderIDList responder_id_list;
+        Extensions request_extensions;
+    };
+
+    struct CertificateStatusRequest
+    {
+        CertificateStatusType status_type;
+        OCSPStatusRequest ocsp_status_request;
+    };
 
     struct HeartbeatExtension
     {
         HeartbeatMode mode;
     };
 
-    struct ClientHello
-    {
-        ProtocolVersion client_version;
-        Random random;
-        std::vector<opaque> session_id;
-        CipherSuites cipher_suites;
-        CompressionMethods compression_methods;
-        ServerNameList server_name_list;
-        SignatureAndHashAlgorithms supported_signature_algorithms;
-        std::vector<opaque> renegotiation_info;
-        CertificateStatusRequest certificate_status_request;
-        EllipticCurveList elliptic_curve_list;
-        ECPointFormatList ec_point_format_list;
-        HeartbeatExtension heartbeat_extension;
-        bool heartbeat_extension_initialized;
-    };
-
-    struct ServerHello
-    {
-        ProtocolVersion server_version;
-        Random random;
-        std::vector<opaque> session_id;
-        CipherSuite cipher_suite;
-        CompressionMethod compression_method;
-        HeartbeatExtension heartbeat_extension;
-        bool heartbeat_extension_initialized;
-    };
-
     struct PreMasterSecret
     {
         ProtocolVersion client_version;
-        opaque random[46];
+        byte random[46];
     };
-
-    static const uint8 ChangeCipherSpec = 1;
 
     struct Alert
     {
         AlertLevel level;
         AlertDescription description;
-    };
-
-    enum EventType
-    {
-        change_cipher_spec_event = 0x2000,
     };
 
     struct ChangeCipherSpecEvent : public Basic::IEvent
@@ -700,14 +759,494 @@ namespace Tls
     {
         HeartbeatMessageType type;
         uint16 payload_length;
-        std::vector<opaque> payload;
-        std::vector<opaque> padding;
+        ByteString payload;
+        ByteString padding;
     };
 
     struct ServerDHParams
     {
-        std::vector<opaque> dh_p;
-        std::vector<opaque> dh_g;
-        std::vector<opaque> dh_Ys;
+        DhP dh_p;
+        DhG dh_g;
+        DhYs dh_Ys;
     };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // vectors of complex types
+    ///////////////////////////////////////////////////////////////////////////
+
+    typedef Vector<SignatureAndHashAlgorithm, 2, 0xfffe, 2> SignatureAndHashAlgorithms;
+    typedef Vector<ServerName, 1, 0xffff, 2> ServerNameList;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // complex types with vectors of complex types
+    ///////////////////////////////////////////////////////////////////////////
+
+    struct ClientHello
+    {
+        ProtocolVersion client_version;
+        Random random;
+        SessionId session_id;
+        CipherSuites cipher_suites;
+        CompressionMethods compression_methods;
+        ServerNameList server_name_list;
+        SignatureAndHashAlgorithms supported_signature_algorithms;
+        RenegotiationInfo renegotiation_info;
+        CertificateStatusRequest certificate_status_request;
+        EllipticCurveList elliptic_curve_list;
+        ECPointFormatList ec_point_format_list;
+        HeartbeatExtension heartbeat_extension;
+        bool heartbeat_extension_initialized;
+    };
+
+    struct ServerHello
+    {
+        ProtocolVersion server_version;
+        Random random;
+        SessionId session_id;
+        CipherSuite cipher_suite;
+        CompressionMethod compression_method;
+        HeartbeatExtension heartbeat_extension;
+        bool heartbeat_extension_initialized;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // serialization meta template
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    struct __declspec(novtable) serialize
+    {
+        void operator()(const value_type* value, IStream<byte>* stream) const
+        {
+        	static_assert(false, "No Tls::serialize defined for this type");
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // memory range serialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type, int value_size = sizeof(value_type)>
+    struct __declspec(novtable) serialize_memory
+    {
+        void operator()(const value_type* value, IStream<byte>* stream) const
+        {
+            stream->write_elements((byte*)value, value_size);
+        }
+    };
+
+    template <> struct __declspec(novtable) serialize<byte> : public serialize_memory<byte> {};
+    template <> struct __declspec(novtable) serialize<CompressionMethod> : public serialize_memory<CompressionMethod> {};
+    template <> struct __declspec(novtable) serialize<ContentType> : public serialize_memory<ContentType> {};
+    template <> struct __declspec(novtable) serialize<AlertLevel> : public serialize_memory<AlertLevel> {};
+    template <> struct __declspec(novtable) serialize<AlertDescription> : public serialize_memory<AlertDescription> {};
+    template <> struct __declspec(novtable) serialize<HeartbeatMode> : public serialize_memory<HeartbeatMode> {};
+    template <> struct __declspec(novtable) serialize<HandshakeType> : public serialize_memory<HandshakeType> {};
+    template <> struct __declspec(novtable) serialize<HeartbeatMessageType> : public serialize_memory<HeartbeatMessageType> {};
+    template <> struct __declspec(novtable) serialize<NameType> : public serialize_memory<NameType> {};
+    template <> struct __declspec(novtable) serialize<SignatureAlgorithm> : public serialize_memory<SignatureAlgorithm> {};
+    template <> struct __declspec(novtable) serialize<HashAlgorithm> : public serialize_memory<HashAlgorithm> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // array serialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    struct __declspec(novtable) serialize_array
+    {
+        void operator()(const value_type* value, IStream<byte>* stream) const
+        {
+            stream->write_elements((byte*)(*value), sizeof(value_type));
+        }
+    };
+
+    template <> struct __declspec(novtable) serialize<const byte[28]> : public serialize_array<const byte[28]> {};
+    template <> struct __declspec(novtable) serialize<const byte[46]> : public serialize_array<const byte[46]> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // byte vector serialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <>
+    struct __declspec(novtable) serialize<std::vector<byte> >
+    {
+        void operator()(const std::vector<byte>* value, IStream<byte>* stream) const
+        {
+            stream->write_elements(&*value->begin(), value->size());
+        }
+    };
+
+    template <>
+    struct __declspec(novtable) serialize<ByteString>
+    {
+        void operator()(const ByteString* value, IStream<byte>* stream) const
+        {
+            value->write_to_stream(stream);
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // number serialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type, int encoded_length = sizeof(value_type)>
+    struct __declspec(novtable) serialize_number
+    {
+        void operator()(const value_type* value, IStream<byte>* stream) const
+        {
+            byte* value_bytes = (byte*)value;
+            int most_significant = sizeof(value_type) - 1;
+            int overflow = 0;
+
+            if (encoded_length < sizeof(value_type))
+            {
+                overflow = sizeof(value_type) - encoded_length;
+
+                for (int i = 0; i < overflow; i++)
+                {
+                    if (value_bytes[most_significant - i] != 0)
+                        throw FatalError("Tls::NumberFrame::write_to_stream overflow");
+                }
+            }
+            else
+            {
+                int padding = encoded_length - sizeof(value_type);
+
+                for (int i = 0; i < padding; i++)
+                {
+                    stream->write_element(0);
+                }
+            }
+
+            for (int i = overflow; i < sizeof(value_type); i++)
+            {
+                stream->write_element(value_bytes[most_significant - i]);
+            }
+        }
+    };
+
+    template <> struct __declspec(novtable) serialize<uint16> : public serialize_number<uint16> {};
+    template <> struct __declspec(novtable) serialize<uint32> : public serialize_number<uint32> {};
+    template <> struct __declspec(novtable) serialize<uint64> : public serialize_number<uint64> {};
+    template <> struct __declspec(novtable) serialize<ExtensionType> : public serialize_number<ExtensionType> {};
+    template <> struct __declspec(novtable) serialize<CipherSuite> : public serialize_number<CipherSuite> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // tls vector serialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename vector_type>
+    struct __declspec(novtable) serialize_vector
+    {
+        static void serialize_items(const vector_type* value, IStream<byte>* stream)
+        {
+            for (vector_type::const_iterator it = value->cbegin(); it != value->cend(); it++)
+            {
+                serialize<vector_type::element_type>()(&(*it), stream);
+            }
+        }
+
+        void operator()(const vector_type* value, IStream<byte>* stream) const
+        {
+            CountStream<byte> count_stream;
+            serialize_items(value, &count_stream);
+
+            if (count_stream.count < vector_type::encoded_length_min)
+                throw FatalError("vector too short");
+
+            if (count_stream.count > vector_type::encoded_length_max)
+                throw FatalError("vector too long");
+
+            serialize_number<uint32, vector_type::length_of_encoded_length>()(&count_stream.count, stream);
+            serialize_items(value, stream);
+        }
+    };
+
+    template <> struct __declspec(novtable) serialize<CompressionMethods> : public serialize_vector<CompressionMethods> {};
+    template <> struct __declspec(novtable) serialize<CipherSuites> : public serialize_vector<CipherSuites> {};
+    template <> struct __declspec(novtable) serialize<ResponderID> : public serialize_vector<ResponderID> {};
+    template <> struct __declspec(novtable) serialize<ResponderIDList> : public serialize_vector<ResponderIDList> {};
+    template <> struct __declspec(novtable) serialize<Certificate> : public serialize_vector<Certificate> {};
+    template <> struct __declspec(novtable) serialize<Certificates> : public serialize_vector<Certificates> {};
+    template <> struct __declspec(novtable) serialize<SessionId> : public serialize_vector<SessionId> {};
+    template <> struct __declspec(novtable) serialize<RenegotiationInfo> : public serialize_vector<RenegotiationInfo> {};
+    template <> struct __declspec(novtable) serialize<Extensions> : public serialize_vector<Extensions> {};
+    template <> struct __declspec(novtable) serialize<EncryptedPreMasterSecret> : public serialize_vector<EncryptedPreMasterSecret> {};
+    template <> struct __declspec(novtable) serialize<SignatureAndHashAlgorithms> : public serialize_vector<SignatureAndHashAlgorithms> {};
+    template <> struct __declspec(novtable) serialize<ServerNameList> : public serialize_vector<ServerNameList> {};
+    template <> struct __declspec(novtable) serialize<EllipticCurveList> : public serialize_vector<EllipticCurveList> {};
+    template <> struct __declspec(novtable) serialize<ECPointFormatList> : public serialize_vector<ECPointFormatList> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // serializer object
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    class Serializer : public IStreamWriter<byte>
+    {
+    private:
+        value_type* value;
+
+    public:
+        Serializer(value_type* value)
+        {
+            this->value = value;
+        }
+
+        virtual void IStreamWriter<byte>::write_to_stream(IStream<byte>* stream) const
+        {
+            serialize<value_type>()(value, stream);
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // deserialization meta template
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    struct __declspec(novtable) make_deserializer
+    {
+        void operator()(value_type* value, std::shared_ptr<IProcess>* deserializer) const
+        {
+        	static_assert(false, "No Tls::make_deserializer defined for this type");
+        }
+    };
+
+    template <typename value_type, typename frame_type>
+    struct __declspec(novtable) make_frame_deserializer
+    {
+        void operator()(value_type* value, std::shared_ptr<IProcess>* deserializer) const
+        {
+            std::shared_ptr<frame_type> frame = std::make_shared<frame_type>(value);
+            (*deserializer) = frame;
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // memory range deserialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    struct __declspec(novtable) make_memory_deserializer
+    {
+        void operator()(value_type* value, std::shared_ptr<IProcess>* deserializer) const
+        {
+            std::shared_ptr<MemoryRange> memory_range = std::make_shared<MemoryRange>((byte*)value, sizeof(value_type));
+            (*deserializer) = memory_range;
+        }
+    };
+
+    template <> struct __declspec(novtable) make_deserializer<byte> : public make_memory_deserializer<byte> {};
+    template <> struct __declspec(novtable) make_deserializer<CompressionMethod> : public make_memory_deserializer<CompressionMethod> {};
+    template <> struct __declspec(novtable) make_deserializer<ECPointFormat> : public make_memory_deserializer<ECPointFormat> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // number deserialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type, int encoded_length = sizeof(value_type)>
+    class NumberFrame : public Frame
+    {
+    private:
+        enum State
+        {
+            start_state = Start_State,
+            receiving_state,
+            done_state = Succeeded_State,
+        };
+
+        uint32 received;
+        value_type* value;
+
+    public:
+        NumberFrame(value_type* value)
+        {
+            this->received = 0;
+            this->value = value;
+        }
+
+        void reset()
+        {
+            __super::reset();
+            this->received = 0;
+        }
+
+        virtual void IProcess::consider_event(IEvent* event)
+        {
+            switch (get_state())
+            {
+            case State::start_state:
+                ZeroMemory(this->value, sizeof(value_type));
+                switch_to_state(State::receiving_state);
+                break;
+
+            case State::receiving_state:
+                {
+                    byte b;
+                    Event::ReadNext(event, &b);
+
+                    byte* value_bytes = reinterpret_cast<byte*>(this->value);
+                    int index = encoded_length - this->received - 1;
+                    value_bytes[index] = b;
+
+                    this->received++;
+
+                    if (this->received == encoded_length)
+                        switch_to_state(State::done_state);
+                }
+                break;
+
+            default:
+                throw FatalError("Tls::NumberFrame::handle_event unexpected state");
+            }
+        }
+    };
+
+    template <typename value_type, int encoded_length = sizeof(value_type)>
+    struct __declspec(novtable) make_number_deserializer : public make_frame_deserializer<value_type, NumberFrame<value_type, encoded_length> > {};
+
+    template <> struct __declspec(novtable) make_deserializer<uint16> : public make_number_deserializer<uint16> {};
+    template <> struct __declspec(novtable) make_deserializer<uint32> : public make_number_deserializer<uint32> {};
+    template <> struct __declspec(novtable) make_deserializer<uint64> : public make_number_deserializer<uint64> {};
+    template <> struct __declspec(novtable) make_deserializer<CipherSuite> : public make_number_deserializer<CipherSuite> {};
+    template <> struct __declspec(novtable) make_deserializer<NamedCurve> : public make_number_deserializer<NamedCurve> {};
+
+    ///////////////////////////////////////////////////////////////////////////
+    // tls vector deserialization
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename vector_type>
+    class VectorFrame : public Frame
+    {
+    private:
+        enum State
+        {
+            length_frame_pending_state = Start_State,
+            length_known_state,
+            next_item_state,
+            item_pending_state,
+            items_received_state,
+            done_state = Succeeded_State,
+            item_frame_failed,
+            length_mismatch_error,
+            vector_complete_failed,
+            length_frame_failed,
+            unexpected_length_error,
+        };
+
+        uint32 encoded_length;
+        std::shared_ptr<CountStream<byte> > counter;
+        NumberFrame<uint32, vector_type::length_of_encoded_length> length_frame;
+        std::shared_ptr<IProcess> item_frame;
+
+    protected:
+        void switch_to_state(IEvent* event, State state)
+        {
+            __super::switch_to_state(state);
+
+            if (!this->in_progress())
+                Event::RemoveObserver<byte>(event, this->counter);
+        }
+
+    public:
+        vector_type* items;
+
+        VectorFrame(vector_type* items) :
+            items(items),
+            length_frame(&encoded_length)
+        {
+        }
+
+        virtual void IProcess::consider_event(IEvent* event)
+        {
+            switch (get_state())
+            {
+            case State::length_frame_pending_state:
+                {
+                    delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
+
+                    switch_to_state(event, State::length_known_state);
+                }
+                break;
+
+            case State::length_known_state:
+                if (!(this->encoded_length >= vector_type::encoded_length_min && this->encoded_length <= vector_type::encoded_length_max))
+                {
+                    switch_to_state(event, State::unexpected_length_error);
+                    return;
+                }
+
+                this->counter = std::make_shared<CountStream<byte> >();
+                Event::AddObserver<byte>(event, this->counter);
+
+                this->items->clear();
+
+                // since each item must be at list 1 byte big, may as well
+                // reserve at least that much.  in the case where sizeof(vector_type::element_type) == 1
+                // this should be all the space ever needed
+                this->items->reserve(this->encoded_length);
+
+                switch_to_state(event, State::next_item_state);
+                break;
+
+            case State::next_item_state:
+                {
+                    uint32 received = this->counter->count;
+
+                    if (received > this->encoded_length)
+                    {
+                        switch_to_state(event, State::length_mismatch_error);
+                    }
+                    else if (received == this->encoded_length)
+                    {
+                        switch_to_state(event, State::items_received_state);
+                    }
+                    else
+                    {
+                        this->items->push_back(vector_type::element_type());
+
+                        make_deserializer<vector_type::element_type>()(&this->items->back(), &this->item_frame);
+
+                        switch_to_state(event, State::item_pending_state);
+                    }
+                }
+                break;
+
+            case State::item_pending_state:
+                {
+                    delegate_event_change_state_on_fail(this->item_frame.get(), event, State::item_frame_failed);
+
+                    switch_to_state(event, State::next_item_state);
+                }
+                break;
+
+            case State::items_received_state:
+                {
+                    switch_to_state(event, State::done_state);
+                }
+                break;
+
+            default:
+                throw FatalError("Tls::VectorFrame unexpected state");
+            }
+        }
+    };
+
+    template <typename vector_type>
+    struct __declspec(novtable) make_vector_deserializer : public make_frame_deserializer<vector_type, VectorFrame<vector_type> > {};
+
+    template <> struct __declspec(novtable) make_deserializer<CompressionMethods> : public make_vector_deserializer<CompressionMethods> {};
+    template <> struct __declspec(novtable) make_deserializer<CipherSuites> : public make_vector_deserializer<CipherSuites> {};
+    template <> struct __declspec(novtable) make_deserializer<ResponderID> : public make_vector_deserializer<ResponderID> {};
+    template <> struct __declspec(novtable) make_deserializer<ResponderIDList> : public make_vector_deserializer<ResponderIDList> {};
+    template <> struct __declspec(novtable) make_deserializer<Certificate> : public make_vector_deserializer<Certificate> {};
+    template <> struct __declspec(novtable) make_deserializer<Certificates> : public make_vector_deserializer<Certificates> {};
+    template <> struct __declspec(novtable) make_deserializer<SessionId> : public make_vector_deserializer<SessionId> {};
+    template <> struct __declspec(novtable) make_deserializer<RenegotiationInfo> : public make_vector_deserializer<RenegotiationInfo> {};
+    template <> struct __declspec(novtable) make_deserializer<Extensions> : public make_vector_deserializer<Extensions> {};
+    template <> struct __declspec(novtable) make_deserializer<EncryptedPreMasterSecret> : public make_vector_deserializer<EncryptedPreMasterSecret> {};
+    template <> struct __declspec(novtable) make_deserializer<SignatureAndHashAlgorithms> : public make_vector_deserializer<SignatureAndHashAlgorithms> {};
+    template <> struct __declspec(novtable) make_deserializer<ServerNameList> : public make_vector_deserializer<ServerNameList> {};
+    template <> struct __declspec(novtable) make_deserializer<EllipticCurveList> : public make_vector_deserializer<EllipticCurveList> {};
+    template <> struct __declspec(novtable) make_deserializer<ECPointFormatList> : public make_vector_deserializer<ECPointFormatList> {};
 }

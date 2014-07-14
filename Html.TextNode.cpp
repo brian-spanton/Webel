@@ -12,30 +12,32 @@ namespace Html
     TextNode::TextNode() :
         Node(NodeType::TEXT_NODE)
     {
-        this->data = New<UnicodeString>();
+        this->data = std::make_shared<UnicodeString>();
     }
 
     void TextNode::write_to_human(IStream<Codepoint>* stream, bool verbose)
     {
-        if (this->parent->type == NodeType::ELEMENT_NODE)
-        {
-            ElementNode* parent_element = (ElementNode*)this->parent;
+        std::shared_ptr<Node> parent(this->parent);
 
-            if (parent_element->has_element_name(Html::globals->HTML_script))
+        if (parent->type == NodeType::ELEMENT_NODE)
+        {
+            ElementNode* parent_element = (ElementNode*)parent.get();
+
+            if (parent_element->has_element_name(Html::globals->HTML_script.get()))
             {
                 TextWriter writer(stream);
-                writer.Write("...");
+                writer.write_literal("...");
                 return;
             }
         }
 
         if (verbose == false && this->data->size() > 100)
         {
-            stream->Write(this->data->c_str(), 100);
+            stream->write_elements(this->data->address(), 100);
         }
         else
         {
-            this->data->write_to(stream);
+            this->data->write_to_stream(stream);
         }
     }
 }

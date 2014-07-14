@@ -24,309 +24,304 @@ namespace Http
         this->state = State::in_name_state;
     }
 
-    void CookieParser::Write(const Codepoint* elements, uint32 count)
+    void CookieParser::write_element(Codepoint codepoint)
     {
-        // $ fully conform to RFC6265 section 5.2
+        // $ fully conform to RFC6265 section 5.2 except where noted
 
-        for (uint32 element_index = 0; element_index < count; element_index++)
+        switch (this->state)
         {
-            Codepoint codepoint = elements[element_index];
-
-            switch (this->state)
+        case State::in_name_state:
             {
-            case State::in_name_state:
+                if (codepoint == Http::globals->EQ)
                 {
-                    if (codepoint == Http::globals->EQ)
+                    while (Http::globals->WSP[this->cookie->name->back()])
                     {
-                        while (Http::globals->WSP[this->cookie->name->back()])
-                        {
-                            this->cookie->name->pop_back();
-                        }
+                        this->cookie->name->pop_back();
+                    }
 
-                        this->cookie->value = New<UnicodeString>();
-                        this->state = State::before_value_state;
-                    }
-                    else
-                    {
-                        this->cookie->name->push_back(codepoint);
-                    }
+                    this->cookie->value = std::make_shared<UnicodeString>();
+                    this->state = State::before_value_state;
                 }
-                break;
-
-            case State::before_value_state:
+                else
                 {
-                    if (codepoint == ';')
-                    {
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->cookie->value->push_back(codepoint);
-                        this->state = State::in_value_state;
-                    }
+                    this->cookie->name->push_back(codepoint);
                 }
-                break;
-
-            case State::in_value_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        while (Http::globals->WSP[this->cookie->value->back()])
-                        {
-                            this->cookie->value->pop_back();
-                        }
-
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else
-                    {
-                        this->cookie->value->push_back(codepoint);
-                    }
-                }
-                break;
-
-            case State::before_attribute_name_state:
-                {
-                    if (!Http::globals->WSP[codepoint])
-                    {
-                        for (this->attr = attr_map.begin(); this->attr != attr_map.end(); this->attr++)
-                        {
-                            if (lower_case(codepoint) == this->attr->first->at(0))
-                                break;
-                        }
-
-                        if (this->attr != attr_map.end())
-                        {
-                            this->matched = 1;
-                            this->state = State::in_attribute_name_state;
-                        }
-                        else
-                        {
-                            this->state = State::ignore_attribute_state;
-                        }
-                    }
-                }
-                break;
-
-            case State::in_attribute_name_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (lower_case(codepoint) == this->attr->first->at(this->matched))
-                    {
-                        this->matched++;
-
-                        if (this->matched == this->attr->first->size())
-                            this->state = this->attr->second;
-                    }
-                    else
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::ignore_attribute_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->state = State::before_attribute_name_state;
-                    }
-                }
-                break;
-
-            case State::expires_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->state = State::ignore_attribute_state;
-                        // $ this->state = State::expires_value_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::max_age_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->state = State::ignore_attribute_state;
-                        // $ this->state = State::max_age_value_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::domain_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->state = State::domain_value_start_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::domain_value_start_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (codepoint == '.')
-                    {
-                        this->node = New<UnicodeString>();
-                        this->state = State::domain_value_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->node = New<UnicodeString>();
-                        this->node->push_back(lower_case(codepoint));
-                        this->state = State::domain_value_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::domain_value_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        if (this->node->size() > 0)
-                            this->cookie->domain.insert(this->cookie->domain.begin(), this->node);
-
-                        this->node = (UnicodeString*)0;
-
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (codepoint == '.')
-                    {
-                        if (this->node->size() > 0)
-                        {
-                            this->cookie->domain.insert(this->cookie->domain.begin(), this->node);
-                            this->node = New<UnicodeString>();
-                        }
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->node->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::path_state:
-                {
-                    if (codepoint == Http::globals->EQ)
-                    {
-                        this->state = State::path_value_start_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::path_value_start_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (codepoint == Http::globals->FS)
-                    {
-                        this->node = New<UnicodeString>();
-                        this->state = State::path_value_state;
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->node = New<UnicodeString>();
-                        this->node->push_back(codepoint);
-                        this->state = State::path_value_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::path_value_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        if (this->node->size() > 0)
-                            this->cookie->path.push_back(this->node);
-
-                        this->node = (UnicodeString*)0;
-
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (codepoint == Http::globals->FS)
-                    {
-                        this->cookie->path.push_back(this->node);
-                        this->node = New<UnicodeString>();
-                    }
-                    else if (Http::globals->TOKEN[codepoint])
-                    {
-                        this->node->push_back(codepoint);
-                    }
-                    else
-                    {
-                        ParseError(codepoint);
-                    }
-                }
-                break;
-
-            case State::secure_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->cookie->secure_only_flag = true;
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            case State::http_only_state:
-                {
-                    if (codepoint == ';')
-                    {
-                        this->cookie->http_only_flag = true;
-                        this->state = State::before_attribute_name_state;
-                    }
-                    else if (!Http::globals->WSP[codepoint])
-                    {
-                        this->state = State::ignore_attribute_state;
-                    }
-                }
-                break;
-
-            default:
-                throw new Exception("CookieParser::Process unexpected state");
             }
+            break;
+
+        case State::before_value_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->cookie->value->push_back(codepoint);
+                    this->state = State::in_value_state;
+                }
+            }
+            break;
+
+        case State::in_value_state:
+            {
+                if (codepoint == ';')
+                {
+                    while (Http::globals->WSP[this->cookie->value->back()])
+                    {
+                        this->cookie->value->pop_back();
+                    }
+
+                    this->state = State::before_attribute_name_state;
+                }
+                else
+                {
+                    this->cookie->value->push_back(codepoint);
+                }
+            }
+            break;
+
+        case State::before_attribute_name_state:
+            {
+                if (!Http::globals->WSP[codepoint])
+                {
+                    for (this->attr = attr_map.begin(); this->attr != attr_map.end(); this->attr++)
+                    {
+                        if (lower_case(codepoint) == this->attr->first->at(0))
+                            break;
+                    }
+
+                    if (this->attr != attr_map.end())
+                    {
+                        this->matched = 1;
+                        this->state = State::in_attribute_name_state;
+                    }
+                    else
+                    {
+                        this->state = State::ignore_attribute_state;
+                    }
+                }
+            }
+            break;
+
+        case State::in_attribute_name_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (lower_case(codepoint) == this->attr->first->at(this->matched))
+                {
+                    this->matched++;
+
+                    if (this->matched == this->attr->first->size())
+                        this->state = this->attr->second;
+                }
+                else
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::ignore_attribute_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->state = State::before_attribute_name_state;
+                }
+            }
+            break;
+
+        case State::expires_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->state = State::ignore_attribute_state;
+                    // $ this->state = State::expires_value_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::max_age_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->state = State::ignore_attribute_state;
+                    // $ this->state = State::max_age_value_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::domain_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->state = State::domain_value_start_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::domain_value_start_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (codepoint == '.')
+                {
+                    this->node = std::make_shared<UnicodeString>();
+                    this->state = State::domain_value_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->node = std::make_shared<UnicodeString>();
+                    this->node->push_back(lower_case(codepoint));
+                    this->state = State::domain_value_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::domain_value_state:
+            {
+                if (codepoint == ';')
+                {
+                    if (this->node->size() > 0)
+                        this->cookie->domain.insert(this->cookie->domain.begin(), this->node);
+
+                    this->node = 0;
+
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (codepoint == '.')
+                {
+                    if (this->node->size() > 0)
+                    {
+                        this->cookie->domain.insert(this->cookie->domain.begin(), this->node);
+                        this->node = std::make_shared<UnicodeString>();
+                    }
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->node->push_back(codepoint);
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::path_state:
+            {
+                if (codepoint == Http::globals->EQ)
+                {
+                    this->state = State::path_value_start_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::path_value_start_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (codepoint == Http::globals->FS)
+                {
+                    this->node = std::make_shared<UnicodeString>();
+                    this->state = State::path_value_state;
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->node = std::make_shared<UnicodeString>();
+                    this->node->push_back(codepoint);
+                    this->state = State::path_value_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::path_value_state:
+            {
+                if (codepoint == ';')
+                {
+                    if (this->node->size() > 0)
+                        this->cookie->path.push_back(this->node);
+
+                    this->node = 0;
+
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (codepoint == Http::globals->FS)
+                {
+                    this->cookie->path.push_back(this->node);
+                    this->node = std::make_shared<UnicodeString>();
+                }
+                else if (Http::globals->TOKEN[codepoint])
+                {
+                    this->node->push_back(codepoint);
+                }
+                else
+                {
+                    ParseError(codepoint);
+                }
+            }
+            break;
+
+        case State::secure_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->cookie->secure_only_flag = true;
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        case State::http_only_state:
+            {
+                if (codepoint == ';')
+                {
+                    this->cookie->http_only_flag = true;
+                    this->state = State::before_attribute_name_state;
+                }
+                else if (!Http::globals->WSP[codepoint])
+                {
+                    this->state = State::ignore_attribute_state;
+                }
+            }
+            break;
+
+        default:
+            throw FatalError("CookieParser::handle_event unexpected state");
         }
     }
 
@@ -336,8 +331,10 @@ namespace Http
         this->state = State::parse_error;
     }
 
-    void CookieParser::WriteEOF()
+    void CookieParser::write_eof()
     {
+         // $$ probably move logic to write_element and translate to EOF...
+
         switch (this->state)
         {
         case State::in_value_state:

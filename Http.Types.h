@@ -4,53 +4,48 @@
 
 #include "Basic.NameValueCollection.h"
 #include "Basic.Uri.h"
+#include "Basic.IStreamWriter.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    struct Request : public IRefCounted
+    struct Request
     {
-        typedef Basic::Ref<Request> Ref;
-
-        UnicodeString::Ref method; // REF
-        Uri::Ref resource; // REF
-        UnicodeString::Ref protocol; // REF
-        NameValueCollection::Ref headers; // REF
-        Basic::Ref<ISerializable> client_body; // REF
+        UnicodeStringRef method;
+        std::shared_ptr<Uri> resource;
+        UnicodeStringRef protocol;
+        std::shared_ptr<NameValueCollection> headers;
+        std::shared_ptr<IStreamWriter<byte> > client_body;
 
         void Initialize();
         void Initialize(Request* request);
     };
 
-    struct Response : public IRefCounted
+    struct Response
     {
-        typedef Basic::Ref<Response> Ref;
-
-        UnicodeString::Ref protocol; // REF
+        UnicodeStringRef protocol;
         uint16 code;
-        UnicodeString::Ref reason; // REF
-        NameValueCollection::Ref headers; // REF
+        UnicodeStringRef reason;
+        std::shared_ptr<NameValueCollection> headers;
 
-        Basic::Ref<ISerializable> server_body; // REF
+        std::shared_ptr<IStreamWriter<byte>> server_body;
 
         void Initialize();
     };
 
     struct Transaction
     {
-        Request::Ref request; // REF
-        Response::Ref response; // REF
+        std::shared_ptr<Request> request;
+        std::shared_ptr<Response> response;
     };
 
     typedef std::vector<Transaction> TransactionList;
 
-    struct Cookie : public IRefCounted
+    struct Cookie
     {
-        typedef Basic::Ref<Cookie> Ref;
-
-        UnicodeString::Ref name; // REF
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef name;
+        UnicodeStringRef value;
         // $ DateTime expire_time;
         Path domain;
         Path path;
@@ -68,7 +63,7 @@ namespace Http
         bool equals(Cookie* value);
     };
 
-    typedef std::vector<Cookie::Ref> CookieList; // REF
+    typedef std::vector<std::shared_ptr<Cookie> > CookieList;
 
     enum EventType
     {
@@ -79,22 +74,35 @@ namespace Http
 
     struct ResponseHeadersEvent : public IEvent
     {
-        ByteString::Ref cookie; // REF
+        ByteStringRef cookie;
 
         virtual uint32 get_type();
     };
 
     struct ResponseCompleteEvent : public IEvent
     {
-        ByteString::Ref cookie; // REF
+        ByteStringRef cookie;
 
         virtual uint32 get_type();
     };
 
     struct AcceptCompleteEvent : public IEvent
     {
-        ByteString::Ref cookie; // REF
+        ByteStringRef cookie;
 
         virtual uint32 get_type();
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // serialization meta template
+    ///////////////////////////////////////////////////////////////////////////
+
+    template <typename value_type>
+    struct __declspec(novtable) serialize
+    {
+        void operator()(const value_type* value, IStream<byte>* stream) const
+        {
+        	static_assert(false, "No Http::serialize defined for this type");
+        }
     };
 }

@@ -20,31 +20,29 @@ namespace Html
 
     class Parser;
 
-    class Tokenizer : public IProcess
+    class Tokenizer : public StateMachine, public UnitStream<Codepoint>, public std::enable_shared_from_this<Tokenizer>
     {
     private:
-        TokenizerState state;
-        Basic::Ref<IStream<Token*> > output; // REF
+        std::shared_ptr<IStream<TokenRef> > output;
         Parser* parser;
-        UnicodeString::Ref character_reference; // REF
-        UnicodeString::Ref character_reference_unconsume; // REF
-        TagToken::Ref current_tag_token; // REF
-        UnicodeString::Ref temporary_buffer; // REF
-        StartTagToken::Ref last_start_tag; // REF
-        UnicodeString::Ref current_attribute_name; // REF
+        UnicodeStringRef character_reference;
+        UnicodeStringRef character_reference_unconsume;
+        std::shared_ptr<TagToken> current_tag_token;
+        UnicodeStringRef temporary_buffer;
+        UnicodeStringRef last_start_tag_name;
+        UnicodeStringRef current_attribute_name;
         StringMap::iterator current_attribute;
         bool use_additional_allowed_character;
         Codepoint additional_allowed_character;
         TokenizerState attribute_value_state;
-        CommentToken::Ref comment_token; // REF
-        UnicodeString::Ref markup_declaration_open; // REF
-        DocTypeToken::Ref doctype_token; // REF
-        UnicodeString::Ref after_doctype_name; // REF
-        Inline<EndOfFileToken> eof_token;
-        Inline<CharacterReferenceFrame> char_ref_frame;
-        Inline<StreamFrame<Codepoint> > stream_frame;
+        std::shared_ptr<CommentToken> comment_token;
+        UnicodeStringRef markup_declaration_open;
+        std::shared_ptr<DocTypeToken> doctype_token;
+        UnicodeStringRef after_doctype_name;
+        std::shared_ptr<EndOfFileToken> eof_token;
+        CharacterReferenceFrame char_ref_frame;
 
-        void Emit(Token* token);
+        void Emit(TokenRef token);
         void EmitCurrentTagToken();
         void EmitCharacter(Codepoint c);
         bool IsAppropriate(Token* token);
@@ -57,14 +55,9 @@ namespace Html
     public:
         friend class TreeConstruction;
 
-        typedef Basic::Ref<Tokenizer, IProcess> Ref;
+        Tokenizer(Parser* parser, std::shared_ptr<IStream<TokenRef> > output);
 
-        void Initialize(Parser* parser, IStream<Token*>* output);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void IProcess::Process(IEvent* event);
-        virtual bool IProcess::Pending();
-        virtual bool IProcess::Succeeded();
-        virtual bool IProcess::Failed();
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
+        virtual void IStream<Codepoint>::write_eof();
     };
 }

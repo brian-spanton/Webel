@@ -14,7 +14,7 @@ namespace Json
 
     class Parser;
 
-    class Text : public Frame
+    class Text : public StateMachine, public UnitStream<std::shared_ptr<Token> >
     {
     private:
         enum State
@@ -30,19 +30,17 @@ namespace Json
             object_frame_failed,
         };
 
-        Inline<ArrayFrame> array_frame;
-        Inline<ObjectFrame> object_frame;
-        Inline<ScriptFrame> script_frame;
-        Html::Node::Ref domain; // REF
-        Script script;
+        std::shared_ptr<ArrayFrame> array_frame;
+        std::shared_ptr<ObjectFrame> object_frame;
+        std::shared_ptr<Script> script;
+        std::shared_ptr<ScriptFrame> script_frame;
+        std::shared_ptr<Html::Node> domain;
 
     public:
-        typedef Basic::Ref<Text, IProcess> Ref;
+        std::shared_ptr<Value> value;
 
-        Value::Ref value; // REF
+        Text(std::shared_ptr<Html::Node> domain);
 
-        void Initialize(Html::Node::Ref domain);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        virtual void IStream<std::shared_ptr<Token> >::write_element(std::shared_ptr<Token> element);
     };
 }

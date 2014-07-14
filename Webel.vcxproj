@@ -94,8 +94,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Basic.ByteVector.h" />
+    <ClInclude Include="Basic.LogStream.h" />
     <ClInclude Include="Basic.ElementSource.h" />
+    <ClInclude Include="Basic.IStreamWriter.h" />
+    <ClInclude Include="Ftp.Globals.h" />
+    <ClInclude Include="Ftp.Server.h" />
+    <ClInclude Include="Service.Endpoint.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
     <ClInclude Include="Service.HttpServer.h" />
     <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
@@ -131,19 +135,14 @@
     <ClInclude Include="Basic.HexNumberStream.h" />
     <ClInclude Include="Basic.Hold.h" />
     <ClInclude Include="Basic.IBufferedStream.h" />
-    <ClInclude Include="Basic.ICompletion.h" />
+    <ClInclude Include="Basic.ICompleter.h" />
     <ClInclude Include="Basic.IProcess.h" />
-    <ClInclude Include="Basic.IProtocolFactory.h" />
-    <ClInclude Include="Basic.IRefCounted.h" />
-    <ClInclude Include="Basic.ISerializable.h" />
     <ClInclude Include="Basic.IStream.h" />
     <ClInclude Include="Basic.ListenSocket.h" />
     <ClInclude Include="Basic.Lock.h" />
     <ClInclude Include="Basic.LogFile.h" />
     <ClInclude Include="Basic.MemoryRange.h" />
     <ClInclude Include="Basic.NameValueCollection.h" />
-    <ClInclude Include="Basic.Ref.h" />
-    <ClInclude Include="Basic.RefCounted.h" />
     <ClInclude Include="Basic.IgnoreFrame.h" />
     <ClInclude Include="Basic.CommandFrame.h" />
     <ClInclude Include="Service.StandardEncodings.h" />
@@ -178,7 +177,7 @@
     <ClInclude Include="Http.BodyChunksFrame.h" />
     <ClInclude Include="Basic.ClientSocket.h" />
     <ClInclude Include="Basic.ConnectedSocket.h" />
-    <ClInclude Include="Basic.DebugStream.h" />
+    <ClInclude Include="Tls.SignatureAndHashAlgorithmFrame.h" />
     <ClInclude Include="Web.Client.h" />
     <ClInclude Include="Http.CookieParser.h" />
     <ClInclude Include="Http.Globals.h" />
@@ -207,40 +206,30 @@
     <ClInclude Include="Json.ValueFrame.h" />
     <ClInclude Include="Tls.AlertFrame.h" />
     <ClInclude Include="Tls.AlertProtocol.h" />
-    <ClInclude Include="Tls.CertificatesFrame.h" />
     <ClInclude Include="Tls.CertificateStatusRequestFrame.h" />
-    <ClInclude Include="Tls.CipherSuitesFrame.h" />
     <ClInclude Include="Tls.ClientHelloFrame.h" />
     <ClInclude Include="Tls.ConnectionState.h" />
-    <ClInclude Include="Tls.ECPointFormatListFrame.h" />
-    <ClInclude Include="Tls.EllipticCurveListFrame.h" />
     <ClInclude Include="Tls.ExtensionHeaderFrame.h" />
     <ClInclude Include="Tls.Globals.h" />
     <ClInclude Include="Tls.ClientHandshake.h" />
     <ClInclude Include="Tls.HandshakeFrame.h" />
     <ClInclude Include="Tls.HandshakeProtocol.h" />
     <ClInclude Include="Tls.ServerHandshake.h" />
-    <ClInclude Include="Tls.NumberFrame.h" />
     <ClInclude Include="Tls.OCSPStatusRequestFrame.h" />
     <ClInclude Include="Tls.PreMasterSecretFrame.h" />
     <ClInclude Include="Tls.Types.h" />
     <ClInclude Include="Tls.RandomFrame.h" />
     <ClInclude Include="Tls.RecordFrame.h" />
-    <ClInclude Include="Tls.ResponderIDListFrame.h" />
     <ClInclude Include="Tls.SecurityParameters.h" />
     <ClInclude Include="Tls.ServerHelloFrame.h" />
     <ClInclude Include="Tls.ServerNameFrame.h" />
-    <ClInclude Include="Tls.ServerNameListFrame.h" />
-    <ClInclude Include="Tls.VectorFrame.h" />
-    <ClInclude Include="Tls.VectorFrames.h" />
     <ClInclude Include="Basic.StreamFrame.h" />
     <ClInclude Include="Basic.ServerSocket.h" />
     <ClInclude Include="Basic.Console.h" />
     <ClInclude Include="Basic.CountStream.h" />
-    <ClInclude Include="Basic.DebugLog.h" />
     <ClInclude Include="Http.ResponseHeadersFrame.h" />
     <ClInclude Include="Http.RequestFrame.h" />
-    <ClInclude Include="Basic.AsyncBytes.h" />
+    <ClInclude Include="Basic.Job.h" />
     <ClInclude Include="Basic.Socket.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Basic.String.h" />
@@ -253,12 +242,11 @@
     <ClInclude Include="Basic.TextSanitizer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Basic.ByteVector.cpp" />
+    <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />
     <ClCompile Include="Basic.Frame.cpp" />
     <ClCompile Include="Basic.FrameStream.cpp" />
     <ClCompile Include="Basic.Globals.cpp" />
-    <ClCompile Include="Basic.RefCounted.cpp" />
     <ClCompile Include="Basic.SingleByteDecoder.cpp" />
     <ClCompile Include="Basic.SingleByteEncoder.cpp" />
     <ClCompile Include="Basic.SingleByteEncodingIndex.cpp" />
@@ -266,17 +254,18 @@
     <ClCompile Include="Basic.Types.cpp" />
     <ClCompile Include="Basic.Utf32LittleEndianDecoder.cpp" />
     <ClCompile Include="Basic.Utf8Encoder.cpp" />
+    <ClCompile Include="Ftp.Globals.cpp" />
+    <ClCompile Include="Ftp.Server.cpp" />
     <ClCompile Include="Service.AdminProtocol.cpp" />
     <ClCompile Include="Basic.Cng.cpp" />
-    <ClCompile Include="Basic.AsyncBytes.cpp" />
+    <ClCompile Include="Basic.Job.cpp" />
     <ClCompile Include="Basic.HashAlgorithm.cpp" />
     <ClCompile Include="Basic.HashStream.cpp" />
     <ClCompile Include="Basic.ListenSocket.cpp" />
     <ClCompile Include="Basic.LogFile.cpp" />
     <ClCompile Include="Basic.MemoryRange.cpp" />
-    <ClCompile Include="Basic.IgnoreFrame.cpp" />
     <ClCompile Include="Basic.Socket.cpp" />
-    <ClCompile Include="Basic.CommandFrame.cpp" />
+    <ClCompile Include="Service.Endpoint.cpp" />
     <ClCompile Include="Service.HtmlNamedCharacterReferences.cpp" />
     <ClCompile Include="Service.HttpServer.cpp" />
     <ClCompile Include="Service.StandardEncodings.cpp" />
@@ -311,13 +300,12 @@
     <ClCompile Include="Basic.ClientSocket.cpp" />
     <ClCompile Include="Basic.ConnectedSocket.cpp" />
     <ClCompile Include="Basic.CountStream.cpp" />
-    <ClCompile Include="Basic.DebugLog.cpp" />
-    <ClCompile Include="Basic.DebugStream.cpp" />
     <ClCompile Include="Http.DisconnectBodyFrame.cpp" />
     <ClCompile Include="Http.BodyFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatMessageFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatProtocol.cpp" />
+    <ClCompile Include="Tls.SignatureAndHashAlgorithmFrame.cpp" />
     <ClCompile Include="Web.Client.cpp" />
     <ClCompile Include="Http.CookieParser.cpp" />
     <ClCompile Include="Http.Globals.cpp" />
@@ -376,6 +364,10 @@
     <ClCompile Include="Web.Link.cpp" />
     <ClCompile Include="Web.Page.cpp" />
     <ClCompile Include="Basic.TextSanitizer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
+    <Text Include="README.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

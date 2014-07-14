@@ -19,8 +19,8 @@ namespace Service
         static void QuestionRequest(Request* request, Response* response);
 
     public:
-        typedef Basic::Ref<HttpServer, IProcess> Ref;
+        HttpServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        virtual void Process();
+        virtual void handle_event();
     };
 }

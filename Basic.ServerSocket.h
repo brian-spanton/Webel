@@ -13,11 +13,9 @@ namespace Basic
     private:
         friend class ListenSocket;
 
-        void CompleteAccept(AsyncBytes* bytes, uint32 count);
+        void CompleteAccept(std::shared_ptr<ByteString> bytes, uint32 count);
 
     public:
-        typedef Basic::Ref<ServerSocket, ICompletion> Ref;
-
-        void Initialize();
+        ServerSocket(std::shared_ptr<IProcess> protocol);
     };
 }

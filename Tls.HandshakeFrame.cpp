@@ -7,58 +7,34 @@ namespace Tls
 {
     using namespace Basic;
 
-    void HandshakeFrame::Initialize(Handshake* handshake)
+    HandshakeFrame::HandshakeFrame(Handshake* handshake) :
+        handshake(handshake),
+        type_frame(&this->handshake->msg_type),
+        length_frame(&this->handshake->length)
     {
-        __super::Initialize();
-        this->handshake = handshake;
-        this->type_frame.Initialize(&this->handshake->msg_type);
-        this->length_frame.Initialize(&this->handshake->length);
     }
 
-    void HandshakeFrame::Process(IEvent* event, bool* yield)
+    void HandshakeFrame::reset()
     {
-        switch (frame_state())
+        __super::reset();
+    }
+
+    void HandshakeFrame::consider_event(IEvent* event)
+    {
+        switch (get_state())
         {
         case State::type_frame_pending_state:
-            if (this->type_frame.Pending())
-            {
-                this->type_frame.Process(event, yield);
-            }
-
-            if (this->type_frame.Failed())
-            {
-                switch_to_state(State::type_frame_failed);
-            }
-            else if (this->type_frame.Succeeded())
-            {
-                switch_to_state(State::length_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            switch_to_state(State::length_frame_pending_state);
             break;
 
         case State::length_frame_pending_state:
-            if (this->length_frame.Pending())
-            {
-                this->length_frame.Process(event, yield);
-            }
-
-            if (this->length_frame.Failed())
-            {
-                switch_to_state(State::length_frame_failed);
-            }
-            else if (this->length_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("Tls::HandshakeFrame::Process unexpected state");
+            throw FatalError("Tls::HandshakeFrame::handle_event unexpected state");
         }
-    }
-
-    void HandshakeFrame::SerializeTo(IStream<byte>* stream)
-    {
-        this->type_frame.SerializeTo(stream);
-        this->length_frame.SerializeTo(stream);
     }
 }

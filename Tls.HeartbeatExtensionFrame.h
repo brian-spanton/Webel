@@ -4,32 +4,36 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class HeartbeatExtensionFrame : public Frame, public ISerializable
+    class HeartbeatExtensionFrame : public Frame
     {
     private:
         enum State
         {
-            start_state = Start_State,
-            mode_frame_pending_state,
+            mode_frame_pending_state = Start_State,
             done_state = Succeeded_State,
             mode_frame_failed,
         };
 
         HeartbeatExtension* heartbeat_extension;
-        Inline<NumberFrame<HeartbeatMode> > mode_frame;
+        NumberFrame<HeartbeatMode> mode_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HeartbeatExtensionFrame, IProcess> Ref;
+        HeartbeatExtensionFrame(HeartbeatExtension* heartbeat_extension);
+    };
 
-        void Initialize(HeartbeatExtension* heartbeat_extension);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<HeartbeatExtension>
+    {
+        void operator()(const HeartbeatExtension* value, IStream<byte>* stream) const
+        {
+            serialize<HeartbeatMode>()(&value->mode, stream);
+        }
     };
 }

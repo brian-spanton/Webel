@@ -10,7 +10,7 @@ namespace Service
 {
     using namespace Basic;
 
-    class HtmlNamedCharacterReferences : public Frame
+    class HtmlNamedCharacterReferences : public Frame, public std::enable_shared_from_this<HtmlNamedCharacterReferences>
     {
     private:
         enum State
@@ -19,20 +19,18 @@ namespace Service
             done_state = Succeeded_State,
         };
 
-        Web::Client::Ref client; // REF
-        Json::Parser::Ref json_parser; // REF
-        Basic::Ref<IProcess> characters_completion; // REF
-        ByteString::Ref characters_cookie; // REF
+        std::shared_ptr<Web::Client> client;
+        std::shared_ptr<Json::Parser> json_parser;
+        std::shared_ptr<IProcess> characters_completion;
+        ByteStringRef characters_cookie;
 
-        UnicodeString::Ref codepoints_member_name; // REF
+        UnicodeStringRef codepoints_member_name;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HtmlNamedCharacterReferences> Ref;
+        HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        HtmlNamedCharacterReferences();
-
-        void Initialize(Basic::Ref<IProcess> completion, ByteString::Ref cookie);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        void start();
     };
 }

@@ -11,221 +11,219 @@ namespace Html
 {
     using namespace Basic;
 
-    class Globals : public IRefCounted
+    class Globals
     {
     private:
         template <int Count>
-        void InitializeElementName(ElementName::Ref* element, UnicodeString* name_space, const char (&name)[Count])
+        void InitializeElementName(std::shared_ptr<ElementName>* element, UnicodeStringRef name_space, const char (&name)[Count])
         {
-            UnicodeString::Ref name_string = New<UnicodeString>();
+            UnicodeStringRef name_string = std::make_shared<UnicodeString>();
             if (name[Count - 1] == 0)
                 name_string->append(name, name + Count - 1);
             else
                 name_string->append(name, name + Count);
 
-            (*element) = New<ElementName>();
+            (*element) = std::make_shared<ElementName>();
             (*element)->Initialize(name_space, name_string);
         }
 
     public:
-        typedef Basic::Ref<Globals> Ref;
-
         Globals();
 
         void Initialize();
 
-        ElementNameList::Ref Scope; // REF
-        ElementNameList::Ref ListItemScope; // REF
-        ElementNameList::Ref ButtonScope; // REF
-        ElementNameList::Ref TableScope; // REF
-        ElementNameList::Ref SelectScope; // REF
+        ElementNameList Scope;
+        ElementNameList ListItemScope;
+        ElementNameList ButtonScope;
+        ElementNameList TableScope;
+        ElementNameList SelectScope;
 
-        StringMap::Ref named_character_references_table; // REF
+        std::shared_ptr<StringMap> named_character_references_table;
 
-        TranslationMap::Ref number_character_references_table; // REF
+        TranslationMap number_character_references_table;
 
-        UnicodeString::Ref Script; // REF
+        UnicodeStringRef Script;
 
-        UnicodeString::Ref markup_declaration_comment; // REF
-        UnicodeString::Ref markup_declaration_doctype; // REF
-        UnicodeString::Ref markup_declaration_cdata; // REF
-        UnicodeString::Ref after_doctype_public_keyword; // REF
-        UnicodeString::Ref after_doctype_system_keyword; // REF
-        UnicodeString::Ref cdata_section_end; // REF
+        UnicodeStringRef markup_declaration_comment;
+        UnicodeStringRef markup_declaration_doctype;
+        UnicodeStringRef markup_declaration_cdata;
+        UnicodeStringRef after_doctype_public_keyword;
+        UnicodeStringRef after_doctype_system_keyword;
+        UnicodeStringRef cdata_section_end;
 
-        UnicodeString::Ref Namespace_HTML; // REF
-        UnicodeString::Ref Namespace_XML; // REF
-        UnicodeString::Ref Namespace_XMLNS; // REF
-        UnicodeString::Ref Namespace_MathML; // REF
-        UnicodeString::Ref Namespace_SVG; // REF
-        UnicodeString::Ref Namespace_XLink; // REF
+        UnicodeStringRef Namespace_HTML;
+        UnicodeStringRef Namespace_XML;
+        UnicodeStringRef Namespace_XMLNS;
+        UnicodeStringRef Namespace_MathML;
+        UnicodeStringRef Namespace_SVG;
+        UnicodeStringRef Namespace_XLink;
 
-        UnicodeString::Ref DOCTYPE_html_4_0_public_identifier; // REF
-        UnicodeString::Ref DOCTYPE_html_4_0_system_identifier; // REF
-        UnicodeString::Ref DOCTYPE_html_4_01_public_identifier; // REF
-        UnicodeString::Ref DOCTYPE_html_4_01_system_identifier; // REF
-        UnicodeString::Ref DOCTYPE_xhtml_1_0_public_identifier; // REF
-        UnicodeString::Ref DOCTYPE_xhtml_1_0_system_identifier; // REF
-        UnicodeString::Ref DOCTYPE_xhtml_1_1_public_identifier; // REF
-        UnicodeString::Ref DOCTYPE_xhtml_1_1_system_identifier; // REF
-        UnicodeString::Ref DOCTYPE_legacy_compat; // REF
+        UnicodeStringRef DOCTYPE_html_4_0_public_identifier;
+        UnicodeStringRef DOCTYPE_html_4_0_system_identifier;
+        UnicodeStringRef DOCTYPE_html_4_01_public_identifier;
+        UnicodeStringRef DOCTYPE_html_4_01_system_identifier;
+        UnicodeStringRef DOCTYPE_xhtml_1_0_public_identifier;
+        UnicodeStringRef DOCTYPE_xhtml_1_0_system_identifier;
+        UnicodeStringRef DOCTYPE_xhtml_1_1_public_identifier;
+        UnicodeStringRef DOCTYPE_xhtml_1_1_system_identifier;
+        UnicodeStringRef DOCTYPE_legacy_compat;
 
-        UnicodeString::Ref encoding_attribute_name; // REF
-        UnicodeString::Ref href_attribute_name; // REF
-        UnicodeString::Ref action_attribute_name; // REF
-        UnicodeString::Ref id_attribute_name; // REF
-        UnicodeString::Ref form_attribute_name; // REF
-        UnicodeString::Ref value_attribute_name; // REF
-        UnicodeString::Ref type_attribute_name; // REF
-        UnicodeString::Ref dirname_attribute_name; // REF
-        UnicodeString::Ref name_attribute_name; // REF
-        UnicodeString::Ref disabled_attribute_name; // REF
-        UnicodeString::Ref checked_attribute_name; // REF
-        UnicodeString::Ref enctype_attribute_name; // REF
-        UnicodeString::Ref method_attribute_name; // REF
-        UnicodeString::Ref target_attribute_name; // REF
-        UnicodeString::Ref accept_charset_attribute_name; // REF
-        UnicodeString::Ref class_attribute_name; // REF
+        UnicodeStringRef encoding_attribute_name;
+        UnicodeStringRef href_attribute_name;
+        UnicodeStringRef action_attribute_name;
+        UnicodeStringRef id_attribute_name;
+        UnicodeStringRef form_attribute_name;
+        UnicodeStringRef value_attribute_name;
+        UnicodeStringRef type_attribute_name;
+        UnicodeStringRef dirname_attribute_name;
+        UnicodeStringRef name_attribute_name;
+        UnicodeStringRef disabled_attribute_name;
+        UnicodeStringRef checked_attribute_name;
+        UnicodeStringRef enctype_attribute_name;
+        UnicodeStringRef method_attribute_name;
+        UnicodeStringRef target_attribute_name;
+        UnicodeStringRef accept_charset_attribute_name;
+        UnicodeStringRef class_attribute_name;
 
-        UnicodeString::Ref on_value; // REF
+        UnicodeStringRef on_value;
 
-        UnicodeString::Ref checkbox_type; // REF
-        UnicodeString::Ref radio_type; // REF
-        UnicodeString::Ref image_type; // REF
-        UnicodeString::Ref file_type; // REF
-        UnicodeString::Ref object_type; // REF
-        UnicodeString::Ref hidden_type; // REF
-        UnicodeString::Ref text_type; // REF
+        UnicodeStringRef checkbox_type;
+        UnicodeStringRef radio_type;
+        UnicodeStringRef image_type;
+        UnicodeStringRef file_type;
+        UnicodeStringRef object_type;
+        UnicodeStringRef hidden_type;
+        UnicodeStringRef text_type;
 
-        UnicodeString::Ref _charset__name; // REF
-        UnicodeString::Ref isindex_name; // REF
+        UnicodeStringRef _charset__name;
+        UnicodeStringRef isindex_name;
 
-        UnicodeString::Ref text_html_media_type; // REF
-        UnicodeString::Ref application_xhtml_xml_media_type; // REF
+        UnicodeStringRef text_html_media_type;
+        UnicodeStringRef application_xhtml_xml_media_type;
 
-        ElementName::Ref HTML_applet; // REF
-        ElementName::Ref HTML_body; // REF
-        ElementName::Ref HTML_br; // REF
-        ElementName::Ref button_element_name; // REF
-        ElementName::Ref HTML_caption; // REF
-        ElementName::Ref HTML_colgroup; // REF
-        ElementName::Ref HTML_frameset; // REF
-        ElementName::Ref HTML_head; // REF
-        ElementName::Ref HTML_html; // REF
-        ElementName::Ref HTML_marquee; // REF
-        ElementName::Ref object_element_name; // REF
-        ElementName::Ref HTML_ol; // REF
-        ElementName::Ref HTML_optgroup; // REF
-        ElementName::Ref HTML_option; // REF
-        ElementName::Ref select_element_name; // REF
-        ElementName::Ref HTML_table; // REF
-        ElementName::Ref HTML_tbody; // REF
-        ElementName::Ref HTML_td; // REF
-        ElementName::Ref HTML_tfoot; // REF
-        ElementName::Ref HTML_th; // REF
-        ElementName::Ref HTML_thead; // REF
-        ElementName::Ref HTML_tr; // REF
-        ElementName::Ref HTML_ul; // REF
-        ElementName::Ref HTML_a; // REF
-        ElementName::Ref HTML_b; // REF
-        ElementName::Ref HTML_big; // REF
-        ElementName::Ref HTML_code; // REF
-        ElementName::Ref HTML_em; // REF
-        ElementName::Ref HTML_font; // REF
-        ElementName::Ref HTML_i; // REF
-        ElementName::Ref HTML_nobr; // REF
-        ElementName::Ref HTML_s; // REF
-        ElementName::Ref HTML_small; // REF
-        ElementName::Ref HTML_strike; // REF
-        ElementName::Ref HTML_strong; // REF
-        ElementName::Ref HTML_tt; // REF
-        ElementName::Ref HTML_u; // REF
-        ElementName::Ref HTML_fieldset; // REF
-        ElementName::Ref input_element_name; // REF
-        ElementName::Ref HTML_keygen; // REF
-        ElementName::Ref HTML_label; // REF
-        ElementName::Ref HTML_output; // REF
-        ElementName::Ref HTML_textarea; // REF
-        ElementName::Ref HTML_base; // REF
-        ElementName::Ref HTML_basefont; // REF
-        ElementName::Ref HTML_bgsound; // REF
-        ElementName::Ref HTML_link; // REF
-        ElementName::Ref HTML_title; // REF
-        ElementName::Ref HTML_meta; // REF
-        ElementName::Ref HTML_noscript; // REF
-        ElementName::Ref HTML_noframes; // REF
-        ElementName::Ref HTML_style; // REF
-        ElementName::Ref HTML_script; // REF
-        ElementName::Ref HTML_dd; // REF
-        ElementName::Ref HTML_dt; // REF
-        ElementName::Ref HTML_li; // REF
-        ElementName::Ref HTML_p; // REF
-        ElementName::Ref HTML_rp; // REF
-        ElementName::Ref HTML_rt; // REF
-        ElementName::Ref HTML_address; // REF
-        ElementName::Ref HTML_article; // REF
-        ElementName::Ref HTML_aside; // REF
-        ElementName::Ref HTML_blockquote; // REF
-        ElementName::Ref HTML_center; // REF
-        ElementName::Ref HTML_details; // REF
-        ElementName::Ref HTML_dialog; // REF
-        ElementName::Ref HTML_dir; // REF
-        ElementName::Ref HTML_div; // REF
-        ElementName::Ref HTML_dl; // REF
-        ElementName::Ref HTML_figcaption; // REF
-        ElementName::Ref HTML_figure; // REF
-        ElementName::Ref HTML_footer; // REF
-        ElementName::Ref HTML_header; // REF
-        ElementName::Ref HTML_hgroup; // REF
-        ElementName::Ref HTML_main; // REF
-        ElementName::Ref HTML_menu; // REF
-        ElementName::Ref HTML_nav; // REF
-        ElementName::Ref HTML_section; // REF
-        ElementName::Ref HTML_summary; // REF
-        ElementName::Ref HTML_h1; // REF
-        ElementName::Ref HTML_h2; // REF
-        ElementName::Ref HTML_h3; // REF
-        ElementName::Ref HTML_h4; // REF
-        ElementName::Ref HTML_h5; // REF
-        ElementName::Ref HTML_h6; // REF
-        ElementName::Ref HTML_pre; // REF
-        ElementName::Ref HTML_listing; // REF
-        ElementName::Ref HTML_form; // REF
-        ElementName::Ref HTML_plaintext; // REF
-        ElementName::Ref HTML_area; // REF
-        ElementName::Ref HTML_embed; // REF
-        ElementName::Ref HTML_img; // REF
-        ElementName::Ref HTML_wbr; // REF
-        ElementName::Ref HTML_menuitem; // REF
-        ElementName::Ref HTML_param; // REF
-        ElementName::Ref HTML_source; // REF
-        ElementName::Ref HTML_track; // REF
-        ElementName::Ref HTML_hr; // REF
-        ElementName::Ref HTML_image; // REF
-        ElementName::Ref HTML_isindex; // REF
-        ElementName::Ref HTML_xmp; // REF
-        ElementName::Ref HTML_iframe; // REF
-        ElementName::Ref HTML_noembed; // REF
-        ElementName::Ref HTML_ruby; // REF
-        ElementName::Ref HTML_col; // REF
-        ElementName::Ref HTML_frame; // REF
-        ElementName::Ref datalist_element_name; // REF
+        std::shared_ptr<ElementName> HTML_applet;
+        std::shared_ptr<ElementName> HTML_body;
+        std::shared_ptr<ElementName> HTML_br;
+        std::shared_ptr<ElementName> button_element_name;
+        std::shared_ptr<ElementName> HTML_caption;
+        std::shared_ptr<ElementName> HTML_colgroup;
+        std::shared_ptr<ElementName> HTML_frameset;
+        std::shared_ptr<ElementName> HTML_head;
+        std::shared_ptr<ElementName> HTML_html;
+        std::shared_ptr<ElementName> HTML_marquee;
+        std::shared_ptr<ElementName> object_element_name;
+        std::shared_ptr<ElementName> HTML_ol;
+        std::shared_ptr<ElementName> HTML_optgroup;
+        std::shared_ptr<ElementName> HTML_option;
+        std::shared_ptr<ElementName> select_element_name;
+        std::shared_ptr<ElementName> HTML_table;
+        std::shared_ptr<ElementName> HTML_tbody;
+        std::shared_ptr<ElementName> HTML_td;
+        std::shared_ptr<ElementName> HTML_tfoot;
+        std::shared_ptr<ElementName> HTML_th;
+        std::shared_ptr<ElementName> HTML_thead;
+        std::shared_ptr<ElementName> HTML_tr;
+        std::shared_ptr<ElementName> HTML_ul;
+        std::shared_ptr<ElementName> HTML_a;
+        std::shared_ptr<ElementName> HTML_b;
+        std::shared_ptr<ElementName> HTML_big;
+        std::shared_ptr<ElementName> HTML_code;
+        std::shared_ptr<ElementName> HTML_em;
+        std::shared_ptr<ElementName> HTML_font;
+        std::shared_ptr<ElementName> HTML_i;
+        std::shared_ptr<ElementName> HTML_nobr;
+        std::shared_ptr<ElementName> HTML_s;
+        std::shared_ptr<ElementName> HTML_small;
+        std::shared_ptr<ElementName> HTML_strike;
+        std::shared_ptr<ElementName> HTML_strong;
+        std::shared_ptr<ElementName> HTML_tt;
+        std::shared_ptr<ElementName> HTML_u;
+        std::shared_ptr<ElementName> HTML_fieldset;
+        std::shared_ptr<ElementName> input_element_name;
+        std::shared_ptr<ElementName> HTML_keygen;
+        std::shared_ptr<ElementName> HTML_label;
+        std::shared_ptr<ElementName> HTML_output;
+        std::shared_ptr<ElementName> HTML_textarea;
+        std::shared_ptr<ElementName> HTML_base;
+        std::shared_ptr<ElementName> HTML_basefont;
+        std::shared_ptr<ElementName> HTML_bgsound;
+        std::shared_ptr<ElementName> HTML_link;
+        std::shared_ptr<ElementName> HTML_title;
+        std::shared_ptr<ElementName> HTML_meta;
+        std::shared_ptr<ElementName> HTML_noscript;
+        std::shared_ptr<ElementName> HTML_noframes;
+        std::shared_ptr<ElementName> HTML_style;
+        std::shared_ptr<ElementName> HTML_script;
+        std::shared_ptr<ElementName> HTML_dd;
+        std::shared_ptr<ElementName> HTML_dt;
+        std::shared_ptr<ElementName> HTML_li;
+        std::shared_ptr<ElementName> HTML_p;
+        std::shared_ptr<ElementName> HTML_rp;
+        std::shared_ptr<ElementName> HTML_rt;
+        std::shared_ptr<ElementName> HTML_address;
+        std::shared_ptr<ElementName> HTML_article;
+        std::shared_ptr<ElementName> HTML_aside;
+        std::shared_ptr<ElementName> HTML_blockquote;
+        std::shared_ptr<ElementName> HTML_center;
+        std::shared_ptr<ElementName> HTML_details;
+        std::shared_ptr<ElementName> HTML_dialog;
+        std::shared_ptr<ElementName> HTML_dir;
+        std::shared_ptr<ElementName> HTML_div;
+        std::shared_ptr<ElementName> HTML_dl;
+        std::shared_ptr<ElementName> HTML_figcaption;
+        std::shared_ptr<ElementName> HTML_figure;
+        std::shared_ptr<ElementName> HTML_footer;
+        std::shared_ptr<ElementName> HTML_header;
+        std::shared_ptr<ElementName> HTML_hgroup;
+        std::shared_ptr<ElementName> HTML_main;
+        std::shared_ptr<ElementName> HTML_menu;
+        std::shared_ptr<ElementName> HTML_nav;
+        std::shared_ptr<ElementName> HTML_section;
+        std::shared_ptr<ElementName> HTML_summary;
+        std::shared_ptr<ElementName> HTML_h1;
+        std::shared_ptr<ElementName> HTML_h2;
+        std::shared_ptr<ElementName> HTML_h3;
+        std::shared_ptr<ElementName> HTML_h4;
+        std::shared_ptr<ElementName> HTML_h5;
+        std::shared_ptr<ElementName> HTML_h6;
+        std::shared_ptr<ElementName> HTML_pre;
+        std::shared_ptr<ElementName> HTML_listing;
+        std::shared_ptr<ElementName> HTML_form;
+        std::shared_ptr<ElementName> HTML_plaintext;
+        std::shared_ptr<ElementName> HTML_area;
+        std::shared_ptr<ElementName> HTML_embed;
+        std::shared_ptr<ElementName> HTML_img;
+        std::shared_ptr<ElementName> HTML_wbr;
+        std::shared_ptr<ElementName> HTML_menuitem;
+        std::shared_ptr<ElementName> HTML_param;
+        std::shared_ptr<ElementName> HTML_source;
+        std::shared_ptr<ElementName> HTML_track;
+        std::shared_ptr<ElementName> HTML_hr;
+        std::shared_ptr<ElementName> HTML_image;
+        std::shared_ptr<ElementName> HTML_isindex;
+        std::shared_ptr<ElementName> HTML_xmp;
+        std::shared_ptr<ElementName> HTML_iframe;
+        std::shared_ptr<ElementName> HTML_noembed;
+        std::shared_ptr<ElementName> HTML_ruby;
+        std::shared_ptr<ElementName> HTML_col;
+        std::shared_ptr<ElementName> HTML_frame;
+        std::shared_ptr<ElementName> datalist_element_name;
 
-        ElementName::Ref MathML_annotation_xml; // REF
-        ElementName::Ref MathML_malignmark; // REF
-        ElementName::Ref MathML_mglyph; // REF
-        ElementName::Ref MathML_mi; // REF
-        ElementName::Ref MathML_mn; // REF
-        ElementName::Ref MathML_mo; // REF
-        ElementName::Ref MathML_ms; // REF
-        ElementName::Ref MathML_mtext; // REF
-        ElementName::Ref MathML_math; // REF
+        std::shared_ptr<ElementName> MathML_annotation_xml;
+        std::shared_ptr<ElementName> MathML_malignmark;
+        std::shared_ptr<ElementName> MathML_mglyph;
+        std::shared_ptr<ElementName> MathML_mi;
+        std::shared_ptr<ElementName> MathML_mn;
+        std::shared_ptr<ElementName> MathML_mo;
+        std::shared_ptr<ElementName> MathML_ms;
+        std::shared_ptr<ElementName> MathML_mtext;
+        std::shared_ptr<ElementName> MathML_math;
 
-        ElementName::Ref SVG_desc; // REF
-        ElementName::Ref SVG_foreignObject; // REF
-        ElementName::Ref SVG_svg; // REF
-        ElementName::Ref SVG_title; // REF
+        std::shared_ptr<ElementName> SVG_desc;
+        std::shared_ptr<ElementName> SVG_foreignObject;
+        std::shared_ptr<ElementName> SVG_svg;
+        std::shared_ptr<ElementName> SVG_title;
     };
 
-    extern Inline<Globals>* globals;
+    extern Globals* globals;
 }

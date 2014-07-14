@@ -2,69 +2,39 @@
 
 #include "stdafx.h"
 #include "Tls.ServerNameFrame.h"
-#include "Tls.NumberFrame.h"
 #include "Tls.Globals.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void ServerNameFrame::Initialize(ServerName* serverName)
+    ServerNameFrame::ServerNameFrame(ServerName* serverName) :
+        serverName(serverName),
+        type_frame(&serverName->name_type),
+        name_frame(&serverName->name)
     {
-        __super::Initialize();
-        this->serverName = serverName;
-        this->type_frame.Initialize(&this->serverName->name_type);
-        this->name_frame.Initialize(&this->serverName->name);
     }
 
-    void ServerNameFrame::Process(IEvent* event, bool* yield)
+    void ServerNameFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
             switch_to_state(State::type_state);
             break;
 
         case State::type_state:
-            if (this->type_frame.Pending())
-            {
-                this->type_frame.Process(event, yield);
-            }
-
-            if (this->type_frame.Failed())
-            {
-                switch_to_state(State::type_frame_failed);
-            }
-            else if (this->type_frame.Succeeded())
-            {
-                switch_to_state(State::name_state);
-            }
+            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            switch_to_state(State::name_state);
             break;
 
         case State::name_state:
-            if (this->name_frame.Pending())
-            {
-                this->name_frame.Process(event, yield);
-            }
-
-            if (this->name_frame.Failed())
-            {
-                switch_to_state(State::name_frame_failed);
-            }
-            else if (this->name_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->name_frame, event, State::name_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("Tls::ServerNameFrame::Process unexpected state");
+            throw FatalError("Tls::ServerNameFrame::handle_event unexpected state");
         }
-    }
-
-    void ServerNameFrame::SerializeTo(IStream<byte>* stream)
-    {
-        this->type_frame.SerializeTo(stream);
-        this->name_frame.SerializeTo(stream);
     }
 }

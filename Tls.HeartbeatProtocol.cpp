@@ -3,47 +3,41 @@
 #include "stdafx.h"
 #include "Tls.HeartbeatProtocol.h"
 #include "Tls.RecordLayer.h"
+#include "Tls.ServerNameFrame.h"
+#include "Tls.SignatureAndHashAlgorithmFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void HeartbeatProtocol::Initialize(RecordLayer* session)
+    HeartbeatProtocol::HeartbeatProtocol(RecordLayer* session) :
+        session(session),
+        heartbeat_message_frame(&this->heartbeat_message)
     {
-        __super::Initialize();
-        this->session = session;
     }
 
     void HeartbeatProtocol::SetPlaintextLength(uint16 plaintext_length)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
-            this->heartbeat_message_frame.Initialize(&this->heartbeat_message, plaintext_length);
+            this->heartbeat_message_frame.set_plaintext_length(plaintext_length);
             switch_to_state(State::heartbeat_message_frame_pending_state);
             break;
 
         default:
-            throw new Exception("Tls::HeartbeatProtocol::SetPlaintextLength unexpected state");
+            throw FatalError("Tls::HeartbeatProtocol::SetPlaintextLength unexpected state");
         }
     }
 
-    void HeartbeatProtocol::Process(IEvent* event, bool* yield)
+    void HeartbeatProtocol::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::heartbeat_message_frame_pending_state:
-            if (this->heartbeat_message_frame.Pending())
             {
-                this->heartbeat_message_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
 
-            if (this->heartbeat_message_frame.Failed())
-            {
-                switch_to_state(State::heartbeat_message_frame_failed);
-            }
-            else if (this->heartbeat_message_frame.Succeeded())
-            {
                 switch (this->heartbeat_message.type)
                 {
                 case HeartbeatMessageType::heartbeat_request:
@@ -53,11 +47,11 @@ namespace Tls
                         this->heartbeat_message.type = HeartbeatMessageType::heartbeat_response;
 
                         this->heartbeat_message.padding.resize(16);
-                        NTSTATUS error = BCryptGenRandom(0, &this->heartbeat_message.padding[0], this->heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+                        NTSTATUS error = BCryptGenRandom(0, this->heartbeat_message.padding.address(), this->heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                         if (error != 0)
-                            throw new Exception("Tls::ClientHandshake::Process BCryptGenRandom failed", error);
+                            throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
 
-                        this->heartbeat_message_frame.SerializeTo(this->session);
+                        serialize<HeartbeatMessage>()(&this->heartbeat_message, this->session);
                     }
                     break;
 
@@ -73,7 +67,7 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::HeartbeatProtocol::Process unexpected state");
+            throw FatalError("Tls::HeartbeatProtocol::handle_event unexpected state");
         }
     }
 }

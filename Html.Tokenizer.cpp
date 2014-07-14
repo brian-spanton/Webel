@@ -9,68 +9,76 @@
 #include "Html.CharacterToken.h"
 #include "Html.EndOfFileToken.h"
 #include "Html.Parser.h"
-#include "Basic.FrameStream.h"
 
 namespace Html
 {
     using namespace Basic;
 
-    void Tokenizer::Initialize(Parser* parser, IStream<TokenPointer>* output)
+    Tokenizer::Tokenizer(Parser* parser, std::shared_ptr<IStream<TokenRef> > output) :
+        temporary_buffer(std::make_shared<UnicodeString>()),
+        markup_declaration_open(std::make_shared<UnicodeString>()),
+        after_doctype_name(std::make_shared<UnicodeString>()),
+        parser(parser),
+        output(output),
+        eof_token(std::make_shared<EndOfFileToken>()), // $$ could be static
+        char_ref_frame(this->parser)
     {
-        this->state = data_state;
-        this->temporary_buffer = New<UnicodeString>();
-        this->markup_declaration_open = New<UnicodeString>();
-        this->after_doctype_name = New<UnicodeString>();
-        this->parser = parser;
-        this->output = output;
     }
 
     void Tokenizer::SwitchToState(TokenizerState state)
     {
-        if (this->state == attribute_name_state)
+        // first check state we are leaving for special cases...
+
+        if (this->get_state() == attribute_name_state)
             InsertAttribute();
 
-        if (state == character_reference_in_attribute_value_state)
-            this->attribute_value_state = this->state;
+        // then check state we are entering for special cases...
 
-        this->state = state;
+        switch (state)
+        {
+        case character_reference_in_attribute_value_state:
+            this->attribute_value_state = (TokenizerState)this->get_state();
+            this->character_reference = std::make_shared<UnicodeString>();
+            this->character_reference_unconsume = std::make_shared<UnicodeString>();
+            this->char_ref_frame.reset(true, this->use_additional_allowed_character, this->additional_allowed_character, this->character_reference.get(), this->character_reference_unconsume);
+            break;
+        }
+
+        __super::switch_to_state(state);
     }
 
     void Tokenizer::InsertAttribute()
     {
-        if (this->current_attribute_name.item() == 0 || this->current_attribute_name->size() == 0)
+        if (this->current_attribute_name.get() == 0 || this->current_attribute_name->size() == 0)
         {
             Basic::globals->HandleError("Tokenizer::InsertAttribute 1", 0);
             return;
         }
 
-        if (this->current_tag_token.item() == 0)
+        if (this->current_tag_token.get() == 0)
         {
             Basic::globals->HandleError("Tokenizer::InsertAttribute 2", 0);
             return;
         }
 
-        StringMap::value_type value(this->current_attribute_name, New<UnicodeString>());
+        StringMap::value_type value(this->current_attribute_name, std::make_shared<UnicodeString>());
 
-        std::pair<StringMap::iterator, bool> result = this->current_tag_token->attributes->insert(value);
+        std::pair<StringMap::iterator, bool> result = this->current_tag_token->attributes.insert(value);
         if (!result.second)
             ParseError("duplicate attribute");
 
         this->current_attribute = result.first;
-        this->current_attribute_name = (UnicodeString*)0;
+        this->current_attribute_name = 0;
     }
 
-    bool Tokenizer::IsAppropriate(TokenPointer token)
+    bool Tokenizer::IsAppropriate(Token* token)
     {
         if (token->type != Token::Type::end_tag_token)
             return false;
 
-        if (this->last_start_tag.item() == 0)
-            return false;
-
         EndTagToken* end_tag = static_cast<EndTagToken*>(token);
 
-        if (this->last_start_tag->name != end_tag->name)
+        if (this->last_start_tag_name != end_tag->name)
             return false;
 
         return true;
@@ -78,7 +86,7 @@ namespace Html
 
     void Tokenizer::EmitCharacter(Codepoint c)
     {
-        CharacterToken::Ref token = New<CharacterToken>();
+        std::shared_ptr<CharacterToken> token = std::make_shared<CharacterToken>();
         token->data = c;
 
         Emit(token);
@@ -86,10 +94,10 @@ namespace Html
 
     void Tokenizer::EmitCurrentTagToken()
     {
-        if (this->current_tag_token.item() == 0)
-            throw new Exception("Tokenizer::EmitCurrentTagToken should have valid this->current_tag_token");
+        if (this->current_tag_token.get() == 0)
+            throw FatalError("Tokenizer::EmitCurrentTagToken should have valid this->current_tag_token");
 
-        if (this->state == attribute_name_state)
+        if (this->get_state() == attribute_name_state)
             InsertAttribute();
 
         Emit(this->current_tag_token);
@@ -97,7 +105,7 @@ namespace Html
         this->current_tag_token = 0;
     }
 
-    void Tokenizer::Emit(TokenPointer token)
+    void Tokenizer::Emit(TokenRef token)
     {
         StartTagToken* start_tag_to_acknowledge = 0;
 
@@ -105,19 +113,19 @@ namespace Html
         {
         case Token::Type::start_tag_token:
             {
-                StartTagToken* start_tag = static_cast<StartTagToken*>(token);
+                StartTagToken* start_tag = static_cast<StartTagToken*>(token.get());
                 if (start_tag->self_closing)
                     start_tag_to_acknowledge = start_tag;
 
-                this->last_start_tag = start_tag;
+                this->last_start_tag_name = start_tag->name;
             }
             break;
 
         case Token::Type::end_tag_token:
             {
-                EndTagToken* end_tag = static_cast<EndTagToken*>(token);
+                EndTagToken* end_tag = static_cast<EndTagToken*>(token.get());
 
-                if (end_tag->attributes->size() > 0)
+                if (end_tag->attributes.size() > 0)
                     ParseError("end tag token with attributes");
 
                 if (end_tag->self_closing == true)
@@ -126,7 +134,7 @@ namespace Html
             break;
         }
 
-        this->output->Write(&token, 1);
+        this->output->write_element(token);
 
         // When a start tag token is emitted with its self-closing flag set, if the flag is not acknowledged
         // when it is processed by the tree construction stage, that is a parse error.
@@ -136,19 +144,24 @@ namespace Html
         }
     }
 
-    void Tokenizer::Process(IEvent* event, bool* yield)
+    void Tokenizer::write_eof()
     {
-        switch (this->state)
+        // this class requires EOF translated this way (see EOF use in write_element)
+        write_element(EOF);
+    }
+
+    void Tokenizer::write_element(Codepoint c)
+    {
+        switch (this->get_state())
         {
         case data_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch(c)
                 {
                 case 0x0026:
+                    this->character_reference = std::make_shared<UnicodeString>();
+                    this->character_reference_unconsume = std::make_shared<UnicodeString>();
+                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_unconsume);
                     SwitchToState(character_reference_in_data_state);
                     break;
 
@@ -162,7 +175,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(&this->eof_token);
+                    Emit(this->eof_token);
                     break;
 
                 default:
@@ -173,24 +186,12 @@ namespace Html
             break;
 
         case character_reference_in_data_state:
-            this->character_reference = New<UnicodeString>();
-            this->character_reference_unconsume = New<UnicodeString>();
-            this->char_ref_frame.Initialize(this->parser, false, false, 0, this->character_reference, this->character_reference_unconsume);
-            SwitchToState(character_reference_in_data_Done_state);
-            break;
+            {
+                this->char_ref_frame.write_element(c);
 
-        case character_reference_in_data_Done_state:
-            if (this->char_ref_frame.Pending())
-            {
-                this->char_ref_frame.Process(event, yield);
-            }
-            
-            if (this->char_ref_frame.Failed())
-            {
-                throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
-            }
-            else if (this->char_ref_frame.Succeeded())
-            {
+                if (this->char_ref_frame.in_progress())
+                    break;
+
                 if (this->character_reference->size() == 0)
                 {
                     EmitCharacter(0x0026);
@@ -203,21 +204,21 @@ namespace Html
 
                 SwitchToState(data_state);
 
-                Inline<FrameStream<Codepoint> > frame_stream;
-                frame_stream.Initialize(this);
-                frame_stream.Write(this->character_reference_unconsume->c_str(), this->character_reference_unconsume->size());
+                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
+                    this->write_element(*it);
+
+                return;
             }
             break;
 
         case RCDATA_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0026:
+                    this->character_reference = std::make_shared<UnicodeString>();
+                    this->character_reference_unconsume = std::make_shared<UnicodeString>();
+                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_unconsume);
                     SwitchToState(character_reference_in_RCDATA_state);
                     break;
 
@@ -231,7 +232,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(&this->eof_token);
+                    Emit(this->eof_token);
                     break;
 
                 default:
@@ -242,24 +243,12 @@ namespace Html
             break;
 
         case character_reference_in_RCDATA_state:
-            this->character_reference = New<UnicodeString>();
-            this->character_reference_unconsume = New<UnicodeString>();
-            this->char_ref_frame.Initialize(this->parser, false, false, 0, this->character_reference, this->character_reference_unconsume);
-            SwitchToState(character_reference_in_RCDATA_Done_state);
-            break;
+            {
+                this->char_ref_frame.write_element(c);
 
-        case character_reference_in_RCDATA_Done_state:
-            if (this->char_ref_frame.Pending())
-            {
-                this->char_ref_frame.Process(event, yield);
-            }
-            
-            if (this->char_ref_frame.Failed())
-            {
-                throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
-            }
-            else if (this->char_ref_frame.Succeeded())
-            {
+                if (this->char_ref_frame.in_progress())
+                    break;
+
                 if (this->character_reference->size() == 0)
                 {
                     EmitCharacter(0x0026);
@@ -272,18 +261,15 @@ namespace Html
 
                 SwitchToState(RCDATA_state);
 
-                Inline<FrameStream<Codepoint> > frame_stream;
-                frame_stream.Initialize(this);
-                frame_stream.Write(this->character_reference_unconsume->c_str(), this->character_reference_unconsume->size());
+                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
+                    this->write_element(*it);
+
+                return;
             }
             break;
 
         case RAWTEXT_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003C:
@@ -296,7 +282,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(&this->eof_token);
+                    Emit(this->eof_token);
                     break;
 
                 default:
@@ -308,10 +294,6 @@ namespace Html
 
         case script_data_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003C:
@@ -324,7 +306,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(&this->eof_token);
+                    Emit(this->eof_token);
                     break;
 
                 default:
@@ -336,10 +318,6 @@ namespace Html
 
         case PLAINTEXT_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0000:
@@ -348,7 +326,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(&this->eof_token);
+                    Emit(this->eof_token);
                     break;
 
                 default:
@@ -360,25 +338,23 @@ namespace Html
 
         case tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<StartTagToken>();
+                    this->current_tag_token = std::make_shared<StartTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
                     SwitchToState(tag_name_state);
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<StartTagToken>();
+                    this->current_tag_token = std::make_shared<StartTagToken>();
                     this->current_tag_token->name->push_back(c);
                     SwitchToState(tag_name_state);
                 }
                 else switch (c)
                 {
                 case 0x0021:
+                    this->markup_declaration_open->clear();
+                    this->markup_declaration_open->reserve(7);
                     SwitchToState(markup_declaration_open_state);
                     break;
 
@@ -390,7 +366,7 @@ namespace Html
                     ParseError(c);
                     SwitchToState(bogus_comment_state);
 
-                    this->comment_token = New<CommentToken>();
+                    this->comment_token = std::make_shared<CommentToken>();
                     this->comment_token->data->push_back(0x003F);
                     break;
 
@@ -400,27 +376,23 @@ namespace Html
 
                     EmitCharacter(0x003C);
 
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case end_tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
                     SwitchToState(tag_name_state);
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c);
                     SwitchToState(tag_name_state);
                 }
@@ -438,14 +410,14 @@ namespace Html
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
 
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
                     SwitchToState(bogus_comment_state);
 
-                    this->comment_token = New<CommentToken>();
+                    this->comment_token = std::make_shared<CommentToken>();
                     this->comment_token->data->push_back(c);
                     break;
                 }
@@ -454,10 +426,6 @@ namespace Html
 
         case tag_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
                     this->current_tag_token->name->push_back(c + 0x0020);
@@ -488,8 +456,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->current_tag_token->name->push_back(c);
@@ -500,10 +468,6 @@ namespace Html
 
         case RCDATA_less_than_sign_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002F:
@@ -514,28 +478,24 @@ namespace Html
                 default:
                     SwitchToState(RCDATA_state);
                     EmitCharacter(0x003C);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case RCDATA_end_tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(RCDATA_end_tag_name_state);
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(RCDATA_end_tag_name_state);
@@ -545,17 +505,14 @@ namespace Html
                     SwitchToState(RCDATA_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case RCDATA_end_tag_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
@@ -568,7 +525,7 @@ namespace Html
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                 }
-                else if (IsAppropriate(this->current_tag_token))
+                else if (IsAppropriate(this->current_tag_token.get()))
                 {
                     switch (c)
                     {
@@ -609,17 +566,14 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case RAWTEXT_less_than_sign_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002F:
@@ -630,28 +584,24 @@ namespace Html
                 default:
                     SwitchToState(RAWTEXT_state);
                     EmitCharacter(0x003C);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case RAWTEXT_end_tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(RAWTEXT_end_tag_name_state);
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(RAWTEXT_end_tag_name_state);
@@ -661,17 +611,14 @@ namespace Html
                     SwitchToState(RAWTEXT_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case RAWTEXT_end_tag_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
@@ -684,7 +631,7 @@ namespace Html
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                 }
-                else if (IsAppropriate(this->current_tag_token))
+                else if (IsAppropriate(this->current_tag_token.get()))
                 {
                     switch (c)
                     {
@@ -725,17 +672,14 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_less_than_sign_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002F:
@@ -752,28 +696,24 @@ namespace Html
                 default:
                     SwitchToState(script_data_state);
                     EmitCharacter(0x003C);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_end_tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(script_data_end_tag_name_state);
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                     SwitchToState(script_data_end_tag_name_state);
@@ -783,17 +723,14 @@ namespace Html
                     SwitchToState(script_data_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_end_tag_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
@@ -806,7 +743,7 @@ namespace Html
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                 }
-                else if (IsAppropriate(this->current_tag_token))
+                else if (IsAppropriate(this->current_tag_token.get()))
                 {
                     switch (c)
                     {
@@ -847,17 +784,14 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_escape_start_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -867,18 +801,14 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_escape_start_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -888,18 +818,14 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_escaped_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -919,8 +845,8 @@ namespace Html
                 case EOF:
                     SwitchToState(data_state);
                     ParseError(c);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     EmitCharacter(c);
@@ -931,10 +857,6 @@ namespace Html
 
         case script_data_escaped_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -955,8 +877,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     SwitchToState(script_data_escaped_state);
@@ -968,10 +890,6 @@ namespace Html
 
         case script_data_escaped_dash_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -996,8 +914,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     SwitchToState(script_data_escaped_state);
@@ -1009,10 +927,6 @@ namespace Html
 
         case script_data_escaped_less_than_sign_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
                     this->temporary_buffer->clear();
@@ -1041,21 +955,17 @@ namespace Html
                 default:
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0x003C);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_escaped_end_tag_open_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c + 0x0020);
 
                     this->temporary_buffer->push_back(c);
@@ -1064,7 +974,7 @@ namespace Html
                 }
                 else if (c >= 'a' && c <= 'z')
                 {
-                    this->current_tag_token = New<EndTagToken>();
+                    this->current_tag_token = std::make_shared<EndTagToken>();
                     this->current_tag_token->name->push_back(c);
 
                     this->temporary_buffer->push_back(c);
@@ -1076,17 +986,14 @@ namespace Html
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_escaped_end_tag_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
@@ -1099,7 +1006,7 @@ namespace Html
                     this->current_tag_token->name->push_back(c);
                     this->temporary_buffer->push_back(c);
                 }
-                else if (IsAppropriate(this->current_tag_token))
+                else if (IsAppropriate(this->current_tag_token.get()))
                 {
                     switch (c)
                     {
@@ -1140,17 +1047,14 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    Event::UndoReadNext(event);
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_double_escape_start_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
                     this->temporary_buffer->push_back(c + 0x0020);
@@ -1170,7 +1074,7 @@ namespace Html
                 case 0x002F:
                 case 0x003E:
                     {
-                        if (this->temporary_buffer.equals<false>(Html::globals->Script))
+                        if (equals<UnicodeString, false>(this->temporary_buffer.get(), Html::globals->Script.get()))
                             SwitchToState(script_data_double_escaped_state);
                         else
                             SwitchToState(script_data_escaped_state);
@@ -1181,18 +1085,14 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_escaped_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_double_escaped_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -1213,8 +1113,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     EmitCharacter(c);
@@ -1225,10 +1125,6 @@ namespace Html
 
         case script_data_double_escaped_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -1250,8 +1146,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
@@ -1262,10 +1158,6 @@ namespace Html
 
         case script_data_double_escaped_dash_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -1291,8 +1183,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
@@ -1304,10 +1196,6 @@ namespace Html
 
         case script_data_double_escaped_less_than_sign_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002F:
@@ -1318,18 +1206,14 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case script_data_double_escape_end_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
                     this->temporary_buffer->push_back(c + 0x0020);
@@ -1349,7 +1233,7 @@ namespace Html
                 case 0x002F:
                 case 0x003E:
                     {
-                        if (this->temporary_buffer.equals<false>(Html::globals->Script))
+                        if (equals<UnicodeString, false>(this->temporary_buffer.get(), Html::globals->Script.get()))
                             SwitchToState(script_data_escaped_state);
                         else
                             SwitchToState(script_data_double_escaped_state);
@@ -1360,23 +1244,19 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case before_attribute_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(c + 0x0020);
                     SwitchToState(attribute_name_state);
                 }
@@ -1399,7 +1279,7 @@ namespace Html
 
                 case 0x0000:
                     ParseError(c);
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(0xFFFD);
                     SwitchToState(attribute_name_state);
                     break;
@@ -1415,8 +1295,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     anything_else = true;
@@ -1425,7 +1305,7 @@ namespace Html
 
                 if (anything_else)
                 {
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(c);
                     SwitchToState(attribute_name_state);
                 }
@@ -1434,10 +1314,6 @@ namespace Html
 
         case attribute_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
@@ -1481,8 +1357,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     anything_else = true;
@@ -1496,15 +1372,11 @@ namespace Html
 
         case after_attribute_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(c + 0x0020);
                     SwitchToState(attribute_name_state);
                 }
@@ -1531,7 +1403,7 @@ namespace Html
 
                 case 0x0000:
                     ParseError(c);
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(0xFFFD);
                     SwitchToState(attribute_name_state);
                     break;
@@ -1546,8 +1418,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     anything_else = true;
@@ -1556,7 +1428,7 @@ namespace Html
 
                 if (anything_else)
                 {
-                    this->current_attribute_name = New<UnicodeString>();
+                    this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(c);
                     SwitchToState(attribute_name_state);
                 }
@@ -1565,10 +1437,6 @@ namespace Html
 
         case before_attribute_value_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 switch (c)
@@ -1585,8 +1453,8 @@ namespace Html
 
                 case 0x0026:
                     SwitchToState(attribute_value_unquoted_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 case 0x0027:
                     SwitchToState(attribute_value_single_quoted_state);
@@ -1614,8 +1482,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     anything_else = true;
@@ -1632,10 +1500,6 @@ namespace Html
 
         case attribute_value_double_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0022:
@@ -1656,8 +1520,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->current_attribute->second->push_back(c);
@@ -1668,10 +1532,6 @@ namespace Html
 
         case attribute_value_single_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0027:
@@ -1692,8 +1552,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->current_attribute->second->push_back(c);
@@ -1704,10 +1564,6 @@ namespace Html
 
         case attribute_value_unquoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 bool anything_else = false;
 
                 switch (c)
@@ -1747,8 +1603,8 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     anything_else = true;
@@ -1763,24 +1619,12 @@ namespace Html
             break;
 
         case character_reference_in_attribute_value_state:
-            this->character_reference = New<UnicodeString>();
-            this->character_reference_unconsume = New<UnicodeString>();
-            this->char_ref_frame.Initialize(this->parser, true, this->use_additional_allowed_character, this->additional_allowed_character, this->character_reference, this->character_reference_unconsume);
-            SwitchToState(character_reference_in_attribute_value_Done_state);
-            break;
+            {
+                this->char_ref_frame.write_element(c);
 
-        case character_reference_in_attribute_value_Done_state:
-            if (this->char_ref_frame.Pending())
-            {
-                this->char_ref_frame.Process(event, yield);
-            }
-            
-            if (this->char_ref_frame.Failed())
-            {
-                throw new Exception("Html::Tokenizer::Process char_ref_frame.Failed()");
-            }
-            else if (this->char_ref_frame.Succeeded())
-            {
+                if (this->char_ref_frame.in_progress())
+                    break;
+
                 if (this->character_reference->size() == 0)
                 {
                     this->current_attribute->second->push_back(0x0026);
@@ -1793,18 +1637,15 @@ namespace Html
 
                 SwitchToState(this->attribute_value_state);
 
-                Inline<FrameStream<Codepoint> > frame_stream;
-                frame_stream.Initialize(this);
-                frame_stream.Write(this->character_reference_unconsume->c_str(), this->character_reference_unconsume->size());
+                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
+                    this->write_element(*it);
+
+                return;
             }
             break;
 
         case after_attribute_value_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -1826,24 +1667,20 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
                     SwitchToState(before_attribute_name_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case self_closing_start_tag_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003E:
@@ -1855,24 +1692,20 @@ namespace Html
                 case EOF:
                     ParseError(c);
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
                     SwitchToState(before_attribute_name_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case bogus_comment_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003E:
@@ -1885,8 +1718,8 @@ namespace Html
                     Emit(this->comment_token);
                     this->comment_token = 0;
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 case 0x0000:
                     this->comment_token->data->push_back(0xFFFD);
@@ -1904,50 +1737,35 @@ namespace Html
 
         case markup_declaration_open_state:
             {
-                this->markup_declaration_open->clear();
-                this->markup_declaration_open->reserve(2);
+                this->markup_declaration_open->write_element(c);
 
-                this->stream_frame.Initialize(this->markup_declaration_open, 2);
+                if (this->markup_declaration_open->size() != 2)
+                    break;
 
-                SwitchToState(markup_declaration_open_2_state);
-            }
-            break;
-
-        case markup_declaration_open_2_state:
-            if (this->stream_frame.Pending())
-            {
-                this->stream_frame.Process(event, yield);
-            }
-            else
-            {
-                if (this->markup_declaration_open.equals<false>(Html::globals->markup_declaration_comment))
+                if (equals<UnicodeString, false>(this->markup_declaration_open.get(), Html::globals->markup_declaration_comment.get()))
                 {
-                    this->comment_token = New<CommentToken>();
+                    this->comment_token = std::make_shared<CommentToken>();
                     SwitchToState(comment_start_state_state);
                 }
                 else
                 {
-                    this->markup_declaration_open->reserve(7);
-
-                    this->stream_frame.Initialize(this->markup_declaration_open, 5);
-
-                    SwitchToState(markup_declaration_open_3_state);
+                    SwitchToState(markup_declaration_open_2_state);
                 }
             }
             break;
 
-        case markup_declaration_open_3_state:
-            if (this->stream_frame.Pending())
+        case markup_declaration_open_2_state:
             {
-                this->stream_frame.Process(event, yield);
-            }
-            else
-            {
-                if (this->markup_declaration_open.equals<false>(Html::globals->markup_declaration_doctype))
+                this->markup_declaration_open->write_element(c);
+
+                if (this->markup_declaration_open->size() != 7)
+                    break;
+
+                if (equals<UnicodeString, false>(this->markup_declaration_open.get(), Html::globals->markup_declaration_doctype.get()))
                 {
                     SwitchToState(doctype_state);
                 }
-                else if (this->markup_declaration_open.equals<true>(Html::globals->markup_declaration_cdata))
+                else if (equals<UnicodeString, true>(this->markup_declaration_open.get(), Html::globals->markup_declaration_cdata.get()))
                 {
                     SwitchToState(cdata_section_state);
                 }
@@ -1955,25 +1773,22 @@ namespace Html
                 {
                     ParseError("unexpected markup_declaration_open");
                     SwitchToState(bogus_comment_state);
-                    this->comment_token = New<CommentToken>();
+                    this->comment_token = std::make_shared<CommentToken>();
 
                     // $ NYI: The next character that is consumed, if any, is the first character that will be in the comment.
                     // not sure if the spec is right - if that's the case it would be this->markup_declaration_open[0] even if
                     // bogus_comment_state would not otherwise not have put it in the comment?
 
-                    Inline<FrameStream<Codepoint> > frame_stream;
-                    frame_stream.Initialize(this);
-                    frame_stream.Write(this->markup_declaration_open->c_str(), this->markup_declaration_open->size());
+                    for (UnicodeString::iterator it = this->markup_declaration_open->begin(); it != this->markup_declaration_open->end(); it++)
+                        this->write_element(*it);
+
+                    return;
                 }
             }
             break;
 
         case comment_start_state_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -1998,8 +1813,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->comment_token->data->push_back(c);
@@ -2011,10 +1826,6 @@ namespace Html
 
         case comment_start_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -2040,8 +1851,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->comment_token->data->push_back(0x002D);
@@ -2054,10 +1865,6 @@ namespace Html
 
         case comment_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -2074,8 +1881,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->comment_token->data->push_back(c);
@@ -2086,10 +1893,6 @@ namespace Html
 
         case comment_end_dash_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -2108,8 +1911,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->comment_token->data->push_back(0x002D);
@@ -2122,10 +1925,6 @@ namespace Html
 
         case comment_end_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003E:
@@ -2157,8 +1956,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2173,10 +1972,6 @@ namespace Html
 
         case comment_end_bang_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x002D:
@@ -2205,8 +2000,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2222,10 +2017,6 @@ namespace Html
 
         case doctype_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2239,33 +2030,29 @@ namespace Html
                     ParseError(c);
                     SwitchToState(data_state);
 
-                    this->doctype_token = New<DocTypeToken>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
 
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
                     SwitchToState(before_doctype_name_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case before_doctype_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
-                    this->doctype_token = New<DocTypeToken>();
-                    this->doctype_token->name = New<UnicodeString>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
+                    this->doctype_token->name = std::make_shared<UnicodeString>();
                     this->doctype_token->name->push_back(c + 0x0020);
 
                     SwitchToState(doctype_name_state);
@@ -2281,8 +2068,8 @@ namespace Html
                 case 0x0000:
                     ParseError(c);
 
-                    this->doctype_token = New<DocTypeToken>();
-                    this->doctype_token->name = New<UnicodeString>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
+                    this->doctype_token->name = std::make_shared<UnicodeString>();
                     this->doctype_token->name->push_back(0xFFFD);
 
                     SwitchToState(doctype_name_state);
@@ -2291,7 +2078,7 @@ namespace Html
                 case 0x003E:
                     ParseError(c);
 
-                    this->doctype_token = New<DocTypeToken>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->force_quirks = true;
 
                     SwitchToState(data_state);
@@ -2303,17 +2090,17 @@ namespace Html
                     ParseError(c);
                     SwitchToState(data_state);
 
-                    this->doctype_token = New<DocTypeToken>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->force_quirks = true;
 
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
-                    this->doctype_token = New<DocTypeToken>();
-                    this->doctype_token->name = New<UnicodeString>();
+                    this->doctype_token = std::make_shared<DocTypeToken>();
+                    this->doctype_token->name = std::make_shared<UnicodeString>();
                     this->doctype_token->name->push_back(c);
                     SwitchToState(doctype_name_state);
                     break;
@@ -2323,10 +2110,6 @@ namespace Html
 
         case doctype_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 if (c >= 'A' && c <= 'Z')
                 {
                     this->doctype_token->name->push_back(c + 0x0020);
@@ -2357,8 +2140,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->doctype_token->name->push_back(c);
@@ -2369,10 +2152,6 @@ namespace Html
 
         case after_doctype_name_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2393,16 +2172,14 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     {
                         this->after_doctype_name->clear();
                         this->after_doctype_name->reserve(6);
                         this->after_doctype_name->push_back(c);
-
-                        this->stream_frame.Initialize(this->after_doctype_name, 5);
 
                         SwitchToState(after_doctype_name_2_state);
                     }
@@ -2412,17 +2189,17 @@ namespace Html
             break;
 
         case after_doctype_name_2_state:
-            if (this->stream_frame.Pending())
             {
-                this->stream_frame.Process(event, yield);
-            }
-            else
-            {
-                if (this->after_doctype_name.equals<false>(Html::globals->after_doctype_public_keyword))
+                this->after_doctype_name->write_element(c);
+
+                if (this->after_doctype_name->size() != 6)
+                    break;
+
+                if (equals<UnicodeString, false>(this->after_doctype_name.get(), Html::globals->after_doctype_public_keyword.get()))
                 {
                     SwitchToState(after_doctype_public_keyword_state);
                 }
-                else if (this->after_doctype_name.equals<false>(Html::globals->after_doctype_system_keyword))
+                else if (equals<UnicodeString, false>(this->after_doctype_name.get(), Html::globals->after_doctype_system_keyword.get()))
                 {
                     SwitchToState(after_doctype_system_keyword_state);
                 }
@@ -2432,19 +2209,16 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
 
-                    Inline<FrameStream<Codepoint> > frame_stream;
-                    frame_stream.Initialize(this);
-                    frame_stream.Write(this->after_doctype_name->c_str(), this->after_doctype_name->size());
+                    for (UnicodeString::iterator it = this->after_doctype_name->begin(); it != this->after_doctype_name->end(); it++)
+                        this->write_element(*it);
+
+                    return;
                 }
             }
             break;
 
         case after_doctype_public_keyword_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2456,13 +2230,13 @@ namespace Html
 
                 case 0x0022:
                     ParseError(c);
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
                     ParseError(c);
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
@@ -2480,8 +2254,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2494,10 +2268,6 @@ namespace Html
 
         case before_doctype_public_identifier_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2507,12 +2277,12 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
@@ -2530,8 +2300,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2544,10 +2314,6 @@ namespace Html
 
         case doctype_public_identifier_double_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0022:
@@ -2573,8 +2339,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->doctype_token->public_identifier->push_back(c);
@@ -2585,10 +2351,6 @@ namespace Html
 
         case doctype_public_identifier_single_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0027:
@@ -2614,8 +2376,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->doctype_token->public_identifier->push_back(c);
@@ -2626,10 +2388,6 @@ namespace Html
 
         case after_doctype_public_identifier_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2647,13 +2405,13 @@ namespace Html
 
                 case 0x0022:
                     ParseError(c);
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
                     ParseError(c);
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
@@ -2663,8 +2421,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2677,10 +2435,6 @@ namespace Html
 
         case between_doctype_public_and_system_identifiers_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2696,12 +2450,12 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    this->doctype_token->public_identifier = New<UnicodeString>();
+                    this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
@@ -2711,8 +2465,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2725,10 +2479,6 @@ namespace Html
 
         case after_doctype_system_keyword_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2740,13 +2490,13 @@ namespace Html
 
                 case 0x0022:
                     ParseError(c);
-                    this->doctype_token->system_identifier = New<UnicodeString>();
+                    this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
                     ParseError(c);
-                    this->doctype_token->system_identifier = New<UnicodeString>();
+                    this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_single_quoted_state);
                     break;
 
@@ -2764,8 +2514,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2778,10 +2528,6 @@ namespace Html
 
         case before_doctype_system_identifier_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2791,12 +2537,12 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    this->doctype_token->system_identifier = New<UnicodeString>();
+                    this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    this->doctype_token->system_identifier = New<UnicodeString>();
+                    this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_single_quoted_state);
                     break;
 
@@ -2814,8 +2560,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2828,10 +2574,6 @@ namespace Html
 
         case doctype_system_identifier_double_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0022:
@@ -2857,8 +2599,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->doctype_token->system_identifier->push_back(c);
@@ -2869,10 +2611,6 @@ namespace Html
 
         case doctype_system_identifier_single_quoted_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0027:
@@ -2898,8 +2636,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     this->doctype_token->system_identifier->push_back(c);
@@ -2910,10 +2648,6 @@ namespace Html
 
         case after_doctype_system_identifier_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x0009:
@@ -2934,8 +2668,8 @@ namespace Html
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     ParseError(c);
@@ -2947,10 +2681,6 @@ namespace Html
 
         case bogus_doctype_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003E:
@@ -2963,8 +2693,8 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     break;
@@ -2974,10 +2704,6 @@ namespace Html
 
         case cdata_section_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x005D:
@@ -2986,8 +2712,8 @@ namespace Html
 
                 case EOF:
                     SwitchToState(data_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
 
                 default:
                     EmitCharacter(c);
@@ -2998,10 +2724,6 @@ namespace Html
 
         case cdata_section_2_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x005D:
@@ -3011,18 +2733,14 @@ namespace Html
                 default:
                     EmitCharacter(0x005D);
                     SwitchToState(cdata_section_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         case cdata_section_3_state:
             {
-                Codepoint c;
-                if (!Event::ReadNext(event, &c, yield))
-                    return;
-
                 switch (c)
                 {
                 case 0x003E:
@@ -3033,14 +2751,14 @@ namespace Html
                     EmitCharacter(0x005D);
                     EmitCharacter(0x005D);
                     SwitchToState(cdata_section_state);
-                    Event::UndoReadNext(event);
-                    break;
+                    write_element(c);
+                    return;
                 }
             }
             break;
 
         default:
-            throw new Exception("Tokenizer::Write unexpected state");
+            throw FatalError("Tokenizer::write_element unexpected state");
         }
     }
 
@@ -3056,7 +2774,7 @@ namespace Html
     {
         char state_string[0x40];
 
-        switch (this->state)
+        switch (this->get_state())
         {
 #define CASE(e) \
         case e: \
@@ -3065,10 +2783,8 @@ namespace Html
 
             CASE(data_state);
             CASE(character_reference_in_data_state);
-            CASE(character_reference_in_data_Done_state);
             CASE(RCDATA_state);
             CASE(character_reference_in_RCDATA_state);
-            CASE(character_reference_in_RCDATA_Done_state);
             CASE(RAWTEXT_state);
             CASE(script_data_state);
             CASE(PLAINTEXT_state);
@@ -3106,13 +2822,11 @@ namespace Html
             CASE(attribute_value_single_quoted_state);
             CASE(attribute_value_unquoted_state);
             CASE(character_reference_in_attribute_value_state);
-            CASE(character_reference_in_attribute_value_Done_state);
             CASE(after_attribute_value_quoted_state);
             CASE(self_closing_start_tag_state);
             CASE(bogus_comment_state);
             CASE(markup_declaration_open_state);
             CASE(markup_declaration_open_2_state);
-            CASE(markup_declaration_open_3_state);
             CASE(comment_start_state_state);
             CASE(comment_start_dash_state);
             CASE(comment_state);
@@ -3143,7 +2857,7 @@ namespace Html
 #undef CASE
 
         default:
-            sprintf_s(state_string, "%d", state);
+            sprintf_s(state_string, "%d", this->get_state());
             break;
         }
 
@@ -3159,25 +2873,5 @@ namespace Html
         sprintf_s(full_error, "codepoint: 0x%04X '%c', %s", c, c, error);
 
         ParseError(full_error);
-    }
-
-    void Tokenizer::Process(IEvent* event)
-    {
-        Frame::Process(this, event);
-    }
-
-    bool Tokenizer::Pending()
-    {
-        return true;
-    }
-
-    bool Tokenizer::Succeeded()
-    {
-        return false;
-    }
-
-    bool Tokenizer::Failed()
-    {
-        return false;
     }
 }

@@ -2,19 +2,16 @@
 
 #pragma once
 
-#include "Basic.IRefCounted.h"
 #include "Basic.Socket.h"
 #include "Basic.LogFile.h"
-#include "Basic.ICompletion.h"
-#include "Basic.IProcess.h"
+#include "Basic.Job.h"
 
 namespace Basic
 {
-    __interface ICompletionQueue : public IRefCounted
+    __interface ICompletionQueue
     {
-        void BindToCompletionQueue(Socket::Ref socket);
-        void BindToCompletionQueue(LogFile::Ref socket);
-        void PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
-        void QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie);
+        void BindToCompletionQueue(Socket* socket);
+        void BindToCompletionQueue(LogFile* log_file);
+        void QueueJob(std::shared_ptr<Job> job);
     };
 }

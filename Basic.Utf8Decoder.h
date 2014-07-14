@@ -3,14 +3,13 @@
 #pragma once
 
 #include "Basic.IDecoder.h"
-#include "Basic.Ref.h"
 
 namespace Basic
 {
     class Utf8Decoder : public IDecoder
     {
     private:
-        Ref<IStream<Codepoint> > destination; // REF
+        IStream<Codepoint>* destination;
         int needed;
         int seen;
         Codepoint codepoint;
@@ -22,18 +21,15 @@ namespace Basic
         void EmitDecoderError(const char* error);
 
     public:
-        typedef Basic::Ref<Utf8Decoder> Ref;
-
         void IDecoder::set_destination(IStream<Codepoint>* destination);
-        void IDecoder::Write(const byte* elements, uint32 count);
-        void IDecoder::WriteEOF();
+        void IDecoder::write_elements(const byte* elements, uint32 count);
+        void IDecoder::write_element(byte element);
+        void IDecoder::write_eof();
     };
 
     class Utf8DecoderFactory : public IDecoderFactory
     {
     public:
-        typedef Ref<Utf8DecoderFactory> Ref;
-
-        virtual void IDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder);
+        virtual void IDecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder);
     };
 }

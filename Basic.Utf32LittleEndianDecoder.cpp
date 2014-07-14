@@ -12,43 +12,50 @@ namespace Basic
         this->received = 0;
     }
 
-    void Utf32LittleEndianDecoder::Write(const byte* elements, uint32 count)
+    void Utf32LittleEndianDecoder::write_elements(const byte* elements, uint32 count)
     {
-        for (uint32 i = 0; i != count; i++)
+        for (const byte* element = elements; element != elements + count; element++)
         {
-            byte b = elements[i];
-
-            byte* value_bytes = reinterpret_cast<byte*>(&this->codepoint);
-            int index = this->received;
-            value_bytes[index] = b;
-
-            this->received++;
-
-            if (this->received == 4)
-            {
-                this->received = 0;
-                Emit(this->codepoint);
-            }
+            write_element(*element);
         }
     }
 
-    void Utf32LittleEndianDecoder::WriteEOF()
+    void Utf32LittleEndianDecoder::write_element(byte b)
+    {
+        byte* value_bytes = reinterpret_cast<byte*>(&this->codepoint);
+        int index = this->received;
+        value_bytes[index] = b;
+
+        this->received++;
+
+        if (this->received == 4)
+        {
+            this->received = 0;
+            Emit(this->codepoint);
+        }
+    }
+
+    void Utf32LittleEndianDecoder::write_eof()
     {
         if (this->received != 0)
         {
             HandleError("end of stream with received != 0");
         }
 
-        Emit(EOF);
+        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
+        // because it might not at all be the last thing sent to the destination
+
+        // $$ let's see what turns up
+        HandleError("unexpected eof");
     }
 
     void Utf32LittleEndianDecoder::Emit(Codepoint codepoint)
     {
-        this->destination->Write(&codepoint, 1);
+        this->destination->write_element(codepoint);
     }
 
-    void Utf32LittleEndianDecoderFactory::CreateDecoder(Basic::Ref<IDecoder>* decoder)
+    void Utf32LittleEndianDecoderFactory::CreateDecoder(std::shared_ptr<IDecoder>* decoder)
     {
-        (*decoder) = New<Utf32LittleEndianDecoder>();
+        (*decoder) = std::make_shared<Utf32LittleEndianDecoder>();
     }
 }

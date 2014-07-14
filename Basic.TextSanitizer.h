@@ -6,7 +6,7 @@
 
 namespace Basic
 {
-    class TextSanitizer : public IStream<Codepoint>
+    class TextSanitizer : public UnitStream<Codepoint>
     {
     private:
         enum State
@@ -17,16 +17,13 @@ namespace Basic
         };
 
         State state;
-        Basic::Ref<IStream<Codepoint> > destination; // REF
+        IStream<Codepoint>* destination;
 
         bool white_space(Codepoint c);
 
     public:
-        typedef Basic::Ref<TextSanitizer> Ref;
-
         void Initialize(IStream<Codepoint>* destination);
 
-        virtual void IStream<Codepoint>::Write(const Codepoint* elements, uint32 count);
-        virtual void IStream<Codepoint>::WriteEOF();
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
     };
 }

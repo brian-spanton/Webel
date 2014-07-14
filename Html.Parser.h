@@ -22,17 +22,15 @@ namespace Html
         friend class TreeConstruction;
         friend class CharacterReferenceFrame;
 
-        ByteStreamDecoder::Ref decoder; // REF
-        InputStreamPreprocessor::Ref preprocessor; // REF
-        Tokenizer::Ref tokenizer; // REF
+        std::shared_ptr<ByteStreamDecoder> decoder;
+        std::shared_ptr<InputStreamPreprocessor> preprocessor;
+        std::shared_ptr<Tokenizer> tokenizer;
 
         bool ParseError(const char* error);
 
     public:
-        typedef Basic::Ref<Parser, IStream<byte> > Ref;
+        std::shared_ptr<TreeConstruction> tree;
 
-        TreeConstruction::Ref tree; // REF
-
-        void Initialize(Uri::Ref url, UnicodeString::Ref charset);
+        void Initialize(std::shared_ptr<Uri> url, UnicodeStringRef charset);
     };
 }

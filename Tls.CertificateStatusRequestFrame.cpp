@@ -7,30 +7,21 @@ namespace Tls
 {
     using namespace Basic;
 
-    void CertificateStatusRequestFrame::Initialize(CertificateStatusRequest* certificate_status_request)
+    CertificateStatusRequestFrame::CertificateStatusRequestFrame(CertificateStatusRequest* certificate_status_request) :
+        certificate_status_request(certificate_status_request),
+        type_frame(&this->certificate_status_request->status_type),
+        request_frame(&this->certificate_status_request->ocsp_status_request)
     {
-        __super::Initialize();
-        this->certificate_status_request = certificate_status_request;
-        this->type_frame.Initialize(&this->certificate_status_request->status_type);
-        this->request_frame.Initialize(&this->certificate_status_request->ocsp_status_request);
     }
 
-    void CertificateStatusRequestFrame::Process(IEvent* event, bool* yield)
+    void CertificateStatusRequestFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::type_frame_pending_state:
-            if (this->type_frame.Pending())
             {
-                this->type_frame.Process(event, yield);
-            }
-            
-            if (this->type_frame.Failed())
-            {
-                switch_to_state(State::type_frame_failed);
-            }
-            else if (this->type_frame.Succeeded())
-            {
+                delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+
                 switch (this->certificate_status_request->status_type)
                 {
                 case CertificateStatusType::ocsp:
@@ -45,23 +36,12 @@ namespace Tls
             break;
 
         case State::request_frame_pending_state:
-            if (this->request_frame.Pending())
-            {
-                this->request_frame.Process(event, yield);
-            }
-            
-            if (this->request_frame.Failed())
-            {
-                switch_to_state(State::request_frame_failed);
-            }
-            else if (this->request_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->request_frame, event, State::request_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("CertificateStatusRequestFrame::Process unexpected state");
+            throw FatalError("CertificateStatusRequestFrame::handle_event unexpected state");
         }
     }
 }

@@ -26,12 +26,11 @@ namespace Tls
 
         RecordLayer* session;
         Alert alert;
-        Inline<AlertFrame> alert_frame;
+        std::shared_ptr<AlertFrame> alert_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<AlertProtocol, IProcess> Ref;
-
-        void Initialize(RecordLayer* session);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        AlertProtocol(RecordLayer* session);
     };
 }

@@ -5,7 +5,6 @@
 #include "Basic.IProcess.h"
 #include "Tls.SecurityParameters.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
 
 namespace Tls
 {
@@ -13,7 +12,7 @@ namespace Tls
 
     class Server;
 
-    class HandshakeFrame : public Frame, public ISerializable
+    class HandshakeFrame : public Frame
     {
     private:
         enum State
@@ -26,16 +25,24 @@ namespace Tls
         };
 
         Handshake* handshake;
-        Inline<NumberFrame<HandshakeType> > type_frame;
-        Inline<NumberFrame<uint32, 3> > length_frame;
+        NumberFrame<HandshakeType> type_frame;
+        NumberFrame<uint32, 3> length_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HandshakeFrame, IProcess> Ref;
+        HandshakeFrame(Handshake* handshake);
 
-        void Initialize(Handshake* handshake);
+        void reset();
+    };
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+    template <>
+    struct __declspec(novtable) serialize<Handshake>
+    {
+        void operator()(const Handshake* value, IStream<byte>* stream) const
+        {
+            serialize<HandshakeType>()(&value->msg_type, stream);
+            serialize_number<uint32, 3>()(&value->length, stream);
+        }
     };
 }

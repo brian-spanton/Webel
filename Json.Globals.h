@@ -15,33 +15,33 @@ namespace Json
 
         void Initialize();
 
-        UnicodeString::Ref json_false; // REF
-        UnicodeString::Ref json_null; // REF
-        UnicodeString::Ref json_true; // REF
-        UnicodeString::Ref equals_method; // REF
-        UnicodeString::Ref starts_with_method; // REF
-        UnicodeString::Ref children_count_equals_method; // REF
-        UnicodeString::Ref first_text_method; // REF
-        UnicodeString::Ref deep_text_method; // REF
-        UnicodeString::Ref text_equals_method; // REF
+        UnicodeStringRef json_false;
+        UnicodeStringRef json_null;
+        UnicodeStringRef json_true;
+        UnicodeStringRef equals_method;
+        UnicodeStringRef starts_with_method;
+        UnicodeStringRef children_count_equals_method;
+        UnicodeStringRef first_text_method;
+        UnicodeStringRef deep_text_method;
+        UnicodeStringRef text_equals_method;
 
-        Codepoint begin_script;
-        Codepoint end_script;
-        Codepoint begin_parameter;
-        Codepoint end_parameter;
-        Codepoint token_separator;
-        Codepoint begin_array;
-        Codepoint begin_object;
-        Codepoint end_array;
-        Codepoint end_object;
-        Codepoint name_separator;
-        Codepoint value_separator;
+        static const Codepoint begin_script = '<';
+        static const Codepoint end_script = '>';
+        static const Codepoint begin_parameter = '(';
+        static const Codepoint end_parameter = ')';
+        static const Codepoint token_separator = '.';
+        static const Codepoint begin_array = '[';
+        static const Codepoint begin_object = '{';
+        static const Codepoint end_array = ']';
+        static const Codepoint end_object = '}';
+        static const Codepoint name_separator = ':';
+        static const Codepoint value_separator = ',';
 
-        UnicodeString::Ref ws; // REF
+        UnicodeStringRef ws;
 
-        BoolToken::Ref false_token; // REF
-        NullToken::Ref null_token; // REF
-        BoolToken::Ref true_token; // REF
+        std::shared_ptr<BoolToken> false_token;
+        std::shared_ptr<NullToken> null_token;
+        std::shared_ptr<BoolToken> true_token;
     };
 
     extern Globals* globals;

@@ -8,24 +8,13 @@ namespace Json
 {
     using namespace Basic;
 
-    void Parser::Initialize(Html::Node::Ref domain, UnicodeString::Ref charset)
+    void Parser::Initialize(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset)
     {
-        this->text = New<Text>();
-        this->text->Initialize(domain);
+        this->text = std::make_shared<Text>(domain);
+        this->tokenizer = std::make_shared<Tokenizer>(this->text);
+        this->decoder = std::make_shared<ByteStreamDecoder>(charset, this->tokenizer.get());
 
-        FrameStream<Token::Ref>::Ref text_stream = New<FrameStream<Token::Ref> >();
-        text_stream->Initialize(this->text);
-
-        this->tokenizer = New<Tokenizer>();
-        this->tokenizer->Initialize(text_stream);
-
-        FrameStream<Codepoint>::Ref tokenizer_stream = New<FrameStream<Codepoint> >();
-        tokenizer_stream->Initialize(this->tokenizer);
-
-        this->decoder = New<ByteStreamDecoder>();
-        this->decoder->Initialize(charset, tokenizer_stream);
-
-        __super::Initialize(this->decoder);
+        __super::Initialize(this->decoder.get());
     }
 
     bool Parser::ParseError(const char* error)

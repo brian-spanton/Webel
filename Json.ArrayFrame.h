@@ -13,7 +13,7 @@ namespace Json
 
     class Parser;
 
-    class ArrayFrame : public Frame
+    class ArrayFrame : public StateMachine, public UnitStream<std::shared_ptr<Token> >
     {
     private:
         enum State
@@ -31,23 +31,21 @@ namespace Json
         };
 
         Array* value;
-        Value::Ref element; // REF
-        Inline<ValueFrame> element_frame;
-        Inline<ScriptFrame> script_frame;
-        Html::Node::Ref domain; // REF
-        Html::Node::Ref element_domain; // REF
-        Html::Node::Ref start_from; // REF
-        Script script;
-        TokenVector::Ref scripted_tokens; // REF
-        Basic::Ref<IElementSource<Token::Ref> > element_source; // REF
+        std::shared_ptr<Value> element;
+        std::shared_ptr<ValueFrame> element_frame;
+        std::shared_ptr<Script> script;
+        std::shared_ptr<ScriptFrame> script_frame;
+        std::shared_ptr<Html::Node> domain;
+        std::shared_ptr<Html::Node> element_domain;
+        std::shared_ptr<Html::Node> start_from;
+        std::shared_ptr<TokenVector> scripted_tokens;
 
         bool FindNextScriptElement();
+        void WriteUnobserved(std::shared_ptr<Token> element);
 
     public:
-        typedef Basic::Ref<ArrayFrame, IProcess> Ref;
+        ArrayFrame(std::shared_ptr<Html::Node> domain, Array* value);
 
-        void Initialize(Html::Node::Ref domain, Array* value);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        virtual void IStream<std::shared_ptr<Token> >::write_element(std::shared_ptr<Token> element);
     };
 }

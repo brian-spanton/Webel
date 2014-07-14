@@ -3,16 +3,13 @@
 #pragma once
 
 #include "Basic.IProcess.h"
-#include "Basic.ISerializable.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
-#include "Tls.VectorFrames.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    class ServerNameFrame : public Frame, public ISerializable
+    class ServerNameFrame : public Frame
     {
     private:
         enum State
@@ -26,14 +23,25 @@ namespace Tls
         };
 
         ServerName* serverName;
-        Inline<NumberFrame<NameType> > type_frame;
-        Inline<HostNameFrame> name_frame;
+        NumberFrame<NameType> type_frame;
+        VectorFrame<HostName> name_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<ServerNameFrame, IProcess> Ref;
-
-        void Initialize(ServerName* serverName);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+        ServerNameFrame(ServerName* serverName);
     };
+
+    template <>
+    struct __declspec(novtable) serialize<ServerName>
+    {
+        void operator()(const ServerName* value, IStream<byte>* stream) const
+        {
+            serialize<NameType>()(&value->name_type, stream);
+            serialize<HostName>()(&value->name, stream);
+        }
+    };
+
+    template <>
+    struct __declspec(novtable) make_deserializer<ServerName> : public make_frame_deserializer<ServerName, ServerNameFrame> {};
 }

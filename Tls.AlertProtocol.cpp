@@ -3,39 +3,31 @@
 #include "stdafx.h"
 #include "Tls.AlertProtocol.h"
 #include "Tls.RecordLayer.h"
+#include "Tls.ServerNameFrame.h"
+#include "Tls.SignatureAndHashAlgorithmFrame.h"
 
 namespace Tls
 {
     using namespace Basic;
 
-    void AlertProtocol::Initialize(RecordLayer* session)
+    AlertProtocol::AlertProtocol(RecordLayer* session) :
+        session(session)
     {
-        __super::Initialize();
-        this->session = session;
     }
 
-    void AlertProtocol::Process(IEvent* event, bool* yield)
+    void AlertProtocol::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::start_state:
-            (*yield) = false;
-            this->alert_frame.Initialize(&this->alert);
+            this->alert_frame = std::make_shared<AlertFrame>(&this->alert);
             switch_to_state(State::alert_frame_pending_state);
             break;
 
         case State::alert_frame_pending_state:
-            if (this->alert_frame.Pending())
             {
-                this->alert_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(this->alert_frame.get(), event, State::alert_frame_failed);
 
-            if (this->alert_frame.Failed())
-            {
-                switch_to_state(State::alert_frame_failed);
-            }
-            else if (this->alert_frame.Succeeded())
-            {
                 switch (this->alert.description)
                 {
                 case AlertDescription::close_notify:
@@ -50,7 +42,7 @@ namespace Tls
             break;
 
         default:
-            throw new Exception("Tls::AlertProtocol::Process unexpected state");
+            throw FatalError("Tls::AlertProtocol::handle_event unexpected state");
         }
     }
 }

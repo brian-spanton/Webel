@@ -4,7 +4,6 @@
 #include "Json.ArrayFrame.h"
 #include "Json.Globals.h"
 #include "Json.Types.h"
-#include "Json.Tokenizer.h"
 #include "Json.Parser.h"
 #include "Json.ValueFrame.h"
 
@@ -12,20 +11,18 @@ namespace Json
 {
     using namespace Basic;
 
-    void ArrayFrame::Initialize(Html::Node::Ref domain, Array* value)
+    ArrayFrame::ArrayFrame(std::shared_ptr<Html::Node> domain, Array* value) :
+        domain(domain),
+        element_domain(domain),
+        value(value)
     {
-        __super::Initialize();
-
-        this->domain = domain;
-        this->element_domain = domain;
-        this->value = value;
     }
 
     bool ArrayFrame::FindNextScriptElement()
     {
-        Html::Node::Ref script_element;
+        std::shared_ptr<Html::Node> script_element;
 
-        bool success = this->script.Execute(this->domain, this->start_from, &script_element);
+        bool success = this->script->Execute(this->domain, this->start_from, &script_element);
         if (!success)
         {
             this->start_from = 0;
@@ -38,20 +35,27 @@ namespace Json
         return true;
     }
 
-    void ArrayFrame::Process(IEvent* event, bool* yield)
+    void ArrayFrame::write_element(std::shared_ptr<Token> token)
     {
-        switch (frame_state())
+        if (this->scripted_tokens.get() != 0)
+        {
+            this->scripted_tokens->push_back(token);
+        }
+
+        WriteUnobserved(token);
+    }
+
+    void ArrayFrame::WriteUnobserved(std::shared_ptr<Token> token)
+    {
+        switch (get_state())
         {
         case State::expecting_first_element_state:
             {
-                Token::Ref token;
-                if (!ReadyForReadTokenPointerEvent::ReadNext(event, &token, yield))
-                    return;
-
                 switch(token->type)
                 {
                 case Token::Type::begin_script_token:
-                    this->script_frame.Initialize(this->domain, &this->script);
+                    this->script = std::make_shared<Script>();
+                    this->script_frame = std::make_shared<ScriptFrame>(this->domain, this->script.get());
                     switch_to_state(State::script_frame_pending_state);
                     break;
 
@@ -60,64 +64,57 @@ namespace Json
                     break;
 
                 default:
-                    ReadyForReadTokenPointerEvent::UndoReadNext(event);
-                    this->element_frame.Initialize(this->element_domain, &this->element);
+                    this->element_frame = std::make_shared<ValueFrame>(this->element_domain, &this->element);
                     switch_to_state(State::element_frame_pending_state);
-                    break;
+                    WriteUnobserved(token);
+                    return;
                 }
             }
             break;
 
         case State::script_frame_pending_state:
-            if (this->script_frame.Pending())
             {
-                this->script_frame.Process(event, yield);
-            }
+                this->script_frame->write_element(token);
 
-            if (this->script_frame.Failed())
-            {
-                switch_to_state(State::script_frame_failed);
-            }
-            else if (this->script_frame.Succeeded())
-            {
-                if (event->get_type() != EventType::ready_for_read_token_pointer_event)
+                if (this->script_frame->in_progress())
+                    return;
+
+                if (this->script_frame->failed())
                 {
-                    throw new Exception("unexpected event type");
+                    switch_to_state(State::script_frame_failed);
+                    return;
                 }
 
                 bool success = FindNextScriptElement();
                 if (success)
                 {
-                    this->scripted_tokens = New<TokenVector>();
-
-                    ReadyForReadTokenPointerEvent* read_event = (ReadyForReadTokenPointerEvent*)event;
-                    this->element_source = read_event->element_source;
-                    this->element_source->AddObserver(this->scripted_tokens);
+                    this->scripted_tokens = std::make_shared<TokenVector>();
                 }
 
-                this->element_frame.Initialize(this->element_domain, &this->element);
+                this->element_frame = std::make_shared<ValueFrame>(this->element_domain, &this->element);
                 switch_to_state(State::script_execution_state);
             }
             break;
 
         case State::script_execution_state:
-            if (this->element_frame.Pending())
             {
-                this->element_frame.Process(event, yield);
-            }
+                this->element_frame->write_element(token);
 
-            if (this->element_frame.Failed())
-            {
-                switch_to_state(State::element_frame_failed);
-            }
-            else if (this->element_frame.Succeeded())
-            {
-                if (this->element_source.item() != 0)
+                if (this->element_frame->in_progress())
+                    return;
+
+                if (this->element_frame->failed())
+                {
+                    switch_to_state(State::element_frame_failed);
+                    return;
+                }
+
+                if (this->scripted_tokens.get() != 0)
                 {
                     this->value->elements.push_back(this->element);
 
-                    this->element_source->RemoveObserver(this->scripted_tokens);
-                    this->element_source = 0;
+                    std::shared_ptr<TokenVector> scripted_tokens;
+                    scripted_tokens.swap(this->scripted_tokens);
 
                     while (true)
                     {
@@ -125,25 +122,23 @@ namespace Json
                         if (!success)
                             break;
 
-                        this->element_frame.Initialize(this->element_domain, &this->element);
+                        this->element_frame = std::make_shared<ValueFrame>(this->element_domain, &this->element);
 
-                        FrameStream<Token::Ref>::Ref element_stream = New<FrameStream<Token::Ref> >();
-                        element_stream->Initialize(&this->element_frame);
+                        for (TokenVector::iterator it = scripted_tokens->begin(); it != scripted_tokens->end(); it++)
+                        {
+                            this->element_frame->write_element(*it);
 
-                        this->scripted_tokens->write_to(element_stream);
+                            if (this->element_frame->in_progress())
+                                continue;
+                        }
 
-                        if (this->element_frame.Failed())
+                        if (this->element_frame->failed())
                         {
                             switch_to_state(State::element_frame_failed);
+                            return;
                         }
-                        else if (this->element_frame.Succeeded())
-                        {
-                            this->value->elements.push_back(this->element);
-                        }
-                        else
-                        {
-                            throw new Exception("unexpectedly still pending");
-                        }
+
+                        this->value->elements.push_back(this->element);
                     }
                 }
 
@@ -152,17 +147,18 @@ namespace Json
             break;
 
         case State::element_frame_pending_state:
-            if (this->element_frame.Pending())
             {
-                this->element_frame.Process(event, yield);
-            }
+                this->element_frame->write_element(token);
 
-            if (this->element_frame.Failed())
-            {
-                switch_to_state(State::element_frame_failed);
-            }
-            else if (this->element_frame.Succeeded())
-            {
+                if (this->element_frame->in_progress())
+                    return;
+
+                if (this->element_frame->failed())
+                {
+                    switch_to_state(State::element_frame_failed);
+                    return;
+                }
+
                 this->value->elements.push_back(this->element);
                 switch_to_state(State::expecting_value_separator_state);
             }
@@ -170,10 +166,6 @@ namespace Json
 
         case State::expecting_value_separator_state:
             {
-                Token::Ref token;
-                if (!ReadyForReadTokenPointerEvent::ReadNext(event, &token, yield))
-                    return;
-
                 switch(token->type)
                 {
                 case Token::Type::end_array_token:
@@ -185,7 +177,6 @@ namespace Json
                     break;
 
                 default:
-                    ReadyForReadTokenPointerEvent::UndoReadNext(event);
                     switch_to_state(State::expecting_value_separator_error);
                     break;
                 }
@@ -194,28 +185,25 @@ namespace Json
 
         case State::expecting_next_element_state:
             {
-                Token::Ref token;
-                if (!ReadyForReadTokenPointerEvent::ReadNext(event, &token, yield))
-                    return;
-
                 switch(token->type)
                 {
                 case Token::Type::begin_script_token:
-                    this->script_frame.Initialize(this->domain, &this->script);
+                    this->script = std::make_shared<Script>();
+                    this->script_frame = std::make_shared<ScriptFrame>(this->domain, this->script.get());
                     switch_to_state(State::script_frame_pending_state);
                     break;
 
                 default:
-                    ReadyForReadTokenPointerEvent::UndoReadNext(event);
-                    this->element_frame.Initialize(this->element_domain, &this->element);
+                    this->element_frame = std::make_shared<ValueFrame>(this->element_domain, &this->element);
                     switch_to_state(State::element_frame_pending_state);
-                    break;
+                    WriteUnobserved(token);
+                    return;
                 }
             }
             break;
 
         default:
-            throw new Exception("Json::ArrayFrame::Process unexpected state");
+            throw FatalError("Json::ArrayFrame::handle_event unexpected state");
         }
     }
 }

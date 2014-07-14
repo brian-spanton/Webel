@@ -8,7 +8,6 @@
 #include "Html.Globals.h"
 #include "Http.Globals.h"
 #include "Basic.IStream.h"
-#include "Basic.FrameStream.h"
 #include "Service.AdminProtocol.h"
 #include "Web.Server.h"
 #include "Web.Proxy.h"
@@ -20,43 +19,32 @@
 #include "Service.HttpServer.h"
 #include "Service.HtmlNamedCharacterReferences.h"
 #include "Web.Globals.h"
+#include "Ftp.Server.h"
+#include "Ftp.Globals.h"
+#include "Service.Endpoint.h"
+
+template <typename type>
+void make_immortal(type** pointer, std::shared_ptr<type>* ref)
+{
+    // create a ref that will never destruct
+    std::shared_ptr<type>* heap_ref = new std::shared_ptr<type>();
+
+    // create the global instance held by the ref that never destructs
+    (*heap_ref) = std::make_shared<type>();
+
+    // return the address
+    (*pointer) = heap_ref->get();
+
+    if (ref != 0)
+        (*ref) = (*heap_ref);
+}
 
 namespace Service
 {
-    Basic::Inline<Globals>* globals = 0;
+    Globals* globals = 0;
 
     __declspec(thread) Basic::IStream<Codepoint>* debug_stream = 0;
     __declspec(thread) Basic::TextWriter* debug_writer = 0;
-
-    class ProcessCompletion : public ICompletion, public IRefHolder
-    {
-    private:
-        Basic::Ref<IRefCounted> queue_ref;
-        Basic::Ref<IProcess> process;
-        ByteString::Ref cookie;
-
-    public:
-        typedef Basic::Ref<ProcessCompletion> Ref;
-
-        ProcessCompletion()
-        {
-            this->queue_ref.SetHolder(this);
-        }
-
-        void PrepareForQueue(Basic::Ref<IProcess> process, ByteString::Ref cookie)
-        {
-            queue_ref = this;
-            this->process = process;
-            this->cookie = cookie;
-        }
-
-        virtual void Basic::ICompletion::CompleteAsync(OVERLAPPED_ENTRY& SortEntry)
-        {
-            ProcessEvent event;
-            this->process->Process(&event);
-            this->queue_ref = 0;
-        }
-    };
 
     DWORD WINAPI Globals::Thread(void* param)
     {
@@ -74,7 +62,7 @@ namespace Service
     {
         // these get used before Globals::Initialize is called
 
-        this->debugLog = New<Basic::DebugLog>();
+        this->debugLog = std::make_shared<Basic::LogFile>();
     }
 
     Globals::~Globals()
@@ -88,65 +76,66 @@ namespace Service
 
     bool Globals::Initialize()
     {
-        __super::Initialize();
+        this->index = std::make_shared<Index>();
 
-        this->index = New<Index>();
-
-        Tls::globals = new Tls::Globals();
+        make_immortal<Tls::Globals>(&Tls::globals, 0);
         Tls::globals->Initialize();
 
-        Http::globals = new Http::Globals();
+        make_immortal<Ftp::Globals>(&Ftp::globals, 0);
+        Ftp::globals->Initialize();
+
+        make_immortal<Http::Globals>(&Http::globals, 0);
         Http::globals->Initialize();
 
-        Html::globals = new Basic::Inline<Html::Globals>();
+        make_immortal<Html::Globals>(&Html::globals, 0);
         Html::globals->Initialize();
 
-        Json::globals = new Json::Globals();
+        make_immortal<Json::Globals>(&Json::globals, 0);
         Json::globals->Initialize();
 
-        Web::globals = new Web::Globals();
+        make_immortal<Web::Globals>(&Web::globals, 0);
         Web::globals->Initialize();
 
-        command_stop.Initialize("stop");
+        initialize_unicode(&command_stop, "stop");
         command_list.push_back(command_stop);
 
-        command_log.Initialize("log");
+        initialize_unicode(&command_log, "log");
         command_list.push_back(command_log);
 
-        command_get.Initialize("get");
+        initialize_unicode(&command_get, "get");
         command_list.push_back(command_get);
 
-        command_follow_link.Initialize("link");
+        initialize_unicode(&command_follow_link, "link");
         command_list.push_back(command_follow_link);
 
-        command_select_form.Initialize("form");
+        initialize_unicode(&command_select_form, "form");
         command_list.push_back(command_select_form);
 
-        command_set_control_value.Initialize("control");
+        initialize_unicode(&command_set_control_value, "control");
         command_list.push_back(command_set_control_value);
 
-        command_submit.Initialize("submit");
+        initialize_unicode(&command_submit, "submit");
         command_list.push_back(command_submit);
 
-        command_render_links.Initialize("links");
+        initialize_unicode(&command_render_links, "links");
         command_list.push_back(command_render_links);
 
-        command_render_forms.Initialize("forms");
+        initialize_unicode(&command_render_forms, "forms");
         command_list.push_back(command_render_forms);
 
-        command_render_nodes.Initialize("nodes");
+        initialize_unicode(&command_render_nodes, "nodes");
         command_list.push_back(command_render_nodes);
 
-        command_search.Initialize("search");
+        initialize_unicode(&command_search, "search");
         command_list.push_back(command_search);
 
-        root_admin.Initialize("admin");
-        root_echo.Initialize("echo");
-        root_question.Initialize("question");
+        initialize_unicode(&root_admin, "admin");
+        initialize_unicode(&root_echo, "echo");
+        initialize_unicode(&root_question, "question");
 
-        title_property.Initialize("title"); // $ schema for search index
-        as_of_property.Initialize("as of"); // $ schema for search index
-        source_property.Initialize("source"); // $ schema for search index
+        initialize_unicode(&title_property, "title"); // $ schema for search index
+        initialize_unicode(&as_of_property, "as of"); // $ schema for search index
+        initialize_unicode(&source_property, "source"); // $ schema for search index
 
         DebugWriter()->WriteLine("initializing io completion port");
 
@@ -169,10 +158,9 @@ namespace Service
 
         DebugWriter()->WriteLine("initializing console");
 
-        this->console = New<Basic::Console>();
+        this->console = std::make_shared<Basic::Console>();
 
-        this->adminProtocol = New<AdminProtocol>();
-        this->adminProtocol->Initialize(this->console);
+        this->adminProtocol = std::make_shared<AdminProtocol>(this->console);
 
         this->console->Initialize(this->adminProtocol, &this->consoleThread);
 
@@ -200,7 +188,7 @@ namespace Service
                 return false;
         }
 
-        SetThreadCount(0);
+        SetThreadCount(1); // $$$ 1 is good for debugging, 0 is good for perf (matches CPU count)
 
         return true;
     }
@@ -210,7 +198,7 @@ namespace Service
         char pfx_path[MAX_PATH + 0x100];
         GetFilePath(Service::globals->certificate_file_name.c_str(), pfx_path);
 
-        DebugWriter()->Write("reading ");
+        DebugWriter()->write_literal("reading ");
         DebugWriter()->WriteLine(pfx_path);
 
         this->pfx_file = ::CreateFileA(
@@ -224,7 +212,7 @@ namespace Service
         if (this->pfx_file == INVALID_HANDLE_VALUE)
             return Basic::globals->HandleError("CreateFileA", GetLastError());
 
-        HANDLE result = CreateIoCompletionPort(this->pfx_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompletion*>(this)), 0);
+        HANDLE result = CreateIoCompletionPort(this->pfx_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
         if (result == 0)
             return Basic::globals->HandleError("CreateIoCompletionPort", GetLastError());
 
@@ -236,18 +224,19 @@ namespace Service
         if (size.HighPart > 0)
             return Basic::globals->HandleError("GetFileSizeEx returned unexpectedly large size", 0);
 
-        AsyncBytes::Ref pfx_data = New<AsyncBytes>("7");
-        pfx_data->Initialize(size.LowPart);
-        pfx_data->PrepareForReceive("ConnectedSocket::StartReceive WSARecv", this);
+        std::shared_ptr<ByteString> pfx_data = std::make_shared<ByteString>();
+        pfx_data->resize(size.LowPart);
 
-        success = (bool)ReadFile(this->pfx_file, pfx_data->bytes, size.LowPart, 0, pfx_data);
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), pfx_data);
+
+        success = (bool)ReadFile(this->pfx_file, pfx_data->address(), pfx_data->size(), 0, job.get());
         if (!success)
         {
             DWORD error = GetLastError();
             if (error != ERROR_IO_PENDING)
             {
-                pfx_data->Internal = error;
-                Service::globals->PostCompletion(this, pfx_data);
+                job->Internal = error;
+                Service::globals->QueueJob(job);
             }
         }
 
@@ -278,32 +267,19 @@ namespace Service
             Basic::globals->HandleError("WSACleanup", WSAGetLastError());
     }
 
-    void Globals::CompleteAsync(OVERLAPPED_ENTRY& entry)
+    void Globals::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
-        int transferred = entry.dwNumberOfBytesTransferred;
-        int error = static_cast<int>(entry.lpOverlapped->Internal);
+        std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(context);
 
-        AsyncBytes::Ref bytes = AsyncBytes::FromOverlapped(entry.lpOverlapped);
-        bytes->IoCompleted();
-
-        bool success = CompleteRead(bytes, transferred, error);
-        if (!success)
-        {
-            SendStopSignal();
-        }
-    }
-
-    bool Globals::CompleteRead(AsyncBytes* bytes, int transferred, int error)
-    {
-        bool success = ParseCert(bytes, transferred, error);
+        bool success = ParseCert(bytes.get(), count, error);
         if (!success)
         {
             success = CreateSelfSignCert();
             if (!success)
-                return false;
+            {
+                SendStopSignal();
+            }
         }
-
-        return true;
     }
 
     bool Globals::ExtractPrivateKey()
@@ -319,25 +295,25 @@ namespace Service
             &keySpec,
             &free);
         if (!success)
-            return Basic::globals->HandleError("Process::main CryptAcquireCertificatePrivateKey", GetLastError());
+            return Basic::globals->HandleError("handle_event::main CryptAcquireCertificatePrivateKey", GetLastError());
 
         if (!free)
-            return Basic::globals->HandleError("Process::main !free", 0);
+            return Basic::globals->HandleError("handle_event::main !free", 0);
 
         if (keySpec != CERT_NCRYPT_KEY_SPEC)
-            return Basic::globals->HandleError("Process::main != CERT_NCRYPT_KEY_SPEC", 0);
+            return Basic::globals->HandleError("handle_event::main != CERT_NCRYPT_KEY_SPEC", 0);
 
         this->certificates.resize(1);
 
         this->certificates[0].resize(this->cert->cbCertEncoded);
-        CopyMemory(&(this->certificates[0][0]), this->cert->pbCertEncoded, this->cert->cbCertEncoded);
+        CopyMemory(this->certificates[0].address(), this->cert->pbCertEncoded, this->cert->cbCertEncoded);
 
         DebugWriter()->WriteLine("initializing encodings");
 
         switch_to_state(State::encodings_pending_state);
 
-        StandardEncodings::Ref standard_encodings = New<StandardEncodings>();
-        standard_encodings->Initialize(this, (ByteString*)0);
+        std::shared_ptr<StandardEncodings> standard_encodings = std::make_shared<StandardEncodings>(this->shared_from_this(), ByteStringRef());
+        standard_encodings->start();
 
         return true;
     }
@@ -352,12 +328,12 @@ namespace Service
         x_500 = "CN=";
         x_500 += this->self_sign_domain;
 
-        DebugWriter()->Write("creating transient self-sign certificate ");
+        DebugWriter()->write_literal("creating transient self-sign certificate ");
         DebugWriter()->WriteLine(x_500.c_str());
 
         bool success = (bool)CertStrToNameA(X509_ASN_ENCODING, x_500.c_str(), 0, 0, name, &count, 0);
         if (!success)
-            return Basic::globals->HandleError("Process::main CertStrToNameA", GetLastError());
+            return Basic::globals->HandleError("handle_event::main CertStrToNameA", GetLastError());
 
         CERT_NAME_BLOB blob;
         blob.cbData = count;
@@ -365,7 +341,7 @@ namespace Service
 
         this->cert = CertCreateSelfSignCertificate(0, &blob, 0, 0, 0, 0, 0, 0); // $ seems to spin up win32 thread pool?
         if (this->cert == 0)
-            return Basic::globals->HandleError("Process::main CertCreateSelfSignCertificate", GetLastError());
+            return Basic::globals->HandleError("handle_event::main CertCreateSelfSignCertificate", GetLastError());
 
         success = ExtractPrivateKey();
         if (!success)
@@ -374,24 +350,26 @@ namespace Service
         return true;
     }
 
-    bool Globals::ParseCert(AsyncBytes* bytes, int transferred, int error)
+    bool Globals::ParseCert(ByteString* bytes, uint32 count, uint32 error)
     {
         if (error != ERROR_SUCCESS)
             return Basic::globals->HandleError("read cert from file failed", error);
 
+        bytes->resize(count);
+
         DebugWriter()->WriteLine("initializing certificate from file");
 
         CRYPT_DATA_BLOB pfx_blob;
-        pfx_blob.cbData = transferred;
-        pfx_blob.pbData = bytes->bytes;
+        pfx_blob.pbData = bytes->address();
+        pfx_blob.cbData = bytes->size();
 
         Basic::HCERTSTORE store = PFXImportCertStore(&pfx_blob, this->certificate_file_password.c_str(), CRYPT_MACHINE_KEYSET | PKCS12_ALLOW_OVERWRITE_KEY);
         if (store == 0)
-            return Basic::globals->HandleError("Process::main PFXImportCertStore", GetLastError());
+            return Basic::globals->HandleError("handle_event::main PFXImportCertStore", GetLastError());
 
         this->cert = CertFindCertificateInStore(store, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_ANY, 0, 0);
         if (this->cert == 0)
-            return Basic::globals->HandleError("Process::main CertFindCertificateInStore", GetLastError());
+            return Basic::globals->HandleError("handle_event::main CertFindCertificateInStore", GetLastError());
 
         bool success = ExtractPrivateKey();
         if (!success)
@@ -400,129 +378,108 @@ namespace Service
         return true;
     }
 
-    class EndPoint : public Frame
-    {
-    protected:
-        Basic::ListenSocket::Ref listener;
-
-    public:
-        typedef Basic::Ref<EndPoint, IProcess> Ref;
-
-        void Initialize(ListenSocket::Face face, short port)
-        {
-            __super::Initialize();
-
-            this->listener = New<Basic::ListenSocket>();
-            this->listener->Initialize(face, port);
-        }
-
-        void SpawnListeners(uint16 count)
-        {
-            for (uint16 i = 0; i < count; i++)
-            {
-                SpawnListener();
-            }
-        }
-
-        void Process(IEvent* event, bool* yield)
-        {
-            (*yield) = true;
-
-            if (event->get_type() == Http::EventType::accept_complete_event)
-            {
-                SpawnListener();
-            }
-        }
-
-        virtual void SpawnListener() = 0;
-    };
-
-    class HttpServerEndpoint : public EndPoint
+    class HttpServerEndpoint : public Endpoint, public std::enable_shared_from_this<HttpServerEndpoint>
     {
     private:
-        Basic::Ref<Tls::ICertificate> certificate;
+        std::shared_ptr<Tls::ICertificate> certificate;
 
     public:
-        typedef Basic::Ref<HttpServerEndpoint, IProcess> Ref;
-
-        void Initialize(ListenSocket::Face face, short port, Basic::Ref<Tls::ICertificate> certificate)
+        HttpServerEndpoint(ListenSocket::Face face, short port, std::shared_ptr<Tls::ICertificate> certificate) :
+            Endpoint(face, port),
+            certificate(certificate)
         {
-            __super::Initialize(face, port);
-
-            this->certificate = certificate;
         }
 
         virtual void SpawnListener()
         {
-            HttpServer::Ref protocol = New<HttpServer>();
-            protocol->Initialize(this->listener, this->certificate, this, (ByteString*)0);
+            std::shared_ptr<HttpServer> protocol = std::make_shared<HttpServer>(this->shared_from_this(), ByteStringRef());
+            protocol->start(this->listener.get(), this->certificate);
         }
     };
 
-    class HttpProxyEndpoint : public EndPoint
+    class HttpProxyEndpoint : public Endpoint, public std::enable_shared_from_this<HttpProxyEndpoint>
     {
     private:
-        Basic::Ref<Tls::ICertificate> certificate;
-        Uri::Ref server_url;
+        std::shared_ptr<Tls::ICertificate> certificate;
+        std::shared_ptr<Uri> server_url;
 
     public:
-        typedef Basic::Ref<HttpProxyEndpoint, IProcess> Ref;
-
-        void Initialize(ListenSocket::Face face, short port, Basic::Ref<Tls::ICertificate> certificate, Uri::Ref server_url)
+        HttpProxyEndpoint(ListenSocket::Face face, short port, std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<Uri> server_url) :
+            Endpoint(face, port),
+            certificate(certificate),
+            server_url(server_url)
         {
-            __super::Initialize(face, port);
-
-            this->certificate = certificate;
-            this->server_url = server_url;
         }
 
         virtual void SpawnListener()
         {
-            Web::Proxy::Ref protocol = New<Web::Proxy>();
-            protocol->Initialize(this->listener, this->certificate, this, (ByteString*)0, this->server_url);
+            std::shared_ptr<Web::Proxy> protocol = std::make_shared<Web::Proxy>(this->shared_from_this(), ByteStringRef(), this->server_url);
+            protocol->start(this->listener.get(), this->certificate);
         }
     };
 
-    void Globals::Process(IEvent* event, bool* yield)
+    class FtpServerEndpoint : public Endpoint, public std::enable_shared_from_this<FtpServerEndpoint>
     {
-        (*yield) = true;
+    public:
+        FtpServerEndpoint(ListenSocket::Face face, short port) :
+            Endpoint(face, port)
+        {
+        }
 
-        switch (frame_state())
+        virtual void SpawnListener()
+        {
+            std::shared_ptr<Ftp::Server> protocol = std::make_shared<Ftp::Server>(this->shared_from_this(), ByteStringRef());
+            protocol->start(this->listener.get());
+        }
+    };
+
+    void Globals::consider_event(IEvent* event)
+    {
+        switch (get_state())
         {
         case State::encodings_pending_state:
-            if (event->get_type() == Basic::EventType::encodings_complete_event)
             {
+                if (event->get_type() != Basic::EventType::encodings_complete_event)
+                {
+                    Basic::HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
+
                 DebugWriter()->WriteLine("initializing html globals");
 
-                HtmlNamedCharacterReferences::Ref named_characters = New<HtmlNamedCharacterReferences>();
-                named_characters->Initialize(this, (ByteString*)0);
+                std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
+                named_characters->start();
 
                 switch_to_state(State::named_character_references_pending_state);
             }
             break;
 
         case State::named_character_references_pending_state:
-            if (event->get_type() == Service::EventType::characters_complete_event)
             {
+                if (event->get_type() != Service::EventType::characters_complete_event)
+                    throw Yield("unexepected event");
+
                 DebugWriter()->WriteLine("initializing endpoints");
 
-                HttpServerEndpoint::Ref http_endpoint = New<HttpServerEndpoint>();
-                http_endpoint->Initialize(Basic::ListenSocket::Face_Default, 81, 0);
+                std::shared_ptr<HttpServerEndpoint> http_endpoint = std::make_shared<HttpServerEndpoint>(Basic::ListenSocket::Face_Default, 81, std::shared_ptr<Tls::ICertificate>());
                 http_endpoint->SpawnListeners(20);
 
-                HttpServerEndpoint::Ref https_endpoint = New<HttpServerEndpoint>();
-                https_endpoint->Initialize(Basic::ListenSocket::Face_Default, 82, this);
+                std::shared_ptr<HttpServerEndpoint> https_endpoint = std::make_shared<HttpServerEndpoint>(Basic::ListenSocket::Face_Default, 82, this->shared_from_this());
                 https_endpoint->SpawnListeners(20);
 
+                std::shared_ptr<FtpServerEndpoint> ftp_control_endpoint = std::make_shared<FtpServerEndpoint>(Basic::ListenSocket::Face_Default, 21);
+                ftp_control_endpoint->SpawnListeners(20);
+
                 switch_to_state(State::accepts_pending_state);
+                throw Yield("event consumed");
             }
             break;
 
         case State::accepts_pending_state:
-            break;
+            throw FatalError("was Yield... what is expected for this state?");
 
         default:
-            throw new Exception("Html::Globals::Complete unexpected state");
+            throw FatalError("Html::Globals::Complete unexpected state");
         }
     }
 
@@ -573,7 +530,7 @@ namespace Service
                 if (error != WAIT_TIMEOUT)
                 {
                     if (error != ERROR_ABANDONED_WAIT_0 && error != ERROR_INVALID_HANDLE)
-                        throw new Basic::Exception("GetQueuedCompletionStatusEx", error);
+                        throw Basic::FatalError("GetQueuedCompletionStatusEx", error);
 
                     return false;
                 }
@@ -585,9 +542,8 @@ namespace Service
 
             for (uint32 i = 0; i < count; i++)
             {
-                OVERLAPPED_ENTRY* SortEntry = entries + i;
-                Basic::Ref<Basic::ICompletion> object = reinterpret_cast<Basic::ICompletion*>(SortEntry->lpCompletionKey);
-                object->CompleteAsync(*SortEntry);
+                OVERLAPPED_ENTRY* entry = entries + i;
+                Job::complete(entry);
             }
 
             DWORD result = WaitForSingleObject(stopEvent, 0);
@@ -598,71 +554,29 @@ namespace Service
         return true;
     }
 
-    class CompletionCompletion : public Basic::ICompletion, public IRefHolder
+    void Globals::QueueJob(std::shared_ptr<Job> job)
     {
-    public:
-        Basic::Ref<IRefCounted> queue_ref;
-        Basic::Ref<Basic::ICompletion> completion;
-
-    public:
-        typedef Basic::Ref<CompletionCompletion> Ref;
-
-        CompletionCompletion()
-        {
-            this->queue_ref.SetHolder(this);
-        }
-
-        void PrepareForQueue(Basic::ICompletion* completion)
-        {
-            this->queue_ref = this;
-            this->completion = completion;
-        }
-
-        virtual void Basic::ICompletion::CompleteAsync(OVERLAPPED_ENTRY& SortEntry)
-        {
-            this->completion->CompleteAsync(SortEntry);
-            this->queue_ref = 0;
-        }
-    };
-
-    void Globals::PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped)
-    {
-        CompletionCompletion::Ref outer_completion = New<CompletionCompletion>();
-        outer_completion->PrepareForQueue(completion);
-
-        BOOL success = PostQueuedCompletionStatus(this->queue, 0, reinterpret_cast<ULONG_PTR>(outer_completion.item()), overlapped);
+        BOOL success = PostQueuedCompletionStatus(this->queue, 0, 0, job.get());
         if (success == 0)
-            throw new Basic::Exception("Globals::PostCompletion PostQueuedCompletionStatus", GetLastError());
+            throw Basic::FatalError("Globals::QueueJob PostQueuedCompletionStatus", GetLastError());
     }
 
-    void Globals::QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie)
+    void Globals::BindToCompletionQueue(LogFile* log_file)
     {
-        ProcessCompletion::Ref completion = New<ProcessCompletion>();
-        completion->PrepareForQueue(process, cookie);
+        HANDLE handle = log_file->file;
 
-        BOOL success = PostQueuedCompletionStatus(this->queue, 0, reinterpret_cast<ULONG_PTR>(completion.item()), 0);
-        if (success == 0)
-            throw new Basic::Exception("Globals::QueueProcess PostQueuedCompletionStatus", GetLastError());
-    }
-
-    void Globals::BindToCompletionQueue(LogFile::Ref logfile)
-    {
-        HANDLE handle = logfile->file;
-        Basic::ICompletion* completion = logfile;
-
-        HANDLE result = CreateIoCompletionPort(handle, this->queue, reinterpret_cast<ULONG_PTR>(completion), 0);
+        HANDLE result = CreateIoCompletionPort(handle, this->queue, 0, 0);
         if (result == 0)
-            throw new Basic::Exception("CreateIoCompletionPort", GetLastError());
+            throw Basic::FatalError("CreateIoCompletionPort", GetLastError());
     }
 
-    void Globals::BindToCompletionQueue(Socket::Ref socket)
+    void Globals::BindToCompletionQueue(Socket* socket)
     {
         HANDLE handle = reinterpret_cast<HANDLE>(socket->socket);
-        Basic::ICompletion* completion = socket;
 
-        HANDLE result = CreateIoCompletionPort(handle, this->queue, reinterpret_cast<ULONG_PTR>(completion), 0);
+        HANDLE result = CreateIoCompletionPort(handle, this->queue, 0, 0);
         if (result == 0)
-            throw new Basic::Exception("CreateIoCompletionPort", GetLastError());
+            throw Basic::FatalError("CreateIoCompletionPort", GetLastError());
     }
 
     bool Globals::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult)
@@ -687,11 +601,11 @@ namespace Service
         return &this->certificates;
     }
 
-    void Globals::Store(UnicodeString::Ref source, Json::Value::Ref value)
+    void Globals::Store(UnicodeStringRef source, std::shared_ptr<Json::Value> value)
     {
         if (value->type == Json::Value::Type::array_value)
         {
-            Json::Array* array = (Json::Array*)value.item();
+            Json::Array* array = (Json::Array*)value.get();
 
             for (Json::ValueList::iterator it = array->elements.begin(); it != array->elements.end(); it++)
             {
@@ -700,32 +614,32 @@ namespace Service
         }
         else if (value->type == Json::Value::Type::object_value)
         {
-            Json::Object* object = (Json::Object*)value.item();
+            std::shared_ptr<Json::Object> object = std::static_pointer_cast<Json::Object>(value);
 
             Json::MemberList::iterator title_it = object->members.find(title_property);
 
             if (title_it != object->members.end() &&
                 title_it->second->type == Json::Value::Type::string_value)
             {
-                Json::String::Ref as_of = New<Json::String>();
-                as_of->value = New<UnicodeString>();
+                std::shared_ptr<Json::String> as_of = std::make_shared<Json::String>();
+                as_of->value = std::make_shared<UnicodeString>();
 
-                TextWriter writer(as_of->value);
+                TextWriter writer(as_of->value.get());
                 writer.WriteTimestamp();
 
-                Json::MemberList::_Pairib as_of_result = object->members.insert(Json::MemberList::value_type(as_of_property, as_of.item()));
+                Json::MemberList::_Pairib as_of_result = object->members.insert(Json::MemberList::value_type(as_of_property, as_of));
                 if (as_of_result.second == false)
                     as_of_result.first->second = as_of;
 
-                Json::String* title_string = (Json::String*)title_it->second.item();
+                Json::String* title_string = (Json::String*)title_it->second.get();
                 this->index->Add(title_string->value, object);
             }
         }
     }
 
-    void Globals::Search(UnicodeString::Ref query, Json::Array::Ref* results)
+    void Globals::Search(UnicodeStringRef query, std::shared_ptr<Json::Array>* results)
     {
-        Json::Array::Ref list = New<Json::Array>();
+        std::shared_ptr<Json::Array> list = std::make_shared<Json::Array>();
 
         uint32 begin;
         uint32 end;
@@ -734,23 +648,20 @@ namespace Service
 
         for (uint32 i = begin; i != end; i++)
         {
-            list->elements.push_back(this->index->results[i].value.item());
+            list->elements.push_back(this->index->results[i].value);
         }
 
         (*results) = list;
     }
 
-    Basic::IStream<Codepoint>* Globals::DebugStream()
+    Basic::IStream<Codepoint>* Globals::LogStream()
     {
         if (debug_stream == 0)
         {
-            Basic::DebugStream::Ref debug_frame = New<Basic::DebugStream>();
-            debug_frame->Initialize(this->debugLog);
+            Basic::LogStream* log_stream = new Basic::LogStream();
+            log_stream->Initialize(this->debugLog);
 
-            Basic::FrameStream<Codepoint>* frame_stream = new Basic::Inline<Basic::FrameStream<Codepoint> >();
-            frame_stream->Initialize(debug_frame);
-
-            debug_stream = frame_stream;
+            debug_stream = log_stream;
         }
 
         return debug_stream;
@@ -759,16 +670,16 @@ namespace Service
     Basic::TextWriter* Globals::DebugWriter()
     {
         if (debug_writer == 0)
-            debug_writer = new Basic::TextWriter(DebugStream());
+            debug_writer = new Basic::TextWriter(LogStream());
 
         return debug_writer;
     }
 
     bool Globals::HandleError(const char* context, uint32 error)
     {
-        DebugWriter()->Write("ERROR: ");
-        DebugWriter()->Write(context);
-        DebugWriter()->Write(" code=");
+        DebugWriter()->write_literal("ERROR: ");
+        DebugWriter()->write_c_str(context);
+        DebugWriter()->write_literal(" code=");
         DebugWriter()->WriteError(error);
         DebugWriter()->WriteLine();
         return false;
@@ -831,11 +742,13 @@ void __stdcall ServiceProc(DWORD, char**)
 int main(int argc, char* argv[])
 {
     // must be constructed first because Basic::globals needs it, and we set some variables from the command line parameters
-    Service::globals = new Basic::Inline<Service::Globals>();
+    std::shared_ptr<Service::Globals> service_global_ref;
+    make_immortal<Service::Globals>(&Service::globals, &service_global_ref);
 
     // must be initialized next so that error handling and ascii encoding are initialized
-    Basic::globals = new Basic::Inline<Basic::Globals>();
-    Basic::globals->Initialize(Service::globals, Service::globals);
+    make_immortal<Basic::Globals>(&Basic::globals, 0);
+
+    Basic::globals->Initialize(service_global_ref, service_global_ref);
 
     if (argc == 3 && (0 == _stricmp(argv[1], "/u") || 0 == _stricmp(argv[1], "/uninstall")))
     {

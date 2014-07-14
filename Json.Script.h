@@ -12,16 +12,16 @@ namespace Json
     class Script
     {
     private:
-        void deep_text(Html::Node::Ref domain, UnicodeString::Ref* result);
+        void deep_text(std::shared_ptr<Html::Node> domain, UnicodeStringRef* result);
 
     public:
-        Basic::UnicodeString::Ref element_name; // REF
-        Basic::UnicodeString::Ref attribute_name; // REF
-        Basic::UnicodeString::Ref method_name; // REF
-        Value::Ref parameter_value; // REF
+        Basic::UnicodeStringRef element_name;
+        Basic::UnicodeStringRef attribute_name;
+        Basic::UnicodeStringRef method_name;
+        std::shared_ptr<Value> parameter_value;
 
         void Initialize();
-        bool Execute(Html::Node::Ref domain, Html::Node::Ref after, Html::Node::Ref* result);
-        bool Execute(Html::Node::Ref domain, UnicodeString::Ref* result);
+        bool Execute(std::shared_ptr<Html::Node> domain, std::shared_ptr<Html::Node> after, std::shared_ptr<Html::Node>* result);
+        bool Execute(std::shared_ptr<Html::Node> domain, UnicodeStringRef* result);
     };
 }

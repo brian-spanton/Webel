@@ -4,7 +4,6 @@
 
 #include "Basic.IProcess.h"
 #include "Tls.Types.h"
-#include "Tls.NumberFrame.h"
 #include "Tls.OCSPStatusRequestFrame.h"
 
 namespace Tls
@@ -25,13 +24,12 @@ namespace Tls
         };
 
         CertificateStatusRequest* certificate_status_request;
-        Inline<NumberFrame<CertificateStatusType> > type_frame;
-        Inline<OCSPStatusRequestFrame> request_frame;
+        NumberFrame<CertificateStatusType> type_frame;
+        OCSPStatusRequestFrame request_frame;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<CertificateStatusRequestFrame, IProcess> Ref;
-
-        void Initialize(CertificateStatusRequest* certificate_status_request);
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        CertificateStatusRequestFrame(CertificateStatusRequest* certificate_status_request);
     };
 }

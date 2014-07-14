@@ -12,13 +12,13 @@ namespace Http
 
     void Request::Initialize()
     {
-        this->method = New<UnicodeString>();
+        this->method = std::make_shared<UnicodeString>();
 
-        this->resource = New<Uri>();
+        this->resource = std::make_shared<Uri>();
         this->resource->Initialize();
 
-        this->protocol = New<UnicodeString>();
-        this->headers = New<NameValueCollection >();
+        this->protocol = std::make_shared<UnicodeString>();
+        this->headers = std::make_shared<NameValueCollection>();
     }
 
     void Request::Initialize(Request* request)
@@ -32,16 +32,16 @@ namespace Http
 
     void Response::Initialize()
     {
-        this->protocol = New<UnicodeString>();
+        this->protocol = std::make_shared<UnicodeString>();
         this->code = 0;
-        this->reason = New<UnicodeString>();
-        this->headers = New<NameValueCollection >();
+        this->reason = std::make_shared<UnicodeString>();
+        this->headers = std::make_shared<NameValueCollection>();
     }
 
     void Cookie::Initialize()
     {
-        this->name = New<UnicodeString>();
-        this->value = New<UnicodeString>();
+        this->name = std::make_shared<UnicodeString>();
+        this->value = std::make_shared<UnicodeString>();
         this->secure_only_flag = false;
         this->http_only_flag = false;
         this->host_only_flag = false;
@@ -51,16 +51,16 @@ namespace Http
     {
         Initialize();
 
-        Inline<CookieParser> frame;
+        CookieParser frame;
         frame.Initialize(this);
 
-        frame.Write(value->c_str(), value->size());
-        frame.WriteEOF();
+        frame.write_elements(value->address(), value->size());
+        frame.write_eof();
     }
 
     bool Cookie::equals(Cookie* value)
     {
-        if (!value->name.equals<true>(this->name))
+        if (!Basic::equals<UnicodeString, true>(value->name.get(), this->name.get()))
             return false;
 
         if (!value->domain.equals<true>(this->domain))
@@ -76,7 +76,7 @@ namespace Http
     {
         Path host_path;
 
-        UnicodeString::Ref node = New<UnicodeString>();
+        UnicodeStringRef node = std::make_shared<UnicodeString>();
 
         for (uint32 i = 0; i < url->host->size(); i++)
         {
@@ -85,7 +85,7 @@ namespace Http
             if (c == '.')
             {
                 host_path.insert(host_path.begin(), node);
-                node = New<UnicodeString>();
+                node = std::make_shared<UnicodeString>();
             }
             else
             {
@@ -94,7 +94,7 @@ namespace Http
         }
 
         host_path.insert(host_path.begin(), node);
-        node = New<UnicodeString>();
+        node = std::make_shared<UnicodeString>();
 
         if (this->host_only_flag)
         {

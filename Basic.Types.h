@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Basic.RefCounted.h"
 #include "Basic.NameValueCollection.h"
 #include "Basic.IDecoderFactory.h"
 #include "Basic.IEncoderFactory.h"
@@ -11,13 +10,13 @@
 
 namespace Basic
 {
-    struct Exception
+    struct FatalError
     {
-        Exception(const char* context);
-        Exception(const char* context, uint32 error);
+        FatalError(const char* context);
+        FatalError(const char* context, uint32 error);
     };
 
-    struct Path : std::vector<UnicodeString::Ref> // REF
+    struct Path : std::vector<UnicodeStringRef>
     {
         template <bool case_sensitive>
         bool equals(const Path& rvalue) const
@@ -27,7 +26,7 @@ namespace Basic
 
             for (uint16 i = 0; i < this->size(); i++)
             {
-                if (!this->at(i).equals<case_sensitive>(rvalue.at(i)))
+                if (!Basic::equals<UnicodeString, case_sensitive>(this->at(i).get(), rvalue.at(i).get()))
                     return false;
             }
 
@@ -42,16 +41,17 @@ namespace Basic
 
             for (uint16 i = 0; i != rvalue.size(); i++)
             {
-                if (!this->at(i).equals<case_sensitive>(rvalue.at(i)))
+                if (!Basic::equals<UnicodeString, case_sensitive>(this->at(i).get(), rvalue.at(i).get()))
                     return false;
             }
 
             return true;
         }
 
-        void GetString(uint8 separator, UnicodeString::Ref* value)
+        void GetString(uint8 separator, UnicodeStringRef* value)
         {
-            UnicodeString::Ref result = New<UnicodeString>();
+            UnicodeStringRef result = std::make_shared<UnicodeString>();
+            result->reserve(0x100);
 
             for (Path::iterator it = this->begin(); it != this->end(); it++)
             {
@@ -64,9 +64,10 @@ namespace Basic
             (*value) = result;
         }
 
-        void GetReverseString(uint8 separator, UnicodeString::Ref* value)
+        void GetReverseString(uint8 separator, UnicodeStringRef* value)
         {
-            UnicodeString::Ref result = New<UnicodeString>();
+            UnicodeStringRef result = std::make_shared<UnicodeString>();
+            result->reserve(0x100);
 
             for (Path::reverse_iterator it = this->rbegin(); it != this->rend(); it++)
             {
@@ -82,8 +83,8 @@ namespace Basic
 
     bool HandleError(const char* context);
 
-    typedef StringMapCaseInsensitive<Ref<IEncoderFactory> > EncoderMap;
-    typedef StringMapCaseInsensitive<Ref<IDecoderFactory> > DecoderMap;
+    typedef StringMapCaseInsensitive<std::shared_ptr<IEncoderFactory> > EncoderMap;
+    typedef StringMapCaseInsensitive<std::shared_ptr<IDecoderFactory> > DecoderMap;
 
     enum EventType
     {
@@ -106,7 +107,7 @@ namespace Basic
     struct ReadyForReadBytesEvent : public IEvent
     {
     public:
-        Basic::Ref<IElementSource<byte> > element_source; // REF
+        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
 
         virtual uint32 get_type();
 
@@ -116,7 +117,7 @@ namespace Basic
     struct ReadyForWriteBytesEvent : public IEvent
     {
     public:
-        Basic::Ref<IElementSource<byte> > element_source; // REF
+        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
 
         virtual uint32 get_type();
 
@@ -126,7 +127,7 @@ namespace Basic
     struct ReadyForReadCodepointsEvent : public IEvent
     {
     public:
-        Basic::Ref<IElementSource<Codepoint> > element_source; // REF
+        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
 
         virtual uint32 get_type();
 
@@ -136,7 +137,7 @@ namespace Basic
     struct ReadyForWriteCodepointsEvent : public IEvent
     {
     public:
-        Basic::Ref<IElementSource<Codepoint> > element_source; // REF
+        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
 
         virtual uint32 get_type();
 
@@ -150,7 +151,7 @@ namespace Basic
 
     struct EncodingsCompleteEvent : public IEvent
     {
-        ByteString::Ref cookie; // REF
+        ByteStringRef cookie;
 
         virtual uint32 get_type();
     };

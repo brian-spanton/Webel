@@ -15,13 +15,13 @@ namespace Html
     {
     }
 
-    void ElementNode::Initialize(ElementName* element_name, StringMap* attributes)
+    void ElementNode::Initialize(std::shared_ptr<ElementName> element_name, std::shared_ptr<StringMap> attributes)
     {
         this->element_name = element_name;
         this->attributes = attributes;
     }
 
-    bool ElementNode::has_attribute(UnicodeString* attribute_name)
+    bool ElementNode::has_attribute(UnicodeStringRef attribute_name)
     {
         StringMap::iterator it = this->attributes->find(attribute_name);
         if (it == this->attributes->end())
@@ -30,13 +30,13 @@ namespace Html
         return true;
     }
 
-    bool ElementNode::has_attribute_value(UnicodeString* attribute_name, UnicodeString* value)
+    bool ElementNode::has_attribute_value(UnicodeStringRef attribute_name, UnicodeStringRef value)
     {
         StringMap::iterator it = this->attributes->find(attribute_name);
         if (it == this->attributes->end())
             return false;
 
-        if (it->second != value)
+        if (!equals<UnicodeString, true>(it->second.get(), value.get()))
             return false;
 
         return true;
@@ -60,12 +60,12 @@ namespace Html
         return this->attributes->size();
     }
 
-    void ElementNode::get_attribute(UnicodeString* attribute_name, UnicodeString::Ref* value)
+    void ElementNode::get_attribute(UnicodeStringRef attribute_name, UnicodeStringRef* value)
     {
         StringMap::iterator it = this->attributes->find(attribute_name);
         if (it == this->attributes->end())
         {
-            (*value) = (UnicodeString*)0;
+            (*value) = std::shared_ptr<UnicodeString>();
             return;
         }
 
@@ -80,7 +80,7 @@ namespace Html
         return false;
     }
 
-    bool ElementNode::attribute_missing_or_empty(UnicodeString* attribute_name)
+    bool ElementNode::attribute_missing_or_empty(UnicodeStringRef attribute_name)
     {
         StringMap::iterator it = this->attributes->find(attribute_name);
         if (it == this->attributes->end())
@@ -99,83 +99,83 @@ namespace Html
 
     bool ElementNode::IsFormatting()
     {
-        if (has_element_name(Html::globals->HTML_a))
+        if (has_element_name(Html::globals->HTML_a.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_b))
+        if (has_element_name(Html::globals->HTML_b.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_big))
+        if (has_element_name(Html::globals->HTML_big.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_code))
+        if (has_element_name(Html::globals->HTML_code.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_em))
+        if (has_element_name(Html::globals->HTML_em.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_font))
+        if (has_element_name(Html::globals->HTML_font.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_i))
+        if (has_element_name(Html::globals->HTML_i.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_nobr))
+        if (has_element_name(Html::globals->HTML_nobr.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_s))
+        if (has_element_name(Html::globals->HTML_s.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_small))
+        if (has_element_name(Html::globals->HTML_small.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_strike))
+        if (has_element_name(Html::globals->HTML_strike.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_strong))
+        if (has_element_name(Html::globals->HTML_strong.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_tt))
+        if (has_element_name(Html::globals->HTML_tt.get()))
             return true;
         
-        if (has_element_name(Html::globals->HTML_u))
+        if (has_element_name(Html::globals->HTML_u.get()))
             return true;
 
         return false;
     }
 
-    bool ElementNode::is_in_namespace(UnicodeString* namespace_name)
+    bool ElementNode::is_in_namespace(UnicodeStringRef namespace_name)
     {
-        return this->element_name->is_in_namespace(namespace_name);
+        return this->element_name->is_in_namespace(namespace_name.get());
     }
 
     bool ElementNode::IsFormAssociated()
     {
-        if (has_element_name(Html::globals->button_element_name))
+        if (has_element_name(Html::globals->button_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_fieldset))
+        if (has_element_name(Html::globals->HTML_fieldset.get()))
             return true;
 
-        if (has_element_name(Html::globals->input_element_name)) 
+        if (has_element_name(Html::globals->input_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_keygen)) 
+        if (has_element_name(Html::globals->HTML_keygen.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_label)) 
+        if (has_element_name(Html::globals->HTML_label.get()))
             return true;
 
-        if (has_element_name(Html::globals->object_element_name)) 
+        if (has_element_name(Html::globals->object_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_output)) 
+        if (has_element_name(Html::globals->HTML_output.get()))
             return true;
 
-        if (has_element_name(Html::globals->select_element_name)) 
+        if (has_element_name(Html::globals->select_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_textarea))
+        if (has_element_name(Html::globals->HTML_textarea.get()))
             return true;
 
         return false;
@@ -183,22 +183,22 @@ namespace Html
 
     bool ElementNode::IsSubmittable()
     {
-        if (has_element_name(Html::globals->button_element_name))
+        if (has_element_name(Html::globals->button_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->input_element_name)) 
+        if (has_element_name(Html::globals->input_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_keygen)) 
+        if (has_element_name(Html::globals->HTML_keygen.get()))
             return true;
 
-        if (has_element_name(Html::globals->object_element_name)) 
+        if (has_element_name(Html::globals->object_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->select_element_name)) 
+        if (has_element_name(Html::globals->select_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_textarea))
+        if (has_element_name(Html::globals->HTML_textarea.get()))
             return true;
 
         return false;
@@ -206,31 +206,31 @@ namespace Html
 
     bool ElementNode::IsReassociateable()
     {
-        if (has_element_name(Html::globals->button_element_name))
+        if (has_element_name(Html::globals->button_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_fieldset))
+        if (has_element_name(Html::globals->HTML_fieldset.get()))
             return true;
 
-        if (has_element_name(Html::globals->input_element_name)) 
+        if (has_element_name(Html::globals->input_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_keygen)) 
+        if (has_element_name(Html::globals->HTML_keygen.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_label)) 
+        if (has_element_name(Html::globals->HTML_label.get()))
             return true;
 
-        if (has_element_name(Html::globals->object_element_name)) 
+        if (has_element_name(Html::globals->object_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_output)) 
+        if (has_element_name(Html::globals->HTML_output.get()))
             return true;
 
-        if (has_element_name(Html::globals->select_element_name)) 
+        if (has_element_name(Html::globals->select_element_name.get()))
             return true;
 
-        if (has_element_name(Html::globals->HTML_textarea))
+        if (has_element_name(Html::globals->HTML_textarea.get()))
             return true;
 
         return false;
@@ -238,19 +238,19 @@ namespace Html
 
     bool ElementNode::IsMathMLTextIntegrationPoint()
     {
-        if (has_element_name(Html::globals->MathML_mi))
+        if (has_element_name(Html::globals->MathML_mi.get()))
             return true;
 
-        if (has_element_name(Html::globals->MathML_mo))
+        if (has_element_name(Html::globals->MathML_mo.get()))
             return true;
 
-        if (has_element_name(Html::globals->MathML_mn))
+        if (has_element_name(Html::globals->MathML_mn.get()))
             return true;
 
-        if (has_element_name(Html::globals->MathML_ms))
+        if (has_element_name(Html::globals->MathML_ms.get()))
             return true;
 
-        if (has_element_name(Html::globals->MathML_mtext))
+        if (has_element_name(Html::globals->MathML_mtext.get()))
             return true;
 
         return false;
@@ -258,25 +258,25 @@ namespace Html
 
     bool ElementNode::IsHTMLIntegrationPoint()
     {
-        if (has_element_name(Html::globals->MathML_annotation_xml))
+        if (has_element_name(Html::globals->MathML_annotation_xml.get()))
         {
             if (has_attribute_value(Html::globals->encoding_attribute_name, Html::globals->text_html_media_type))
                 return true;
         }
 
-        if (has_element_name(Html::globals->MathML_annotation_xml))
+        if (has_element_name(Html::globals->MathML_annotation_xml.get()))
         {
             if (has_attribute_value(Html::globals->encoding_attribute_name, Html::globals->application_xhtml_xml_media_type))
                 return true;
         }
 
-        if (has_element_name(Html::globals->SVG_foreignObject))
+        if (has_element_name(Html::globals->SVG_foreignObject.get()))
             return true;
 
-        if (has_element_name(Html::globals->SVG_desc))
+        if (has_element_name(Html::globals->SVG_desc.get()))
             return true;
 
-        if (has_element_name(Html::globals->SVG_title))
+        if (has_element_name(Html::globals->SVG_title.get()))
             return true;
 
         return false;
@@ -286,30 +286,30 @@ namespace Html
     {
         Basic::TextWriter writer(stream);
 
-        writer.Write("<");
-        this->element_name->name->write_to(stream);
+        writer.write_literal("<");
+        this->element_name->name->write_to_stream(stream);
         if (this->attributes->size() == 0)
         {
-            writer.Write("/>");
+            writer.write_literal("/>");
         }
         else
         {
             for (Html::StringMap::iterator it_attr = this->attributes->begin(); it_attr != this->attributes->end(); it_attr++)
             {
-                writer.Write(" ");
-                it_attr->first->write_to(stream);
-                writer.Write("=\"");
-                it_attr->second->write_to(stream);
-                writer.Write("\"");
+                writer.write_literal(" ");
+                it_attr->first->write_to_stream(stream);
+                writer.write_literal("=\"");
+                it_attr->second->write_to_stream(stream);
+                writer.write_literal("\"");
             }
 
-            writer.Write(">");
+            writer.write_literal(">");
         }
     }
 
     void ElementNode::write_to_human(IStream<Codepoint>* stream, bool verbose)
     {
-        this->element_name->name->write_to(stream);
+        this->element_name->name->write_to_stream(stream);
 
         if (verbose)
         {
@@ -317,28 +317,28 @@ namespace Html
 
             for (Html::StringMap::iterator it_attr = this->attributes->begin(); it_attr != this->attributes->end(); it_attr++)
             {
-                writer.Write(" ");
-                it_attr->first->write_to(stream);
-                writer.Write("=\"");
-                it_attr->second->write_to(stream);
-                writer.Write("\"");
+                writer.write_literal(" ");
+                it_attr->first->write_to_stream(stream);
+                writer.write_literal("=\"");
+                it_attr->second->write_to_stream(stream);
+                writer.write_literal("\"");
             }
         }
     }
 
-    bool ElementNode::attribute_equals(UnicodeString* attribute_name, UnicodeString* value)
+    bool ElementNode::attribute_equals(UnicodeStringRef attribute_name, UnicodeStringRef value)
     {
-        UnicodeString::Ref attribute_value;
+        UnicodeStringRef attribute_value;
         get_attribute(attribute_name, &attribute_value);
-        return attribute_value.equals<true>(value);
+        return equals<UnicodeString, true>(attribute_value.get(), value.get());
     }
 
-    void ElementNode::set_attribute(UnicodeString* attribute_name, UnicodeString* attribute_value)
+    void ElementNode::set_attribute(UnicodeStringRef attribute_name, UnicodeStringRef attribute_value)
     {
         this->attributes->set_string(attribute_name, attribute_value);
     }
 
-    void ElementNode::remove_attribute(UnicodeString* attribute_name)
+    void ElementNode::remove_attribute(UnicodeStringRef attribute_name)
     {
         this->attributes->erase(attribute_name);
     }

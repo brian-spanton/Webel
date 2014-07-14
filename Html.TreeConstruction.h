@@ -19,7 +19,7 @@ namespace Html
     class Parser;
     class Tokenizer;
 
-    class TreeConstruction : public IStream<TokenPointer>
+    class TreeConstruction : public UnitStream<TokenRef>
     {
     private:
         enum InsertionMode
@@ -48,7 +48,7 @@ namespace Html
             after_after_frameset_insertion_mode,
         };
 
-        typedef std::vector<ElementNode::Ref> ElementList;
+        typedef std::vector<std::shared_ptr<ElementNode> > ElementList;
 
         Parser* parser;
         int script_nesting_level;
@@ -56,37 +56,37 @@ namespace Html
         InsertionMode insertion_mode;
         InsertionMode original_insertion_mode;
         ElementList open_elements;
-        ElementNode::Ref fragment_context; // REF
+        std::shared_ptr<ElementNode> fragment_context;
         FormattingElementList active_formatting_elements;
-        ElementNode::Ref head_element; // REF
-        ElementNode::Ref form_element; // REF
+        std::shared_ptr<ElementNode> head_element;
+        std::shared_ptr<ElementNode> form_element;
         bool scripting_flag;
         bool frameset_ok;
         bool ignore_line_feed;
-        std::vector<CharacterToken::Ref> pending_table_character_tokens; // REF
+        std::vector<std::shared_ptr<CharacterToken> > pending_table_character_tokens;
 
-        ElementNode* CurrentNode();
-        ElementNode* AdjustedCurrentNode();
+        std::shared_ptr<ElementNode> CurrentNode();
+        std::shared_ptr<ElementNode> AdjustedCurrentNode();
 
-        bool InForeignContent(TokenPointer token);
+        bool InForeignContent(const Token* token);
         bool IsValidDocType(DocTypeToken* doctype_token);
         Document::Mode QuirksMode(DocTypeToken* doctype_token);
 
         void HandleError(const char* error);
         void ParseError(const char* error);
-        void ParseError(TokenPointer token, const char* error);
-        void ParseError(TokenPointer token);
+        void ParseError(const Token* token, const char* error);
+        void ParseError(const Token* token);
         void HandleNyi(const char* algorithm, bool log);
-        void HandleNyi(TokenPointer token, bool log);
+        void HandleNyi(const Token* token, bool log);
         void GetInsertionModeString(InsertionMode insertion_mode, char* mode_string, int count);
 
         void reset_the_insertion_mode_appropriately();
         void switch_the_insertion_mode(InsertionMode insertion_mode);
 
-        bool has_element_in_specific_scope(ElementName* target, ElementNameList* list);
-        bool has_element_in_specific_scope(TagToken* target, ElementNameList* list);
-        bool has_element_in_specific_anti_scope(ElementName* target, ElementNameList* list);
-        bool has_element_in_specific_anti_scope(TagToken* target, ElementNameList* list);
+        bool has_element_in_specific_scope(ElementName* target, const ElementNameList& list);
+        bool has_element_in_specific_scope(TagToken* target, const ElementNameList& list);
+        bool has_element_in_specific_anti_scope(ElementName* target, const ElementNameList& list);
+        bool has_element_in_specific_anti_scope(TagToken* target, const ElementNameList& list);
 
         bool has_element_in_scope(ElementNode* target);
         bool has_element_in_scope(ElementName* target);
@@ -99,14 +99,14 @@ namespace Html
         bool has_element_in_select_scope(ElementName* target);
         bool has_element_in_select_scope(TagToken* target);
 
-        void tree_construction_dispatcher(TokenPointer token, bool* ignored);
-        void apply_the_rules_for(InsertionMode insertion_mode, TokenPointer token, bool* ignored, bool* reprocess);
-        void apply_the_rules_for_parsing_tokens_in_foreign_content(TokenPointer token, bool* ignored, bool* reprocess);
+        void tree_construction_dispatcher(TokenRef token, bool* ignored);
+        void apply_the_rules_for(InsertionMode insertion_mode, TokenRef token, bool* ignored, bool* reprocess);
+        void apply_the_rules_for_parsing_tokens_in_foreign_content(TokenRef token, bool* ignored, bool* reprocess);
         void remove_node_from_the_stack_of_open_elements(ElementNode* node);
         void remove_node_from_the_list_of_active_formatting_elements(ElementNode* node);
-        void create_an_element_for_a_token(TagToken* token, UnicodeString* name_space, ElementNode::Ref* element);
-        void insert_an_HTML_element(TagToken* token, ElementNode::Ref* element);
-        void insert_an_HTML_element(ElementNode* place, TagToken* token, ElementNode::Ref* element);
+        void create_an_element_for_a_token(TagToken* token, UnicodeStringRef name_space, std::shared_ptr<ElementNode>* element);
+        void insert_an_HTML_element(TagToken* token, std::shared_ptr<ElementNode>* element);
+        void insert_an_HTML_element(ElementNode* place, TagToken* token, std::shared_ptr<ElementNode>* element);
         void insert_a_foreign_element(TagToken* token, UnicodeString* name_space);
         void adjust_MathML_attributes(TagToken* token);
         void adjust_SVG_attributes(TagToken* token);
@@ -120,7 +120,7 @@ namespace Html
         void adoption_agency_algorithm(EndTagToken* tag, bool* ignore);
         void foster_parent(ElementNode* node);
         void reconstruct_the_active_formatting_elements();
-        void push_onto_the_list_of_active_formatting_elements(ElementNode* element, TagToken* token);
+        void push_onto_the_list_of_active_formatting_elements(std::shared_ptr<ElementNode> element, std::shared_ptr<TagToken> token);
         void insert_a_marker_at_the_end_of_the_list_of_active_formatting_elements();
         void clear_the_list_of_active_formatting_elements_up_to_the_last_marker();
         void clear_the_stack_back_to_a_table_context();
@@ -133,7 +133,7 @@ namespace Html
         void abort();
         bool is_in_the_stack_of_open_elements(ElementNode* element);
         bool is_in_the_list_of_active_formatting_elements(ElementNode* element);
-        void in_table_insertion_mode_anything_else(TokenPointer token);
+        void in_table_insertion_mode_anything_else(const Token* token);
         void perform_a_microtask_checkpoint();
         void provide_a_stable_state();
         void push_onto_the_stack_of_open_elements(ElementList::value_type& value);
@@ -144,13 +144,10 @@ namespace Html
         std::string StackString() const;
 
     public:
-        typedef Basic::Ref<TreeConstruction> Ref;
+        std::shared_ptr<Document> document;
 
-        Document::Ref document; // REF
+        TreeConstruction(Parser* parser, std::shared_ptr<Uri> url);
 
-        void Initialize(Parser* parser, Uri::Ref url);
-
-        virtual void IStream<TokenPointer>::Write(const TokenPointer* elements, uint32 count);
-        virtual void IStream<TokenPointer>::WriteEOF();
+        virtual void IStream<TokenRef>::write_element(TokenRef element);
     };
 }

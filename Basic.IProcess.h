@@ -6,12 +6,11 @@ namespace Basic
 {
     __interface IEvent;
 
-    __interface IProcess : public IRefCounted
+    __interface IProcess
     {
-        void Process(IEvent* event, bool* yield);
-        void Process(IEvent* event);
-        bool Pending();
-        bool Succeeded();
-        bool Failed();
+        void consider_event(IEvent* event);
+        bool in_progress();
+        bool succeeded();
+        bool failed();
     };
 }

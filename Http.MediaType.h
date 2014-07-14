@@ -6,13 +6,11 @@ namespace Http
 {
     using namespace Basic;
 
-    struct MediaType : public IRefCounted
+    struct MediaType
     {
-        typedef Basic::Ref<MediaType> Ref;
-
-        UnicodeString::Ref type; // REF
-        UnicodeString::Ref subtype; // REF
-        NameValueCollection::Ref parameters; // REF
+        UnicodeStringRef type;
+        UnicodeStringRef subtype;
+        std::shared_ptr<NameValueCollection> parameters;
 
         void Initialize();
         void Initialize(UnicodeString* value);

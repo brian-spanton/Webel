@@ -12,9 +12,7 @@ namespace Html
     class CommentNode : public Node
     {
     public:
-        typedef Basic::Ref<CommentNode> Ref;
-
-        UnicodeString::Ref data; // REF
+        UnicodeStringRef data;
 
         CommentNode();
     };

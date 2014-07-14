@@ -4,7 +4,7 @@
 
 namespace Basic
 {
-    __interface ISingleByteEncodingIndex : public IRefCounted
+    __interface ISingleByteEncodingIndex
     {
         Codepoint pointer_to_codepoint(byte pointer);
         byte codepoint_to_pointer(Codepoint codepoint);

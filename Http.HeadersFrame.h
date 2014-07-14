@@ -4,17 +4,15 @@
 
 #include "Basic.Frame.h"
 #include "Basic.NameValueCollection.h"
-#include "Basic.ISerializable.h"
+#include "Http.Globals.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    class HeadersFrame : public Frame, public ISerializable
+    class HeadersFrame : public Frame
     {
     private:
-        static byte colon;
-
         enum State
         {
             expecting_name_state = Start_State,
@@ -35,16 +33,30 @@ namespace Http
         };
 
         NameValueCollection* nvc;
-        UnicodeString::Ref name; // REF
-        UnicodeString::Ref value; // REF
+        UnicodeStringRef name;
+        UnicodeStringRef value;
+
+        virtual void IProcess::consider_event(IEvent* event);
 
     public:
-        typedef Basic::Ref<HeadersFrame, IProcess> Ref;
+        HeadersFrame(NameValueCollection* nvc);
+    };
 
-        void Initialize(NameValueCollection* nvc);
+    template <>
+    struct __declspec(novtable) serialize<NameValueCollection>
+    {
+        void operator()(const NameValueCollection* value, IStream<byte>* stream) const
+        {
+            for (NameValueCollection::const_iterator it = value->cbegin(); it != value->cend(); it++)
+            {
+                ascii_encode(it->first.get(), stream);
+                stream->write_element(Http::globals->colon);
+                stream->write_element(Http::globals->SP);
+                ascii_encode(it->second.get(), stream);
+                stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
+            }
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+            stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
+        }
     };
 }

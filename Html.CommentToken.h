@@ -11,9 +11,7 @@ namespace Html
     class CommentToken : public Token
     {
     public:
-        typedef Basic::Ref<CommentToken> Ref;
-
-        UnicodeString::Ref data; // REF
+        UnicodeStringRef data;
 
         CommentToken();
     };

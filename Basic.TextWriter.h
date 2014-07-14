@@ -10,17 +10,18 @@ namespace Basic
     class TextWriter
     {
     private:
-        Ref<IStream<Codepoint> > dest; // REF
-        Inline<SingleByteDecoder> decoder;
+        IStream<Codepoint>* dest;
 
     public:
+        SingleByteDecoder decoder;
+
         TextWriter();
         TextWriter(IStream<Codepoint>* dest);
 
         void Initialize(IStream<Codepoint>* dest);
 
-        void Write(const char* text, uint32 count);
-        void Write(const char* text);
+        void write_elements(const char* text, uint32 count);
+        void write_c_str(const char* text);
         void WriteLine(const char* text);
         void WriteLine();
         void WriteThreadId();
@@ -28,12 +29,12 @@ namespace Basic
         void WriteError(uint32 error);
 
         template <int count>
-        void Write(char (&text)[count])
+        void write_literal(const char (&text)[count])
         {
             if (text[count - 1] == 0)
-                return Write(text, count - 1);
+                return write_elements(text, count - 1);
             else
-                return Write(text, count);
+                return write_elements(text, count);
         }
 
         template<int max>
@@ -42,9 +43,9 @@ namespace Basic
             char temp[max + 1];
             uint32 count = vsprintf_s(temp, format, args);
             if (count < 0)
-                throw new Exception("WriteFormat failed");
+                throw FatalError("WriteFormat failed");
 
-            return Write(temp, count);
+            return write_elements(temp, count);
         }
 
         template<int max>

@@ -4,11 +4,11 @@
 
 #include "Basic.IProcess.h"
 #include "Basic.IStream.h"
-#include "Basic.ISerializable.h"
+#include "Basic.IStreamWriter.h"
 
 namespace Basic
 {
-    class MemoryRange : public IProcess, public IStream<byte>, public ISerializable
+    class MemoryRange : public IProcess, public IStream<byte>
     {
     private:
         uint32 count;
@@ -16,22 +16,19 @@ namespace Basic
         byte* bytes;
 
     public:
-        typedef Basic::Ref<MemoryRange, IProcess> Ref;
-
         MemoryRange();
+        MemoryRange(byte* bytes, uint32 count);
 
-        void Initialize(byte* bytes, uint32 count);
+        void reset(byte* bytes, uint32 count);
 
-        virtual void IStream<byte>::Write(const byte* elements, uint32 received);
-        virtual void IStream<byte>::WriteEOF();
+        virtual void IStream<byte>::write_elements(const byte* elements, uint32 received);
+        virtual void IStream<byte>::write_element(byte element);
+        virtual void IStream<byte>::write_eof();
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
-        virtual void IProcess::Process(IEvent* event);
-        virtual bool IProcess::Pending();
-        virtual bool IProcess::Succeeded();
-        virtual bool IProcess::Failed();
-
-        virtual void ISerializable::SerializeTo(IStream<byte>* stream);
+        virtual void IProcess::consider_event(IEvent* event);
+        virtual bool IProcess::in_progress();
+        virtual bool IProcess::succeeded();
+        virtual bool IProcess::failed();
 
         uint32 Length();
     };

@@ -8,30 +8,30 @@
 
 namespace Web
 {
-    void Link::Initialize(ElementNode* element, Uri* document_url)
+    void Link::Initialize(std::shared_ptr<ElementNode> element, std::shared_ptr<Uri> document_url)
     {
         this->element = element;
 
-        UnicodeString::Ref href_attribute_value;
+        UnicodeStringRef href_attribute_value;
         this->element->get_attribute(Html::globals->href_attribute_name, &href_attribute_value);
 
-        if (href_attribute_value.is_null_or_empty() == false)
+        if (is_null_or_empty(href_attribute_value.get()) == false)
         {
-            Uri::Ref url = New<Uri>();
+            std::shared_ptr<Uri> url = std::make_shared<Uri>();
             url->Initialize();
 
-            bool success = url->Parse(href_attribute_value, document_url);
+            bool success = url->Parse(href_attribute_value.get(), document_url.get());
             if (success)
             {
                 this->url = url;
             }
         }
 
-        this->text = New<UnicodeString>();
+        this->text = std::make_shared<UnicodeString>();
         this->text->reserve(0x100);
 
-        Inline<TextSanitizer> stream;
-        stream.Initialize(this->text);
+        TextSanitizer stream;
+        stream.Initialize(this->text.get());
 
         element->extract_text(&stream);
     }

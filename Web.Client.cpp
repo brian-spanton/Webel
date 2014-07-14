@@ -11,28 +11,17 @@
 #include "Basic.SingleByteDecoder.h"
 #include "Basic.SingleByteEncodingIndex.h"
 #include "Web.Globals.h"
+#include "Http.ResponseHeadersFrame.h"
 
 namespace Web
 {
     using namespace Basic;
 
-    void Client::Initialize()
-    {
-        __super::Initialize();
-        this->peer = 0;
-    }
-
-    void Client::Process(IEvent* event)
-    {
-        Hold hold(this->lock);
-        __super::Process(event);
-    }
-
-    void Client::Get(Uri* url, Basic::Ref<IProcess> completion, ByteString::Ref cookie)
+    void Client::Get(std::shared_ptr<Uri> url, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
         Hold hold(this->lock);
 
-        Request::Ref request = New<Request>();
+        std::shared_ptr<Request> request = std::make_shared<Request>();
         request->Initialize();
         request->method = Http::globals->get_method;
         request->resource = url;
@@ -40,12 +29,12 @@ namespace Web
         Get(request, completion, cookie);
     }
 
-    void Client::Get(Http::Request* request, Basic::Ref<IProcess> completion, ByteString::Ref cookie)
+    void Client::Get(std::shared_ptr<Http::Request> request, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
         Hold hold(this->lock);
 
-        if (frame_state() != State::inactive_state)
-            throw new Exception("Client::Get frame_state() != State::inactive_state");
+        if (get_state() != State::inactive_state)
+            throw FatalError("Client::Get get_state() != State::inactive_state");
 
         this->retries = 0;
         this->redirects = 0;
@@ -55,15 +44,20 @@ namespace Web
 
         this->planned_request = request;
 
-        switch_to_state(State::get_pending_state);
-        Basic::globals->QueueProcess(this, (ByteString*)0);
+        QueuePlanned();
     }
 
-    void Client::Redirect(Http::Uri* url)
+    void Client::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
+    {
+        ProcessEvent event;
+        produce_event(this, &event);
+    }
+
+    void Client::Redirect(std::shared_ptr<Uri> url)
     {
         if (this->redirects == 5)
         {
-            Error("redirect error");
+            handle_error("redirect error");
             this->planned_request = 0;
         }
         else
@@ -71,8 +65,8 @@ namespace Web
             this->redirects++;
             this->retries = 0;
 
-            Request::Ref request = New<Request>();
-            request->Initialize(this->history.back().request);
+            std::shared_ptr<Request> request = std::make_shared<Request>();
+            request->Initialize(this->history.back().request.get());
             request->resource = url;
 
             //Note: RFC 1945 and RFC 2068 specify that the client is not allowed
@@ -89,11 +83,11 @@ namespace Web
         }
     }
 
-    void Client::Retry(Http::Request* request)
+    void Client::Retry(std::shared_ptr<Http::Request> request)
     {
-        if (this->retries == 0) // $$ was 2
+        if (this->retries == 0) // $$ was 2, need a way for users of Web::Client to specify desired retry behavior
         {
-            Error("retry error");
+            handle_error("retry error");
             this->planned_request = 0;
         }
         else
@@ -111,99 +105,99 @@ namespace Web
         {
             Basic::globals->DebugWriter()->WriteLine("Complete");
 
-            Basic::Ref<IProcess> completion = this->client_completion;
+            std::shared_ptr<IProcess> completion = this->client_completion;
             this->client_completion = 0;
 
             ResponseCompleteEvent event;
             event.cookie = this->client_cookie;
             this->client_cookie = 0;
 
-            if (completion.item() != 0)
-                completion->Process(&event);
+            if (completion.get() != 0)
+                produce_event(completion.get(), &event);
         }
         else if (state == State::headers_pending_state)
         {
             Transaction transaction;
             transaction.request = this->planned_request;
-            transaction.response = New<Response>();
+            transaction.response = std::make_shared<Response>();
             transaction.response->Initialize();
 
             this->history.push_back(transaction);
-            this->response_headers_frame.Initialize(transaction.request->method, transaction.response);
+            this->response_headers_frame = std::make_shared<ResponseHeadersFrame>(transaction.request->method, transaction.response.get());
 
             this->planned_request->protocol = Http::globals->HTTP_1_1;
 
-            if (this->planned_request->client_body.item() == 0)
+            if (this->planned_request->client_body.get() == 0)
             {
                 this->planned_request->headers->set_base_10(Http::globals->header_content_length, 0);
                 this->planned_request->headers->erase(Http::globals->header_content_type);
             }
             else
             {
-                Inline<CountStream<byte> > count_stream;
-                this->planned_request->client_body->SerializeTo(&count_stream);
+                CountStream<byte> count_stream;
+                this->planned_request->client_body->write_to_stream(&count_stream);
                 this->planned_request->headers->set_base_10(Http::globals->header_content_length, count_stream.count);
             }
 
             this->planned_request->headers->set_string(Http::globals->header_te, Http::globals->trailers);
             this->planned_request->headers->set_string(Http::globals->header_host, planned_request->resource->host);
 
-            UnicodeString::Ref cookie_header_value;
+            UnicodeStringRef cookie_header_value;
 
             for (CookieList::iterator it = this->http_cookies.begin(); it != this->http_cookies.end(); it++)
             {
-                if ((*it)->Matches(this->planned_request->resource))
+                if ((*it)->Matches(this->planned_request->resource.get()))
                 {
-                    if (cookie_header_value.item() == 0)
+                    if (cookie_header_value.get() == 0)
                     {
-                        cookie_header_value = New<UnicodeString>();
+                        cookie_header_value = std::make_shared<UnicodeString>();
                         cookie_header_value->reserve(0x400);
                     }
                     else
                     {
-                        TextWriter writer(cookie_header_value);
-                        writer.Write("; ");
+                        TextWriter writer(cookie_header_value.get());
+                        writer.write_literal("; ");
                     }
 
-                    Cookie::Ref cookie = (*it);
+                    std::shared_ptr<Cookie> cookie = (*it);
 
-                    cookie_header_value->append(*cookie->name.item());
+                    cookie_header_value->append(*cookie->name.get());
                     cookie_header_value->push_back(Http::globals->EQ);
-                    cookie_header_value->append(*cookie->value.item());
+                    cookie_header_value->append(*cookie->value.get());
                 }
             }
 
-            if (cookie_header_value.item() != 0)
+            if (cookie_header_value.get() != 0)
                 this->planned_request->headers->set_string(Http::globals->header_cookie, cookie_header_value);
 
-            Inline<RequestFrame> requestFrame;
-            requestFrame.Initialize(this->planned_request);
-            requestFrame.SerializeTo(this->peer);
-
+            Http::serialize<Request>()(this->planned_request.get(), this->peer.get());
             this->peer->Flush();
 
-            Inline<ByteString> request_bytes;
-            requestFrame.SerializeTo(&request_bytes);
+            Basic::globals->DebugWriter()->write_literal("Request sent: ");
+            Http::serialize<Request>()(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
+            Basic::globals->DebugWriter()->WriteLine();
 
             this->planned_request = 0;
-
-            Basic::globals->DebugWriter()->Write("Request sent: ");
-            Basic::globals->DebugWriter()->Write((const char*)request_bytes.c_str(), request_bytes.size());
-            Basic::globals->DebugWriter()->WriteLine();
         }
     }
 
-    void Client::Error(const char* error)
+    void Client::handle_error(const char* error)
     {
         HandleError(error);
     }
 
+    void Client::QueueJob()
+    {
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), std::shared_ptr<void>());
+        Basic::globals->QueueJob(job);
+    }
+
     void Client::QueuePlanned()
     {
-        if (this->planned_request.item() != 0)
+        if (this->planned_request.get() != 0)
         {
             switch_to_state(State::get_pending_state);
-            Basic::globals->QueueProcess(this, (ByteString*)0);
+            QueueJob();
         }
         else
         {
@@ -211,227 +205,239 @@ namespace Web
         }
     }
 
-    void Client::Process(IEvent* event, bool* yield)
+    void Client::consider_event(IEvent* event)
     {
         Hold hold(this->lock);
 
-        (*yield) = true;
-
-        switch (frame_state())
+        if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
-        case State::inactive_state:
-            switch (event->get_type())
+            this->peer = 0;
+
+            switch (get_state())
             {
-            case Basic::EventType::element_stream_ending_event:
-                break;
+            case State::inactive_state:
+            case State::get_pending_state:
+            case State::resolve_address_state:
+                throw Yield("event consumed");
 
-            default:
-                throw new Exception("unexpected event");
-            }
-            break;
+            case State::connection_pending_state:
+            case State::headers_pending_state:
+                Retry(this->planned_request);
+                QueuePlanned();
+                throw Yield("event consumed, new thread");
 
-        case State::get_pending_state:
-            switch (event->get_type())
-            {
-            case Basic::EventType::element_stream_ending_event:
-                break;
-
-            case Basic::EventType::process_event:
+            case State::body_pending_state:
+                delegate_event(this->response_body_frame.get(), event);
+                
+                if (this->response_body_frame->failed())
                 {
-                    if (!this->planned_request->resource->is_http_scheme())
-                    {
-                        Error("scheme error");
-                        switch_to_state(State::inactive_state);
-                        return;
-                    }
-
-                    Uri::Ref current_url;
-                    if (this->history.size() > 0)
-                        current_url = this->history.back().request->resource;
-
-                    if (!(this->peer.item() != 0 &&
-                        current_url.item() != 0 &&
-                        this->planned_request->resource->scheme.equals<false>(current_url->scheme) && 
-                        this->planned_request->resource->host.equals<false>(current_url->host) && 
-                        this->planned_request->resource->port.equals<true>(current_url->port)))
-                    {
-                        if (this->peer.item() != 0)
-                        {
-                            this->peer->WriteEOF();
-                            this->peer = 0;
-                        }
-
-                        ClientSocket::Ref client_socket;
-                        Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this, &client_socket, &this->peer);
-
-                        sockaddr_in addr;
-                        bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);
-                        if (!success)
-                        {
-                            Error("resolve failed");
-                            switch_to_state(State::inactive_state);
-                            return;
-                        }
-
-                        client_socket->StartConnect(addr);
-
-                        switch_to_state(State::connection_pending_state);
-                    }
-                    else
-                    {
-                        switch_to_state(State::headers_pending_state);
-                    }
+                    Retry(this->history.back().request);
+                    QueuePlanned();
+                    throw Yield("event consumed, new thread");
                 }
-                break;
+
+                switch_to_state(State::response_complete_state);
+                QueueJob();
+                throw Yield("event consumed");
+
+            case State::response_complete_state:
+                throw Yield("event consumed");
 
             default:
-                throw new Exception("unexpected event");
+                throw FatalError("Web::Client::handle_event unexpected state");
+            }
+        }
+
+        switch (get_state())
+        {
+        case State::get_pending_state:
+            {
+                if (event->get_type() != Basic::EventType::process_event)
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
+
+                if (!this->planned_request->resource->is_http_scheme())
+                {
+                    handle_error("scheme error");
+                    switch_to_state(State::inactive_state);
+                    throw Yield("event consumed");
+                }
+
+                std::shared_ptr<Uri> current_url;
+                if (this->history.size() > 0)
+                    current_url = this->history.back().request->resource;
+
+                if (!(this->peer.get() != 0 &&
+                    current_url.get() != 0 &&
+                    equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()) && 
+                    equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()) && 
+                    equals<UnicodeString, true>(this->planned_request->resource->port.get(), current_url->port.get())))
+                {
+                    if (this->peer.get() != 0)
+                    {
+                        this->peer->write_eof();
+                        this->peer = 0;
+                    }
+
+                    std::shared_ptr<ClientSocket> client_socket;
+                    Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this->shared_from_this(), &client_socket, &this->peer);
+
+                    sockaddr_in addr;
+                    bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);
+                    if (!success)
+                    {
+                        handle_error("resolve failed");
+                        switch_to_state(State::inactive_state);
+                        throw Yield("event consumed");
+                    }
+
+                    client_socket->StartConnect(addr);
+
+                    switch_to_state(State::connection_pending_state);
+                }
+                else
+                {
+                    switch_to_state(State::headers_pending_state);
+                }
+
+                throw Yield("event consumed");
             }
             break;
 
         case State::connection_pending_state:
-            switch (event->get_type())
             {
-            case Basic::EventType::element_stream_ending_event:
-                Retry(this->planned_request);
-                QueuePlanned();
-                break;
+                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
 
-            case Basic::EventType::ready_for_write_bytes_event:
                 switch_to_state(State::headers_pending_state);
-                break;
-
-            default:
-                throw new Exception("unexpected event");
+                throw Yield("event consumed");
             }
             break;
 
         case State::headers_pending_state:
-            switch (event->get_type())
             {
-            case Basic::EventType::element_stream_ending_event:
-                Retry(this->history.back().request);
-                QueuePlanned();
-                break;
-
-            case Basic::EventType::ready_for_read_bytes_event:
-                if (this->response_headers_frame.Pending())
+                if (event->get_type() != Basic::EventType::ready_for_read_bytes_event)
                 {
-                    this->response_headers_frame.Frame::Process(event);
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
                 }
 
-                if (this->response_headers_frame.Failed())
+                delegate_event(this->response_headers_frame.get(), event);
+
+                if (this->response_headers_frame->failed())
                 {
-                    Error("response_headers_frame failed");
+                    handle_error("response_headers_frame failed");
                     switch_to_state(State::inactive_state);
+                    throw Yield("event consumed");
                 }
-                else if (this->response_headers_frame.Succeeded())
+
+                std::shared_ptr<Response> response = this->history.back().response;
+
+                Basic::globals->DebugWriter()->write_literal("Response received: ");
+                Http::serialize<Response>()(response.get(), &Basic::globals->DebugWriter()->decoder);
+
+                uint16 code = response->code;
+
+                if (code / 100 == 3)
                 {
-                    (*yield) = false;
+                    UnicodeStringRef location_string;
 
-                    Basic::globals->DebugWriter()->Write("Response received: ");
-                    Inline<SingleByteDecoder> decoder;
-                    decoder.Initialize(Basic::globals->ascii_index, Basic::globals->DebugStream());
-                    this->response_headers_frame.SerializeTo(&decoder);
-
-                    Response::Ref response = this->history.back().response;
-                    uint16 code = response->code;
-
-                    if (code / 100 == 3)
+                    bool success = response->headers->get_string(Http::globals->header_location, &location_string);
+                    if (success)
                     {
-                        UnicodeString::Ref location_string;
+                        std::shared_ptr<Uri> location_url = std::make_shared<Uri>();
+                        location_url->Initialize();
 
-                        bool success = response->headers->get_string(Http::globals->header_location, &location_string);
+                        bool success = location_url->Parse(location_string.get(), this->history.back().request->resource.get());
                         if (success)
                         {
-                            Uri::Ref location_url = New<Uri>();
-                            location_url->Initialize();
-
-                            bool success = location_url->Parse(location_string, this->history.back().request->resource);
-                            if (success)
-                            {
-                                Redirect(location_url);
-                            }
+                            Redirect(location_url);
                         }
                     }
-                    else if (code == 503)
-                    {
-                        Retry(this->history.back().request);
-                    }
-
-                    if (this->planned_request.item() == 0)
-                    {
-                        Http::ResponseHeadersEvent event;
-                        this->client_completion->Process(&event);
-                    }
-
-                    if (code / 100 == 1 || code == 204 || code == 205 || code == 304 || this->history.back().request->method.equals<true>(Http::globals->head_method))
-                    {
-                        switch_to_state(State::response_complete_state);
-                    }
-                    else
-                    {
-                        this->response_body_frame.Initialize(this->history.back().response->headers);
-                        switch_to_state(State::body_pending_state);
-                    }
                 }
-                break;
+                else if (code == 503)
+                {
+                    Retry(this->history.back().request);
+                }
 
-            default:
-                throw new Exception("unexpected event");
+                bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(this->history.back().request->method.get(), Http::globals->head_method.get()));
+
+                if (body_expected)
+                {
+                    this->response_body_frame = std::make_shared<BodyFrame>(this->history.back().response->headers);
+                }
+
+                if (this->planned_request.get() == 0)
+                {
+                    Http::ResponseHeadersEvent event;
+                    produce_event(this->client_completion.get(), &event);
+                }
+
+                if (!body_expected)
+                {
+                    switch_to_state(State::response_complete_state);
+                    QueueJob();
+                    throw Yield("event consumed, new thread");
+                }
+
+                switch_to_state(State::body_pending_state);
             }
             break;
 
         case State::body_pending_state:
-            switch (event->get_type())
             {
-            case Basic::EventType::element_stream_ending_event:
-            case Basic::EventType::ready_for_read_bytes_event:
-                if (this->response_body_frame.Pending())
-                {
-                    this->response_body_frame.Frame::Process(event);
-                }
+                if (event->get_type() != Basic::EventType::ready_for_read_bytes_event)
+                    throw FatalError("unexpected event");
+
+                delegate_event(this->response_body_frame.get(), event);
                 
-                if (this->response_body_frame.Failed())
+                if (this->response_body_frame->failed())
                 {
                     Retry(this->history.back().request);
                     QueuePlanned();
+                    throw Yield("event consumed, new thread");
                 }
-                else if (this->response_body_frame.Succeeded())
-                {
-                    (*yield) = false;
-                    switch_to_state(State::response_complete_state);
-                }
-                break;
 
-            default:
-                throw new Exception("unexpected event");
+                switch_to_state(State::response_complete_state);
+                QueueJob();
+                throw Yield("event consumed, new thread");
             }
             break;
 
         case State::response_complete_state:
             {
-                Response::Ref response = this->history.back().response;
+                if (event->get_type() != Basic::EventType::process_event)
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
+
+                std::shared_ptr<Response> response = this->history.back().response;
 
                 NameValueCollection::_Pairii range = response->headers->equal_range(Http::globals->header_set_cookie);
 
                 for (NameValueCollection::iterator it = range.first; it != range.second; it++)
                 {
-                    UnicodeString::Ref cookie_value = it->second;
+                    UnicodeStringRef cookie_value = it->second;
 
-                    Basic::globals->DebugWriter()->Write("Cookie received: ");
-                    cookie_value->write_to(Basic::globals->DebugStream());
+                    Basic::globals->DebugWriter()->write_literal("Cookie received: ");
+                    cookie_value->write_to_stream(Basic::globals->LogStream());
                     Basic::globals->DebugWriter()->WriteLine();
 
                     // $ conform to RFC6265 section 5.3 (storage model)
 
-                    Cookie::Ref cookie = New<Cookie>();
-                    cookie->Initialize(cookie_value);
+                    std::shared_ptr<Cookie> cookie = std::make_shared<Cookie>();
+                    cookie->Initialize(cookie_value.get());
 
                     bool found = false;
                     for (CookieList::iterator it = this->http_cookies.begin(); it != this->http_cookies.end(); it++)
                     {
-                        if (cookie->equals(*it))
+                        if (cookie->equals(it->get()))
                         {
                             found = true;
 
@@ -448,33 +454,34 @@ namespace Web
                 }
 
                 QueuePlanned();
+                throw Yield("event consumed, new thread");
             }
             break;
 
         default:
-            throw new Exception("Web::Client::Process unexpected state");
+            throw FatalError("Web::Client::handle_event unexpected state");
         }
     }
 
-    bool Client::get_content_type(MediaType::Ref* media_type)
+    bool Client::get_content_type(std::shared_ptr<MediaType>* media_type)
     {
         Hold hold(this->lock);
 
-        UnicodeString::Ref content_type;
+        UnicodeStringRef content_type;
 
         bool success = this->history.back().response->headers->get_string(Http::globals->header_content_type, &content_type);
         if (!success)
             return false;
 
-        (*media_type) = New<MediaType>();
-        (*media_type)->Initialize(content_type);
+        (*media_type) = std::make_shared<MediaType>();
+        (*media_type)->Initialize(content_type.get());
 
         return true;
     }
 
-    bool Client::get_content_type_charset(UnicodeString::Ref* charset)
+    bool Client::get_content_type_charset(UnicodeStringRef* charset)
     {
-        MediaType::Ref content_type;
+        std::shared_ptr<MediaType> content_type;
         bool success = this->get_content_type(&content_type);
         if (!success)
             return false;
@@ -486,12 +493,12 @@ namespace Web
         return true;
     }
 
-    void Client::set_body_stream(IStream<byte>* body_stream)
+    void Client::set_body_stream(std::shared_ptr<IStream<byte> > body_stream)
     {
-        this->response_body_frame.set_body_stream(body_stream);
+        this->response_body_frame->set_body_stream(body_stream);
     }
 
-    void Client::get_url(Uri::Ref* url)
+    void Client::get_url(std::shared_ptr<Uri>* url)
     {
         (*url) = this->history.back().request->resource;
     }

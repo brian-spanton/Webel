@@ -10,23 +10,19 @@ namespace Http
 {
     using namespace Basic;
 
-    byte HeadersFrame::colon = ':';
-
-    void HeadersFrame::Initialize(NameValueCollection* nvc)
+    HeadersFrame::HeadersFrame(NameValueCollection* nvc) :
+        nvc(nvc)
     {
-        __super::Initialize();
-        this->nvc = nvc;
     }
 
-    void HeadersFrame::Process(IEvent* event, bool* yield)
+    void HeadersFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
         case State::expecting_name_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
@@ -34,13 +30,12 @@ namespace Http
                 }
                 else if (Http::globals->TOKEN[b])
                 {
-                    this->name = New<UnicodeString>();
+                    this->name = std::make_shared<UnicodeString>();
                     this->name->push_back(b);
                     switch_to_state(State::receiving_name_state);
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_name_error);
                 }
             }
@@ -49,17 +44,16 @@ namespace Http
         case State::receiving_name_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
-                if (b == colon)
+                if (b == Http::globals->colon)
                 {
-                    this->value = New<UnicodeString>();
+                    this->value = std::make_shared<UnicodeString>();
                     switch_to_state(State::expecting_value_state);
                 }
                 else if (b == Http::globals->SP || b == Http::globals->HT)
                 {
-                    this->value = New<UnicodeString>();
+                    this->value = std::make_shared<UnicodeString>();
                     switch_to_state(State::expecting_colon_state);
                 }
                 else if (Http::globals->TOKEN[b])
@@ -73,7 +67,6 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::receiving_name_error);
                 }
             }
@@ -82,10 +75,9 @@ namespace Http
         case State::expecting_colon_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
-                if (b == colon)
+                if (b == Http::globals->colon)
                 {
                     switch_to_state(State::expecting_value_state);
                 }
@@ -94,7 +86,6 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_colon_error);
                 }
             }
@@ -103,8 +94,7 @@ namespace Http
         case State::expecting_value_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
@@ -124,8 +114,7 @@ namespace Http
         case State::receiving_value_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
@@ -141,8 +130,7 @@ namespace Http
         case State::expecting_LF_after_value_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->LF)
                 {
@@ -150,7 +138,6 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_LF_after_value_error);
                 }
             }
@@ -159,15 +146,14 @@ namespace Http
         case State::expecting_next_header_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->CR)
                 {
                     NameValueCollection::value_type nv(this->name, this->value);
                     this->nvc->insert(nv);
-                    this->name = (UnicodeString*)0;
-                    this->value = (UnicodeString*)0;
+                    this->name = 0;
+                    this->value = 0;
 
                     switch_to_state(State::expecting_LF_after_headers_state);
                 }
@@ -182,15 +168,14 @@ namespace Http
                 {
                     NameValueCollection::value_type nv(this->name, this->value);
                     this->nvc->insert(nv);
-                    this->value = (UnicodeString*)0;
+                    this->value = 0;
 
-                    this->name = New<UnicodeString>();
+                    this->name = std::make_shared<UnicodeString>();
                     this->name->push_back(b);
                     switch_to_state(State::receiving_name_state);
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_next_header_error);
                 }
             }
@@ -199,8 +184,7 @@ namespace Http
         case State::expecting_LF_after_headers_state:
             {
                 byte b;
-                if (!Event::ReadNext(event, &b, yield))
-                    return;
+                Event::ReadNext(event, &b);
 
                 if (b == Http::globals->LF)
                 {
@@ -208,28 +192,13 @@ namespace Http
                 }
                 else
                 {
-                    Event::UndoReadNext(event);
                     switch_to_state(State::expecting_LF_after_headers_error);
                 }
             }
             break;
 
         default:
-            throw new Exception("HeadersFrame::Process unexpected state");
+            throw FatalError("HeadersFrame::handle_event unexpected state");
         }
-    }
-
-    void HeadersFrame::SerializeTo(IStream<byte>* stream)
-    {
-        for (NameValueCollection::iterator it = this->nvc->begin(); it != this->nvc->end(); it++)
-        {
-            it->first->ascii_encode(stream);
-            stream->Write(&colon, 1);
-            stream->Write(&Http::globals->SP, 1);
-            it->second->ascii_encode(stream);
-            stream->Write(Http::globals->CRLF, _countof(Http::globals->CRLF));
-        }
-
-        stream->Write(Http::globals->CRLF, _countof(Http::globals->CRLF));
     }
 }

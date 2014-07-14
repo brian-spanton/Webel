@@ -7,12 +7,12 @@
 
 namespace Basic
 {
-    void ServerSocket::Initialize()
+    ServerSocket::ServerSocket(std::shared_ptr<IProcess> protocol) :
+        ConnectedSocket(protocol)
     {
-        __super::Initialize();
     }
 
-    void ServerSocket::CompleteAccept(AsyncBytes* bytes, uint32 count)
+    void ServerSocket::CompleteAccept(std::shared_ptr<ByteString> bytes, uint32 count)
     {
         sockaddr* localAddress;
         int localLength;
@@ -21,8 +21,8 @@ namespace Basic
         int remoteLength;
 
         GetAcceptExSockaddrs(
-            bytes->bytes,
-            bytes->maxCount - addressLength * 2,
+            bytes->address(),
+            bytes->size() - (addressLength * 2),
             addressLength,
             addressLength,
             &localAddress,
@@ -32,14 +32,24 @@ namespace Basic
 
         InitializePeer((sockaddr_in*)&remoteAddress);
 
+        std::shared_ptr<IProcess> protocol = this->protocol.lock();
+        if (protocol.get() == 0)
+        {
+            Disconnect(0);
+            return;
+        }
+
         ReadyForWriteBytesEvent event;
         event.Initialize(&this->protocol_element_source);
-        this->protocol->Process(&event);
+        produce_event(protocol.get(), &event);
 
         if (count > 0)
-            Received(bytes->bytes, count);
+        {
+            bytes->resize(count);
+            Received(bytes.get());
+        }
 
         if (socket != INVALID_SOCKET)
-            StartReceive();
+            StartReceive(bytes);
     }
 }

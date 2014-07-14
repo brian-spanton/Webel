@@ -22,51 +22,41 @@ namespace Http
 
     void Globals::Initialize()
     {
-        CR = '\r';
-        LF = '\n';
-        SP = ' ';
-        HT = '\t';
-        DQ = '\"';
-        QM = '?';
-        FS = '/';
-        SC = ';';
-        EQ = '=';
-
         byte CRLF[] = { CR, LF };
         CopyMemory(this->CRLF, CRLF, sizeof(CRLF));
 
-        header_content_length.Initialize("content-length");
-        header_connection.Initialize("connection");
-        keep_alive.Initialize("keep-alive");
-        header_content_type.Initialize("content-type");
-        HTTP_1_1.Initialize("HTTP/1.1");
-        header_te.Initialize("te");
-        trailers.Initialize("trailers");
-        header_host.Initialize("host");
-        reason_ok.Initialize("ok");
-        reason_request_uri.Initialize("request-uri");
-        reason_method.Initialize("method");
-        reason_bad_request.Initialize("bad request");
-        header_content_encoding.Initialize("content-encoding");
-        identity.Initialize("identity");
-        header_transfer_encoding.Initialize("transfer-encoding");
-        header_transfer_length.Initialize("transfer-length");
-        chunked.Initialize("chunked");
-        header_location.Initialize("location");
-        header_set_cookie.Initialize("set-cookie");
-        expires_av_name.Initialize("expires");
-        max_age_av_name.Initialize("max-age");
-        domain_av_name.Initialize("domain");
-        path_av_name.Initialize("path");
-        secure_av_name.Initialize("secure");
-        httponly_av_name.Initialize("httponly");
-        header_cookie.Initialize("cookie");
+        initialize_unicode(&header_content_length, "content-length");
+        initialize_unicode(&header_connection, "connection");
+        initialize_unicode(&keep_alive, "keep-alive");
+        initialize_unicode(&header_content_type, "content-type");
+        initialize_unicode(&HTTP_1_1, "HTTP/1.1");
+        initialize_unicode(&header_te, "te");
+        initialize_unicode(&trailers, "trailers");
+        initialize_unicode(&header_host, "host");
+        initialize_unicode(&reason_ok, "ok");
+        initialize_unicode(&reason_request_uri, "request-uri");
+        initialize_unicode(&reason_method, "method");
+        initialize_unicode(&reason_bad_request, "bad request");
+        initialize_unicode(&header_content_encoding, "content-encoding");
+        initialize_unicode(&identity, "identity");
+        initialize_unicode(&header_transfer_encoding, "transfer-encoding");
+        initialize_unicode(&header_transfer_length, "transfer-length");
+        initialize_unicode(&chunked, "chunked");
+        initialize_unicode(&header_location, "location");
+        initialize_unicode(&header_set_cookie, "set-cookie");
+        initialize_unicode(&expires_av_name, "expires");
+        initialize_unicode(&max_age_av_name, "max-age");
+        initialize_unicode(&domain_av_name, "domain");
+        initialize_unicode(&path_av_name, "path");
+        initialize_unicode(&secure_av_name, "secure");
+        initialize_unicode(&httponly_av_name, "httponly");
+        initialize_unicode(&header_cookie, "cookie");
 
-        application_x_www_form_urlencoded_media_type.Initialize("application/x-www-form-urlencoded");
+        initialize_unicode(&application_x_www_form_urlencoded_media_type, "application/x-www-form-urlencoded");
 
-        head_method.Initialize("HEAD");
-        get_method.Initialize("GET");
-        post_method.Initialize("POST");
+        initialize_unicode(&head_method, "HEAD");
+        initialize_unicode(&get_method, "GET");
+        initialize_unicode(&post_method, "POST");
 
         ZeroMemory(CHAR, sizeof(CHAR));
 

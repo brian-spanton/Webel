@@ -3,9 +3,7 @@
 #pragma once
 
 #include "Tls.Types.h"
-#include "Tls.VectorFrame.h"
 #include "Tls.SecurityParameters.h"
-#include "Tls.CertificatesFrame.h"
 #include "Basic.HashAlgorithm.h"
 
 namespace Tls
@@ -17,13 +15,20 @@ namespace Tls
 
         void Initialize();
 
-        void PRF(PRFAlgorithm prf_algorithm, opaque* secret, uint32 secret_length, opaque* label, uint32 label_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_length);
-        void PRF_hash(PRFAlgorithm prf_algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_length);
-        void P_hash(LPCWSTR algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 output_min, uint32 output_max);
-        void HMAC_hash(MACAlgorithm mac_algorithm, opaque* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, opaque* output, uint32 expected_output_length);
-        void Hash(Basic::HashAlgorithm* hashAlgorithm, byte* secret, uint32 secret_length, ISerializable** seed, uint32 seed_count, byte* output, uint32 output_max);
+        void PRF(PRFAlgorithm prf_algorithm, IVector<byte>* secret, ByteString* label, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_length);
+        void PRF_hash(PRFAlgorithm prf_algorithm, IVector<byte>* secret, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_length);
+        void P_hash(LPCWSTR algorithm, byte* secret, uint32 secret_length, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_min, uint32 output_max);
+        void HMAC_hash(MACAlgorithm mac_algorithm, ByteString* secret, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 expected_output_length);
+        void Hash(Basic::HashAlgorithm* hashAlgorithm, byte* secret, uint32 secret_length, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_max);
         bool SelectCipherSuite(CipherSuites* proposed_cipher_suites, CipherSuite* selected_cipher_suite);
-        void Partition(std::vector<opaque>* source, uint16 length, std::vector<opaque>* destination);
+        void Partition(ByteString* source, uint16 length, IStream<byte>* destination);
+
+        ByteString client_finished_label;
+        ByteString server_finished_label;
+        ByteString master_secret_label;
+        ByteString key_expansion_label;
+
+        static const int master_secret_length = 48;
     };
 
     extern Globals* globals;

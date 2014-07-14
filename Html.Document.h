@@ -21,15 +21,13 @@ namespace Html
             no_quirks_mode,
         };
 
-        typedef Basic::Ref<Document> Ref;
-
     public:
-        DocumentTypeNode::Ref doctype; // REF
+        std::shared_ptr<DocumentTypeNode> doctype;
         Mode mode;
-        Uri::Ref url; // REF
+        std::shared_ptr<Uri> url;
 
-        Document();
-        void Initialize(Uri::Ref url);
-        virtual void Append(Node* node);
+        Document(std::shared_ptr<Uri> url);
+
+        virtual void Append(std::shared_ptr<Node> node);
     };
 }

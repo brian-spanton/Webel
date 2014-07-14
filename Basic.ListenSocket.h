@@ -4,18 +4,15 @@
 
 #include "Basic.ServerSocket.h"
 #include "Basic.Hold.h"
-#include "Basic.IProtocolFactory.h"
 
 namespace Basic
 {
     class ListenSocket : public Socket
     {
     protected:
-        virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
+        virtual void CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
 
     public:
-        typedef Basic::Ref<ListenSocket, ICompletion> Ref;
-
         enum Face
         {
             Face_Local,
@@ -23,7 +20,8 @@ namespace Basic
             Face_Default,
         };
 
-        void Initialize(Face face, short port);
-        void StartAccept(ServerSocket* acceptPeer);
+        ListenSocket(Face face, short port);
+
+        void StartAccept(std::shared_ptr<ServerSocket> acceptPeer);
     };
 }

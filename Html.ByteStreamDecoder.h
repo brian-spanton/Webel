@@ -9,7 +9,6 @@
 #include "Basic.Types.h"
 #include "Basic.MemoryRange.h"
 #include "Basic.IDecoder.h"
-#include "Basic.MatchFrame.h"
 
 namespace Html
 {
@@ -38,21 +37,20 @@ namespace Html
             get_decoder_failed,
         };
 
-        UnicodeString::Ref encoding; // REF
-        UnicodeString::Ref transport_charset; // REF
-        Basic::Ref<IStream<Codepoint> > output; // REF
+        UnicodeStringRef encoding;
+        UnicodeStringRef transport_charset;
+        std::shared_ptr<IStream<Codepoint> > output;
         Parser* parser;
         byte bom[3];
-        ByteString::Ref unconsume; // REF
-        Basic::Ref<IDecoder> decoder; // REF
-        Inline<MemoryRange> bom_frame;
+        ByteStringRef not_consumed;
+        std::shared_ptr<IDecoder> decoder;
+        MemoryRange bom_frame;
         Confidence confidence;
 
+        virtual void IProcess::consider_event(IEvent* event);
+
     public:
-        typedef Basic::Ref<ByteStreamDecoder, IProcess> Ref;
+        ByteStreamDecoder(Parser* parser, UnicodeStringRef transport_charset, std::shared_ptr<IStream<Codepoint> > output);
 
-        void Initialize(Parser* parser, UnicodeString::Ref transport_charset, IStream<Codepoint>* output);
-
-        virtual void IProcess::Process(IEvent* event, bool* yield);
     };
 }

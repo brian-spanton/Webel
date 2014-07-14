@@ -11,8 +11,6 @@ namespace Html
     class CharacterToken : public Token
     {
     public:
-        typedef Basic::Ref<CharacterToken> Ref;
-
         Codepoint data;
 
         CharacterToken();

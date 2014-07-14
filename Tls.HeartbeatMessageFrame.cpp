@@ -7,53 +7,32 @@ namespace Tls
 {
     using namespace Basic;
 
-    void HeartbeatMessageFrame::Initialize(HeartbeatMessage* heartbeat_message, uint32 plaintext_length)
+    HeartbeatMessageFrame::HeartbeatMessageFrame(HeartbeatMessage* heartbeat_message) :
+        heartbeat_message(heartbeat_message),
+        type_frame(&this->heartbeat_message->type),
+        payload_length_frame(&this->heartbeat_message->payload_length),
+        plaintext_length(0)
     {
-        __super::Initialize();
+    }
 
-        this->heartbeat_message = heartbeat_message;
+    void HeartbeatMessageFrame::set_plaintext_length(uint32 plaintext_length)
+    {
         this->plaintext_length = plaintext_length;
     }
 
-    void HeartbeatMessageFrame::Process(IEvent* event, bool* yield)
+    void HeartbeatMessageFrame::consider_event(IEvent* event)
     {
-        switch (frame_state())
+        switch (get_state())
         {
-        case State::start_state:
-            (*yield) = false;
-            this->type_frame.Initialize(&this->heartbeat_message->type);
-            switch_to_state(State::type_frame_pending_state);
-            break;
-
         case State::type_frame_pending_state:
-            if (this->type_frame.Pending())
-            {
-                this->type_frame.Process(event, yield);
-            }
-
-            if (this->type_frame.Failed())
-            {
-                switch_to_state(State::type_frame_failed);
-            }
-            else if (this->type_frame.Succeeded())
-            {
-                this->payload_length_frame.Initialize(&this->heartbeat_message->payload_length);
-                switch_to_state(State::payload_length_frame_pending_state);
-            }
+            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            switch_to_state(State::payload_length_frame_pending_state);
             break;
 
         case State::payload_length_frame_pending_state:
-            if (this->payload_length_frame.Pending())
             {
-                this->payload_length_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->payload_length_frame, event, State::payload_length_frame_failed);
 
-            if (this->payload_length_frame.Failed())
-            {
-                switch_to_state(State::payload_length_frame_failed);
-            }
-            else if (this->payload_length_frame.Succeeded())
-            {
                 uint32 non_padding_length = this->heartbeat_message->payload_length + 3;
 
                 // RFC 6520 section 4
@@ -85,62 +64,28 @@ namespace Tls
                 }
 
                 this->heartbeat_message->payload.resize(this->heartbeat_message->payload_length);
-                this->payload_frame.Initialize(&this->heartbeat_message->payload[0], this->heartbeat_message->payload.size());
+                this->payload_frame.reset(this->heartbeat_message->payload.address(), this->heartbeat_message->payload.size());
                 switch_to_state(State::payload_frame_pending_state);
             }
             break;
 
         case State::payload_frame_pending_state:
-            if (this->payload_frame.Pending())
             {
-                this->payload_frame.Process(event, yield);
-            }
+                delegate_event_change_state_on_fail(&this->payload_frame, event, State::payload_frame_failed);
 
-            if (this->payload_frame.Failed())
-            {
-                switch_to_state(State::payload_frame_failed);
-            }
-            else if (this->payload_frame.Succeeded())
-            {
                 this->heartbeat_message->padding.resize(this->padding_length);
-                this->padding_frame.Initialize(&this->heartbeat_message->padding[0], this->heartbeat_message->padding.size());
+                this->padding_frame.reset(this->heartbeat_message->padding.address(), this->heartbeat_message->padding.size());
                 switch_to_state(State::padding_frame_pending_state);
             }
             break;
 
         case State::padding_frame_pending_state:
-            if (this->padding_frame.Pending())
-            {
-                this->padding_frame.Process(event, yield);
-            }
-
-            if (this->padding_frame.Failed())
-            {
-                switch_to_state(State::padding_frame_failed);
-            }
-            else if (this->padding_frame.Succeeded())
-            {
-                switch_to_state(State::done_state);
-            }
+            delegate_event_change_state_on_fail(&this->padding_frame, event, State::padding_frame_failed);
+            switch_to_state(State::done_state);
             break;
 
         default:
-            throw new Exception("HeartbeatMessageFrame::Process unexpected state");
+            throw FatalError("HeartbeatMessageFrame::handle_event unexpected state");
         }
-    }
-
-    void HeartbeatMessageFrame::SerializeTo(IStream<byte>* stream)
-    {
-        this->type_frame.Initialize(&this->heartbeat_message->type);
-        this->type_frame.SerializeTo(stream);
-
-        this->payload_length_frame.Initialize(&this->heartbeat_message->payload_length);
-        this->payload_length_frame.SerializeTo(stream);
-
-        this->payload_frame.Initialize(&this->heartbeat_message->payload[0], this->heartbeat_message->payload.size());
-        this->payload_frame.SerializeTo(stream);
-
-        this->padding_frame.Initialize(&this->heartbeat_message->padding[0], this->heartbeat_message->payload.size());
-        this->padding_frame.SerializeTo(stream);
     }
 }

@@ -3,8 +3,6 @@
 #include "stdafx.h"
 #include "Service.AdminProtocol.h"
 #include "Basic.TextWriter.h"
-#include "Basic.AsyncBytes.h"
-#include "Basic.Ref.h"
 #include "Web.Client.h"
 #include "Http.Globals.h"
 #include "Service.Globals.h"
@@ -13,148 +11,119 @@
 #include "Web.Form.h"
 #include "Basic.TextSanitizer.h"
 #include "Service.Types.h"
+#include "Basic.Event.h"
 
 namespace Service
 {
     using namespace Basic;
 
-    void AdminProtocol::Initialize(Basic::IStream<Codepoint>* peer)
+    AdminProtocol::AdminProtocol(std::shared_ptr<Basic::IStream<Codepoint> > peer) :
+        client(std::make_shared<Web::Client>()),
+        command_frame(&this->command),
+        peer(peer)
     {
-        __super::Initialize();
-
-        set_peer(peer);
-
-        this->client = New<Web::Client>();
-        this->client->Initialize();
     }
 
-    void AdminProtocol::set_peer(Basic::IStream<Codepoint>* peer)
+    void AdminProtocol::reset(std::shared_ptr<Basic::IStream<Codepoint> > peer)
     {
         this->peer = peer;
-
         this->command.clear();
-        this->command_frame.Initialize(&this->command);
+        this->command_frame.reset();
     }
 
-    void AdminProtocol::Process(Basic::IEvent* event, bool* yield)
+    void AdminProtocol::consider_event(Basic::IEvent* event)
     {
         Hold hold(this->lock);
 
-        TextWriter writer(peer);
-
-        (*yield) = true;
+        TextWriter writer(this->peer.get());
 
         if (event->get_type() == Service::EventType::task_complete_event)
         {
-            throw new Exception("unexpected completion");
+            throw FatalError("unexpected completion");
         }
         else if (event->get_type() == Http::EventType::response_headers_event)
         {
-            Uri::Ref url;
+            std::shared_ptr<Uri> url;
             this->client->get_url(&url);
 
-            UnicodeString::Ref charset;
+            UnicodeStringRef charset;
             this->client->get_content_type_charset(&charset);
 
-            this->html_parser = New<Html::Parser>();
+            this->html_parser = std::make_shared<Html::Parser>();
             this->html_parser->Initialize(url, charset);
 
             this->client->set_body_stream(this->html_parser);
+
+            throw Yield("event consumed");
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
             Service::TaskCompleteEvent* cookie_event = (Service::TaskCompleteEvent*)event;
 
-            if (cookie_event->cookie.item() == this->get_cookie.item())
-            {
-                if (this->html_parser.item() != 0)
-                {
-                    this->current_page = New<Web::Page>();
-                    this->current_page->Initialize(this->html_parser->tree->document, this->client);
+            if (cookie_event->cookie.get() != this->get_cookie.get())
+                throw FatalError("unexpected completion");
 
-                    writer.WriteLine("Get completed");
-                }
-                else
-                {
-                    writer.WriteLine("Get failed to produce html");
-                }
+            if (this->html_parser.get() != 0)
+            {
+                this->current_page = std::make_shared<Web::Page>();
+                this->current_page->Initialize(this->html_parser->tree->document, this->client);
+
+                writer.WriteLine("Get completed");
             }
             else
             {
-                throw new Exception("unexpected completion");
+                writer.WriteLine("Get failed to produce html");
             }
+
+            throw Yield("event consumed");
         }
-        else if (event->get_type() == Http::EventType::response_headers_event)
-        {
-            Uri::Ref url;
-            this->client->get_url(&url);
-
-            UnicodeString::Ref charset;
-            this->client->get_content_type_charset(&charset);
-
-            Html::Parser::Ref parser = New<Html::Parser>();
-            parser->Initialize(url, charset);
-
-            this->client->set_body_stream(parser);
-        }
-        else switch (frame_state())
+        else switch (get_state())
         {
         case State::start_state:
             this->command.clear();
-            this->command_frame.Initialize(&this->command);
+            this->command_frame.reset();
             switch_to_state(State::command_frame_pending_state);
-            (*yield) = false;
             break;
 
         case State::command_frame_pending_state:
-            if (this->command_frame.Pending())
             {
-                this->command_frame.Frame::Process(event);
-            }
-
-            if (this->command_frame.Failed())
-            {
-                throw new Basic::Exception("Service::AdminProtocol command_frame failed");
-            }
-            else if (this->command_frame.Succeeded())
-            {
-                (*yield) = false;
+                delegate_event_throw_error_on_fail(&this->command_frame, event);
 
                 switch_to_state(State::start_state);
 
                 bool handled = false;
 
-                if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_stop))
+                if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_stop.get()))
                 {
                     writer.WriteLine("stopping");
                     Service::globals->SendStopSignal();
                     handled = true;
                 }
-                else if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_log))
+                else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_log.get()))
                 {
-                    Service::globals->debugLog->WriteTo(&writer);
+                    Service::globals->debugLog->WriteTo(this->peer.get());
                     handled = true;
                 }
-                else if (this->command.size() == 2 && this->command.at(0).equals<false>(Service::globals->command_get))
+                else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_get.get()))
                 {
-                    if (this->client->frame_state() == Web::Client::State::inactive_state)
+                    if (this->client->get_state() == Web::Client::State::inactive_state)
                     {
-                        Basic::Uri::Ref url = New<Basic::Uri>();
+                        std::shared_ptr<Uri> url = std::make_shared<Basic::Uri>();
                         url->Initialize();
                         
-                        bool success = url->Parse(this->command[1], (Uri*)0);
+                        bool success = url->Parse(this->command[1].get(), (Uri*)0);
                         if (!success)
                         {
                             writer.WriteLine("Url parse error");
                         }
                         else
                         {
-                            this->get_cookie = New<ByteString>();
+                            this->get_cookie = std::make_shared<ByteString>();
 
-                            if (this->current_page.item() != 0)
+                            if (this->current_page.get() != 0)
                                 this->client->http_cookies = this->current_page->http_cookies;
 
-                            this->client->Get(url, this, this->get_cookie);
+                            this->client->Get(url, this->shared_from_this(), this->get_cookie);
                         }
                     }
                     else
@@ -164,18 +133,18 @@ namespace Service
 
                     handled = true;
                 }
-                else if (this->command.size() == 2 && this->command.at(0).equals<false>(Service::globals->command_follow_link))
+                else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_follow_link.get()))
                 {
                     bool all_digits;
                     byte index = this->command.at(1)->as_base_10<byte>(&all_digits);
                     if (all_digits && index < this->current_page->links.size())
                     {
-                        if (this->client->frame_state() == Web::Client::State::inactive_state)
+                        if (this->client->get_state() == Web::Client::State::inactive_state)
                         {
-                            Uri::Ref url = this->current_page->links[index]->url;
-                            this->get_cookie = New<ByteString>();
+                            std::shared_ptr<Uri> url = this->current_page->links[index]->url;
+                            this->get_cookie = std::make_shared<ByteString>();
                             this->client->http_cookies = this->current_page->http_cookies;
-                            this->client->Get(url, this, this->get_cookie);
+                            this->client->Get(url, this->shared_from_this(), this->get_cookie);
                         }
                         else
                         {
@@ -185,7 +154,7 @@ namespace Service
                         handled = true;
                     }
                 }
-                else if (this->command.size() == 2 && this->command.at(0).equals<false>(Service::globals->command_select_form))
+                else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_select_form.get()))
                 {
                     bool all_digits;
                     byte index = this->command.at(1)->as_base_10<byte>(&all_digits);
@@ -193,26 +162,27 @@ namespace Service
                     {
                         this->current_form = this->current_page->forms[index];
 
-                        this->current_form->form_element->write_to_human(this->peer, true);
+                        this->current_form->form_element->write_to_human(this->peer.get(), true);
                         writer.WriteLine();
 
                         for (uint16 i = 0; i != this->current_form->controls.size(); i++)
                         {
                             writer.WriteFormat<0x10>("%d. ", i);
-                            this->current_form->controls[i]->write_html_to_human(this->peer);
+                            this->current_form->controls[i]->write_html_to_human(this->peer.get());
                             writer.WriteLine();
                         }
 
                         handled = true;
                     }
                 }
-                else if (this->command.size() >= 2 && this->command.at(0).equals<false>(Service::globals->command_set_control_value))
+                else if (this->command.size() >= 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_set_control_value.get()))
                 {
                     bool all_digits;
                     byte index = this->command.at(1)->as_base_10<byte>(&all_digits);
                     if (all_digits && index < this->current_form->controls.size())
                     {
-                        UnicodeString::Ref value = New<UnicodeString>();
+                        UnicodeStringRef value = std::make_shared<UnicodeString>();
+                        value->reserve(0x40);
 
                         for (uint32 i = 2; i < this->command.size(); i++)
                         {
@@ -227,32 +197,32 @@ namespace Service
                         handled = true;
                     }
                 }
-                else if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_submit))
+                else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_submit.get()))
                 {
                     this->client->http_cookies = this->current_page->http_cookies;
 
-                    bool success = this->current_form->Submit(this->client, this, 0);
+                    bool success = this->current_form->Submit(this->client.get(), this->shared_from_this(), 0);
                     if (!success)
                         writer.WriteLine("Form submit failed");
 
                     handled = true;
                 }
-                else if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_render_links))
+                else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_links.get()))
                 {
-                    if (this->current_page.item() != 0)
+                    if (this->current_page.get() != 0)
                     {
                         writer.WriteLine("Links <l>:");
 
                         for (uint16 i = 0; i != this->current_page->links.size(); i++)
                         {
                             writer.WriteFormat<0x10>("%d. ", i);
-                            this->current_page->links[i]->text->write_to(this->peer);
-                            writer.Write(" [");
+                            this->current_page->links[i]->text->write_to_stream(this->peer.get());
+                            writer.write_literal(" [");
 
-                            if (this->current_page->links[i]->url.item() != 0)
-                                this->current_page->links[i]->url->SerializeTo(this->peer, false, false);
+                            if (this->current_page->links[i]->url.get() != 0)
+                                this->current_page->links[i]->url->write_to_stream(this->peer.get(), false, false);
 
-                            writer.Write("]");
+                            writer.write_literal("]");
                             writer.WriteLine();
                         }
                     }
@@ -263,16 +233,16 @@ namespace Service
 
                     handled = true;
                 }
-                else if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_render_forms))
+                else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_forms.get()))
                 {
-                    if (this->current_page.item() != 0)
+                    if (this->current_page.get() != 0)
                     {
                         writer.WriteLine("Forms <f>:");
 
                         for (uint16 i = 0; i != this->current_page->forms.size(); i++)
                         {
                             writer.WriteFormat<0x10>("%d. ", i);
-                            this->current_page->forms[i]->form_element->write_html_to_human(this->peer);
+                            this->current_page->forms[i]->form_element->write_html_to_human(this->peer.get());
                             writer.WriteLine();
                         }
                     }
@@ -283,16 +253,16 @@ namespace Service
 
                     handled = true;
                 }
-                else if (this->command.size() >= 1 && this->command.size() <= 2 && this->command.at(0).equals<false>(Service::globals->command_render_nodes))
+                else if (this->command.size() >= 1 && this->command.size() <= 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_nodes.get()))
                 {
-                    if (this->current_page.item() != 0)
+                    if (this->current_page.get() != 0)
                     {
                         writer.WriteLine("Nodes:");
 
                         for (uint16 i = 0; i != this->current_page->leaf_nodes.size(); i++)
                         {
                             writer.WriteFormat<0x10>("%d. ", i);
-                            write_to_human_with_context(this->current_page->leaf_nodes[i], this->peer, this->command.size() >= 2);
+                            write_to_human_with_context(this->current_page->leaf_nodes[i].get(), this->peer.get(), this->command.size() >= 2);
                             writer.WriteLine();
                         }
                     }
@@ -303,12 +273,12 @@ namespace Service
 
                     handled = true;
                 }
-                else if (this->command.size() == 2 && this->command.at(0).equals<false>(Service::globals->command_search))
+                else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_search.get()))
                 {
-                    Json::Array::Ref results;
+                    std::shared_ptr<Json::Array> results;
                     Service::globals->Search(this->command.at(1), &results);
 
-                    results->write_to(peer);
+                    results->write_to_stream(this->peer.get());
                     writer.WriteLine();
 
                     handled = true;
@@ -321,9 +291,9 @@ namespace Service
                     for (Globals::CommandList::iterator it = Service::globals->command_list.begin(); it != Service::globals->command_list.end(); it++)
                     {
                         if (it != Service::globals->command_list.begin())
-                            writer.Write(", ");
+                            writer.write_literal(", ");
 
-                        this->peer->Write((*it)->c_str(), (*it)->size());
+                        this->peer->write_elements((*it)->address(), (*it)->size());
                     }
 
                     writer.WriteLine();
@@ -332,25 +302,26 @@ namespace Service
             break;
 
         default:
-            throw new Basic::Exception("AdminProtocol::Process unexpected state");
+            throw Basic::FatalError("AdminProtocol::handle_event unexpected state");
         }
     }
     
     void AdminProtocol::write_to_human_with_context(Html::Node* node, IStream<Codepoint>* stream, bool verbose)
     {
-        if (node->parent != 0)
-            write_to_human_with_context(node->parent, stream, verbose);
+        std::shared_ptr<Html::Node> parent = node->parent.lock();
+        if (parent.get() != 0)
+            write_to_human_with_context(parent.get(), stream, verbose);
 
         TextWriter writer(stream);
-        writer.Write("/");
+        writer.write_literal("/");
 
-        if (node->parent != 0)
+        if (parent.get() != 0)
         {
             bool found = false;
 
-            for (uint32 i = 0; i < node->parent->children.size(); i++)
+            for (uint32 i = 0; i < parent->children.size(); i++)
             {
-                if (node->parent->children.at(i).item() == node)
+                if (parent->children.at(i).get() == node)
                 {
                     writer.WriteFormat<0x10>("%d", i);
                     found = true;
@@ -359,13 +330,13 @@ namespace Service
 
             if (!found)
             {
-                writer.Write("?");
+                writer.write_literal("?");
             }
 
-            writer.Write(".");
+            writer.write_literal(".");
         }
 
-        Inline<TextSanitizer> clean_stream;
+        TextSanitizer clean_stream;
         clean_stream.Initialize(stream);
 
         node->write_to_human(&clean_stream, verbose);

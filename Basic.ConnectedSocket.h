@@ -14,26 +14,24 @@ namespace Basic
     class ConnectedSocket : public Socket, public IBufferedStream<byte>
     {
     protected:
-        Basic::Ref<IProcess> protocol; // REF
-        Inline<ElementSource<byte> > protocol_element_source;
+        std::weak_ptr<IProcess> protocol; // $$ was shared_ptr
+        ElementSource<byte> protocol_element_source;
         sockaddr_in remoteAddress;
 
-        void StartReceive();
-        void Received(const byte* bytes, uint32 count);
+        void StartReceive(std::shared_ptr<ByteString> bytes);
+        void Received(ByteString* bytes);
         void InitializePeer(sockaddr_in* remoteAddress);
-        void Send(AsyncBytes* buffer);
-        void Disconnect(Basic::Ref<IProcess>* protocol);
+        void Send(ByteStringRef buffer);
+        void Disconnect(std::shared_ptr<IProcess>* protocol);
         void DisconnectAndNotifyProtocol();
-        virtual void CompleteRead(AsyncBytes* bytes, int transferred, int error);
+        virtual void CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error);
 
     public:
-        typedef Basic::Ref<ConnectedSocket, IStream<byte> > Ref;
+        ConnectedSocket(std::shared_ptr<IProcess> protocol);
 
-        virtual ~ConnectedSocket();
-        void InitializeProtocol(IProcess* protocol);
-
-        virtual void IBufferedStream<byte>::Write(const byte* elements, uint32 count);
-        virtual void IBufferedStream<byte>::Flush();
-        virtual void IBufferedStream<byte>::WriteEOF();
+        virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
+        virtual void IStream<byte>::write_element(byte element);
+        virtual void Flush();
+        virtual void IStream<byte>::write_eof();
     };
 }

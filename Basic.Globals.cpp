@@ -9,7 +9,7 @@
 
 namespace Basic
 {
-    Inline<Globals>* globals = 0;
+    Globals* globals = 0;
 
     Globals::Globals()
     {
@@ -17,29 +17,29 @@ namespace Basic
 
     bool Globals::HandleError(const char* context, uint32 error)
     {
-        if (this->error_handler.item() == 0)
+        if (this->error_handler.get() == 0)
             return false;
 
         return this->error_handler->HandleError(context, error);
     }
 
-    Basic::IStream<Codepoint>* Globals::DebugStream()
+    Basic::IStream<Codepoint>* Globals::LogStream()
     {
-        if (this->error_handler.item() == 0)
-            throw new Exception("no error handler set");
+        if (this->error_handler.get() == 0)
+            throw FatalError("no error handler set");
 
-        return this->error_handler->DebugStream();
+        return this->error_handler->LogStream();
     }
 
     Basic::TextWriter* Globals::DebugWriter()
     {
-        if (this->error_handler.item() == 0)
-            throw new Exception("no error handler set");
+        if (this->error_handler.get() == 0)
+            throw FatalError("no error handler set");
 
         return this->error_handler->DebugWriter();
     }
 
-    void Globals::GetEncoder(UnicodeString* encoding, Basic::Ref<IEncoder>* encoder)
+    void Globals::GetEncoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IEncoder>* encoder)
     {
         EncoderMap::iterator it = this->encoder_map.find(encoding);
         if (it == this->encoder_map.end())
@@ -51,7 +51,7 @@ namespace Basic
         it->second->CreateEncoder(encoder);
     }
 
-    void Globals::GetDecoder(UnicodeString* encoding, Basic::Ref<IDecoder>* decoder)
+    void Globals::GetDecoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IDecoder>* decoder)
     {
         DecoderMap::iterator it = this->decoder_map.find(encoding);
         if (it == this->decoder_map.end())
@@ -63,12 +63,12 @@ namespace Basic
         it->second->CreateDecoder(decoder);
     }
 
-    void Globals::Initialize(Basic::Ref<IErrorHandler> error_handler, Basic::Ref<ICompletionQueue> completion_queue)
+    void Globals::Initialize(std::shared_ptr<IErrorHandler> error_handler, std::shared_ptr<ICompletionQueue> completion_queue)
     {
         this->error_handler = error_handler;
         this->completion_queue = completion_queue;
 
-        this->ascii_index = New<SingleByteEncodingIndex>();
+        this->ascii_index = std::make_shared<SingleByteEncodingIndex>();
         this->ascii_index->Initialize();
 
         utf_16_big_endian_bom[0] = 0xFE;
@@ -81,33 +81,33 @@ namespace Basic
         utf_8_bom[1] = 0xBB;
         utf_8_bom[2] = 0xBF;
 
-        ftp_scheme.Initialize("ftp");
-        file_scheme.Initialize("file");
-        gopher_scheme.Initialize("gopher");
-        http_scheme.Initialize("http");
-        https_scheme.Initialize("https");
-        ws_scheme.Initialize("ws");
-        wss_scheme.Initialize("wss");
+        initialize_unicode(&ftp_scheme, "ftp");
+        initialize_unicode(&file_scheme, "file");
+        initialize_unicode(&gopher_scheme, "gopher");
+        initialize_unicode(&http_scheme, "http");
+        initialize_unicode(&https_scheme, "https");
+        initialize_unicode(&ws_scheme, "ws");
+        initialize_unicode(&wss_scheme, "wss");
 
-        utf_32_big_endian_label.Initialize("utf-32be");
-        utf_32_little_endian_label.Initialize("utf-32le");
-        utf_16_big_endian_label.Initialize("utf-16be");
-        utf_16_little_endian_label.Initialize("utf-16le");
-        utf_8_label.Initialize("utf-8");
-        us_ascii_label.Initialize("us-ascii");
+        initialize_unicode(&utf_32_big_endian_label, "utf-32be");
+        initialize_unicode(&utf_32_little_endian_label, "utf-32le");
+        initialize_unicode(&utf_16_big_endian_label, "utf-16be");
+        initialize_unicode(&utf_16_little_endian_label, "utf-16le");
+        initialize_unicode(&utf_8_label, "utf-8");
+        initialize_unicode(&us_ascii_label, "us-ascii");
 
-        CRLF.Initialize("\r\n");
-        percent_forty.Initialize("%40");
-        percent_two_e.Initialize("%2e");
-        dot_percent_two_e.Initialize(".%2e");
-        percent_two_e_dot.Initialize("%2e.");
-        dot_dot.Initialize("..");
-        dot.Initialize(".");
+        initialize_unicode(&CRLF, "\r\n");
+        initialize_unicode(&percent_forty, "%40");
+        initialize_unicode(&percent_two_e, "%2e");
+        initialize_unicode(&dot_percent_two_e, ".%2e");
+        initialize_unicode(&percent_two_e_dot, "%2e.");
+        initialize_unicode(&dot_dot, "..");
+        initialize_unicode(&dot, ".");
 
-        text_plain_media_type.Initialize("text/plain");
-        text_html_media_type.Initialize("text/html");
-        application_json_media_type.Initialize("application/json");
-        charset_parameter_name.Initialize("charset");
+        initialize_unicode(&text_plain_media_type, "text/plain");
+        initialize_unicode(&text_html_media_type, "text/html");
+        initialize_unicode(&application_json_media_type, "application/json");
+        initialize_unicode(&charset_parameter_name, "charset");
 
         ZeroMemory(this->simple_encode_anti_set, sizeof(this->simple_encode_anti_set));
 
@@ -134,22 +134,22 @@ namespace Basic
 
         this->username_encode_anti_set[':'] = false;
 
-        UnicodeString::Ref port;
+        UnicodeStringRef port;
 
-        port.Initialize("21");
+        initialize_unicode(&port, "21");
         this->scheme_to_port_map.insert(PortMap::value_type(this->ftp_scheme, port));
 
-        port.Initialize("");
+        initialize_unicode(&port, "");
         this->scheme_to_port_map.insert(PortMap::value_type(this->file_scheme, port));
 
-        port.Initialize("70");
+        initialize_unicode(&port, "70");
         this->scheme_to_port_map.insert(PortMap::value_type(this->gopher_scheme, port));
 
-        port.Initialize("80");
+        initialize_unicode(&port, "80");
         this->scheme_to_port_map.insert(PortMap::value_type(this->http_scheme, port));
         this->scheme_to_port_map.insert(PortMap::value_type(this->ws_scheme, port));
 
-        port.Initialize("443");
+        initialize_unicode(&port, "443");
         this->scheme_to_port_map.insert(PortMap::value_type(this->https_scheme, port));
         this->scheme_to_port_map.insert(PortMap::value_type(this->wss_scheme, port));
 
@@ -161,14 +161,14 @@ namespace Basic
         sanitizer_white_space['\n'] = true;
         sanitizer_white_space[0xA0] = true;
 
-        Utf32LittleEndianDecoderFactory::Ref utf_32_little_endian_decoder_factory = New<Utf32LittleEndianDecoderFactory>();
-        this->decoder_map.insert(DecoderMap::value_type(utf_32_little_endian_label, utf_32_little_endian_decoder_factory.item()));
+        std::shared_ptr<Utf32LittleEndianDecoderFactory> utf_32_little_endian_decoder_factory = std::make_shared<Utf32LittleEndianDecoderFactory>();
+        this->decoder_map.insert(DecoderMap::value_type(utf_32_little_endian_label, utf_32_little_endian_decoder_factory));
 
-        Utf8DecoderFactory::Ref utf_8_decoder_factory = New<Utf8DecoderFactory>();
-        this->decoder_map.insert(DecoderMap::value_type(utf_8_label, utf_8_decoder_factory.item()));
+        std::shared_ptr<Utf8DecoderFactory> utf_8_decoder_factory = std::make_shared<Utf8DecoderFactory>();
+        this->decoder_map.insert(DecoderMap::value_type(utf_8_label, utf_8_decoder_factory));
 
-        Utf8EncoderFactory::Ref utf_8_encoder_factory = New<Utf8EncoderFactory>();
-        this->encoder_map.insert(EncoderMap::value_type(utf_8_label, utf_8_encoder_factory.item()));
+        std::shared_ptr<Utf8EncoderFactory> utf_8_encoder_factory = std::make_shared<Utf8EncoderFactory>();
+        this->encoder_map.insert(EncoderMap::value_type(utf_8_label, utf_8_encoder_factory));
     }
 
     bool Globals::InitializeSocketApi()
@@ -203,34 +203,26 @@ namespace Basic
         return true;
     }
 
-    void Globals::PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped)
+    void Globals::QueueJob(std::shared_ptr<Job> job)
     {
-        if (this->completion_queue.item() == 0)
-            throw new Exception("no error handler set");
+        if (this->completion_queue.get() == 0)
+            throw FatalError("no error handler set");
 
-        return this->completion_queue->PostCompletion(completion, overlapped);
+        return this->completion_queue->QueueJob(job);
     }
 
-    void Globals::QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie)
+    void Globals::BindToCompletionQueue(LogFile* log_file)
     {
-        if (this->completion_queue.item() == 0)
-            throw new Exception("no error handler set");
+        if (this->completion_queue.get() == 0)
+            throw FatalError("no error handler set");
 
-        return this->completion_queue->QueueProcess(process, cookie);
+        return this->completion_queue->BindToCompletionQueue(log_file);
     }
 
-    void Globals::BindToCompletionQueue(LogFile::Ref logfile)
+    void Globals::BindToCompletionQueue(Socket* socket)
     {
-        if (this->completion_queue.item() == 0)
-            throw new Exception("no error handler set");
-
-        return this->completion_queue->BindToCompletionQueue(logfile);
-    }
-
-    void Globals::BindToCompletionQueue(Socket::Ref socket)
-    {
-        if (this->completion_queue.item() == 0)
-            throw new Exception("no error handler set");
+        if (this->completion_queue.get() == 0)
+            throw FatalError("no error handler set");
 
         return this->completion_queue->BindToCompletionQueue(socket);
     }

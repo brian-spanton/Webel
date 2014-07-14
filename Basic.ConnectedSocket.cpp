@@ -2,29 +2,24 @@
 
 #include "stdafx.h"
 #include "Basic.ConnectedSocket.h"
-#include "Basic.AsyncBytes.h"
 #include "Basic.Globals.h"
 #include "Basic.Hold.h"
 
 namespace Basic
 {
-    ConnectedSocket::~ConnectedSocket()
+    ConnectedSocket::ConnectedSocket(std::shared_ptr<IProcess> protocol) :
+        protocol(protocol)
     {
-    }
-
-    void ConnectedSocket::InitializeProtocol(IProcess* protocol)
-    {
-        this->protocol = protocol;
     }
 
     void ConnectedSocket::InitializePeer(sockaddr_in* remoteAddress)
     {
         this->remoteAddress = (*remoteAddress);
 
-        UnicodeString::Ref id = New<UnicodeString>();
+        UnicodeStringRef id = std::make_shared<UnicodeString>();
         id->reserve(0x40);
 
-        TextWriter text(id);
+        TextWriter text(id.get());
         text.WriteFormat<0x40>(
             "%d.%d.%d.%d:%d",
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
@@ -32,65 +27,77 @@ namespace Basic
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
             this->remoteAddress.sin_port);
+
+        // $ find a way to correlate this id to all related log entries
     }
 
-    void ConnectedSocket::Received(const byte* bytes, uint32 count)
+    void ConnectedSocket::Received(ByteString* bytes)
     {
         if (socket != INVALID_SOCKET)
         {
-            if (count == 0)
+            if (bytes->size() == 0)
             {
                 DisconnectAndNotifyProtocol();
             }
             else
             {
-                this->protocol_element_source.Initialize(bytes, count);
+                std::shared_ptr<IProcess> protocol = this->protocol.lock();
+                if (protocol.get() == 0)
+                {
+                    Disconnect(0);
+                    return;
+                }
+
+                this->protocol_element_source.Initialize(bytes->address(), bytes->size());
 
                 ReadyForReadBytesEvent event;
                 event.Initialize(&this->protocol_element_source);
+                produce_event(protocol.get(), &event);
 
-                this->protocol->Process(&event);
-
-                if (!this->protocol_element_source.Exhausted() && !this->protocol->Failed())
-                    throw new Exception("Basic::ReadyForReadBytesEvent::Consume this->elements_read < this->count");
+                if (!this->protocol_element_source.Exhausted() && !protocol->failed())
+                    throw FatalError("Basic::ReadyForReadBytesEvent::Consume this->elements_read < this->count");
             }
         }
     }
 
-    void ConnectedSocket::StartReceive()
+    void ConnectedSocket::StartReceive(std::shared_ptr<ByteString> bytes)
     {
         uint32 count;
         DWORD flags = 0;
 
-        AsyncBytes::Ref bytes = New<AsyncBytes>("2");
-        bytes->Initialize(0x400);
-        bytes->PrepareForReceive("ConnectedSocket::StartReceive WSARecv", this);
+        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::receive_type);
+        job_context->bytes = bytes.get() != 0 ? bytes : std::make_shared<ByteString>();
+        job_context->bytes->resize(0x400);
+        job_context->wsabuf.buf = (char*)job_context->bytes->address();
+        job_context->wsabuf.len = job_context->bytes->size();
 
-        int error = WSARecv(socket, &bytes->wsabuf, 1, &count, &flags, bytes, 0);
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
+
+        int error = WSARecv(socket, &job_context->wsabuf, 1, &count, &flags, job.get(), 0);
         if (error == SOCKET_ERROR)
         {
             error = WSAGetLastError();
             if (error != ERROR_IO_PENDING)
             {
-                bytes->Internal = error;
-                Basic::globals->PostCompletion(this, bytes);
+                job->Internal = error;
+                Basic::globals->QueueJob(job);
             }
         }
     }
 
     void ConnectedSocket::DisconnectAndNotifyProtocol()
     {
-        Basic::Ref<IProcess> protocol;
+        std::shared_ptr<IProcess> protocol;
         Disconnect(&protocol);
 
-        if (protocol.item() != 0)
+        if (protocol.get() != 0)
         {
             ElementStreamEndingEvent event;
-            protocol->Process(&event);
+            produce_event(protocol.get(), &event);
         }
     }
 
-    void ConnectedSocket::Disconnect(Basic::Ref<IProcess>* protocol)
+    void ConnectedSocket::Disconnect(std::shared_ptr<IProcess>* protocol)
     {
         Hold hold(this->lock);
 
@@ -103,25 +110,25 @@ namespace Basic
         }
 
         if (protocol != 0)
-            (*protocol) = this->protocol;
+            (*protocol) = this->protocol.lock();
 
-        this->protocol = 0;
+        this->protocol.reset();
     }
 
-    void ConnectedSocket::Write(const byte* elements, uint32 count)
+    void ConnectedSocket::write_elements(const byte* elements, uint32 count)
     {
         while(true)
         {
             if (count == 0)
                 break;
 
-            AsyncBytes::Ref buffer = New<AsyncBytes>("3");
-            buffer->Initialize(0x1000);
+            std::shared_ptr<ByteString> buffer = std::make_shared<ByteString>();
+            buffer->reserve(0x1000);
 
-            uint32 remaining = buffer->maxCount - buffer->count;
+            uint32 remaining = 0x1000 - buffer->size();
             uint32 useable = (count > remaining) ? remaining : count;
 
-            buffer->Write(elements, useable);
+            buffer->write_elements(elements, useable);
 
             count -= useable;
             elements += useable;
@@ -130,24 +137,34 @@ namespace Basic
         }
     }
 
-    void ConnectedSocket::Send(AsyncBytes* buffer)
+    void ConnectedSocket::write_element(byte element)
     {
-        if (buffer->count == 0)
-            throw new Exception("ConnectedSocket::Send 0 bytes");
+        write_elements(&element, 1);
+    }
+
+    void ConnectedSocket::Send(std::shared_ptr<ByteString> bytes)
+    {
+        if (bytes->size() == 0)
+            throw FatalError("ConnectedSocket::Send 0 bytes");
 
         uint32 count;
         DWORD flags = 0;
 
-        buffer->PrepareForSend("ConnectedSocket::Flush WSASend", this);
+        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::send_type);
+        job_context->bytes = bytes;
+        job_context->wsabuf.buf = (char*)job_context->bytes->address();
+        job_context->wsabuf.len = job_context->bytes->size();
 
-        int error = WSASend(socket, &buffer->wsabuf, 1, &count, flags, buffer, 0);
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
+
+        int error = WSASend(socket, &job_context->wsabuf, 1, &count, flags, job.get(), 0);
         if (error == SOCKET_ERROR)
         {
             error = WSAGetLastError();
             if (error != ERROR_IO_PENDING)
             {
-                buffer->Internal = error;
-                Basic::globals->PostCompletion(this, buffer);
+                job->Internal = error;
+                Basic::globals->QueueJob(job);
             }
         }
     }
@@ -156,26 +173,26 @@ namespace Basic
     {
     }
 
-    void ConnectedSocket::WriteEOF()
+    void ConnectedSocket::write_eof()
     {
         Disconnect(0);
     }
 
-    void ConnectedSocket::CompleteRead(AsyncBytes* bytes, int transferred, int error)
+    void ConnectedSocket::CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error)
     {
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
-                Basic::globals->HandleError("ConnectedSocket::CompleteRead", error);
+                Basic::globals->HandleError("ConnectedSocket::CompleteReceive", error);
 
             DisconnectAndNotifyProtocol();
         }
         else
         {
-            Received(bytes->bytes, transferred);
+            Received(bytes.get());
 
             if (socket != INVALID_SOCKET)
-                StartReceive();
+                StartReceive(bytes);
         }
     }
 }

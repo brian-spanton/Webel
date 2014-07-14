@@ -14,18 +14,15 @@ namespace Html
 
     class Parser;
 
-    class CharacterReferenceFrame : public Frame
+    class CharacterReferenceFrame : public StateMachine, public UnitStream<Codepoint>
     {
     private:
         enum State
         {
-            unconsume_not_initialized_state = Start_State,
-            start_state,
+            start_state = Start_State,
             number_started_state,
             receiving_number_state,
-            number_stream_done_state,
             matching_name_state,
-            cleanup_state,
             done_state = Succeeded_State,
         };
 
@@ -34,17 +31,21 @@ namespace Html
         bool use_additional_allowed_character;
         Codepoint additional_allowed_character;
         UnicodeString* value;
-        UnicodeString* unconsume;
+        UnicodeStringRef not_consumed;
         Codepoint number;
-        Basic::Ref<INumberStream<Codepoint> > number_stream; // REF
+        std::shared_ptr<INumberStream<Codepoint> > number_stream;
         Html::StringMap::iterator match_value;
-        Inline<MatchFrame<UnicodeString::Ref> > match_frame; // REF
+        MatchFrame<UnicodeStringRef> match_frame;
+
+        void WriteUnobserved(Codepoint element);
+        void Cleanup();
 
     public:
-        typedef Basic::Ref<CharacterReferenceFrame, IProcess> Ref;
+        CharacterReferenceFrame(Parser* parser);
 
-        void Initialize(Parser* parser, bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeString* unconsume);
+        void reset(bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeStringRef not_consumed);
 
-        virtual void IProcess::Process(IEvent* event, bool* yield);
+        virtual void IStream<Codepoint>::write_element(Codepoint element);
+        virtual void IStream<Codepoint>::write_eof();
     };
 }
