@@ -20,8 +20,8 @@ namespace Html
         after_doctype_name(std::make_shared<UnicodeString>()),
         parser(parser),
         output(output),
-        eof_token(std::make_shared<EndOfFileToken>()), // $$ could be static
-        char_ref_frame(this->parser)
+        eof_token(std::make_shared<EndOfFileToken>()), // $ could be static
+        char_ref_frame(this->parser) // order of declaration is important
     {
     }
 
@@ -39,12 +39,21 @@ namespace Html
         case character_reference_in_attribute_value_state:
             this->attribute_value_state = (TokenizerState)this->get_state();
             this->character_reference = std::make_shared<UnicodeString>();
-            this->character_reference_unconsume = std::make_shared<UnicodeString>();
-            this->char_ref_frame.reset(true, this->use_additional_allowed_character, this->additional_allowed_character, this->character_reference.get(), this->character_reference_unconsume);
+            this->character_reference_leftovers = std::make_shared<UnicodeString>();
+            this->char_ref_frame.reset(true, this->use_additional_allowed_character, this->additional_allowed_character, this->character_reference.get(), this->character_reference_leftovers);
             break;
         }
 
         __super::switch_to_state(state);
+    }
+
+    void Tokenizer::consume_leftovers()
+    {
+        // store in local variable since we are about to recurse and change character_reference_leftovers
+        UnicodeStringRef leftovers = this->character_reference_leftovers;
+
+        for (UnicodeString::iterator it = leftovers->begin(); it != leftovers->end(); it++)
+            this->write_element(*it);
     }
 
     void Tokenizer::InsertAttribute()
@@ -160,8 +169,8 @@ namespace Html
                 {
                 case 0x0026:
                     this->character_reference = std::make_shared<UnicodeString>();
-                    this->character_reference_unconsume = std::make_shared<UnicodeString>();
-                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_unconsume);
+                    this->character_reference_leftovers = std::make_shared<UnicodeString>();
+                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_leftovers);
                     SwitchToState(character_reference_in_data_state);
                     break;
 
@@ -204,9 +213,7 @@ namespace Html
 
                 SwitchToState(data_state);
 
-                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
-                    this->write_element(*it);
-
+                consume_leftovers();
                 return;
             }
             break;
@@ -217,8 +224,8 @@ namespace Html
                 {
                 case 0x0026:
                     this->character_reference = std::make_shared<UnicodeString>();
-                    this->character_reference_unconsume = std::make_shared<UnicodeString>();
-                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_unconsume);
+                    this->character_reference_leftovers = std::make_shared<UnicodeString>();
+                    this->char_ref_frame.reset(false, false, 0, this->character_reference.get(), this->character_reference_leftovers);
                     SwitchToState(character_reference_in_RCDATA_state);
                     break;
 
@@ -261,9 +268,7 @@ namespace Html
 
                 SwitchToState(RCDATA_state);
 
-                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
-                    this->write_element(*it);
-
+                consume_leftovers();
                 return;
             }
             break;
@@ -1637,9 +1642,7 @@ namespace Html
 
                 SwitchToState(this->attribute_value_state);
 
-                for (UnicodeString::iterator it = this->character_reference_unconsume->begin(); it != this->character_reference_unconsume->end(); it++)
-                    this->write_element(*it);
-
+                consume_leftovers();
                 return;
             }
             break;

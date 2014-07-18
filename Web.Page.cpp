@@ -9,11 +9,10 @@
 
 namespace Web
 {
-    void Page::Initialize(std::shared_ptr<Document> document, std::shared_ptr<Web::Client> client)
+    Page::Page(std::shared_ptr<Document> document, std::shared_ptr<Web::Client> client) :
+        document(document),
+        http_cookies(client->http_cookies)
     {
-        this->document = document;
-        this->http_cookies = client->http_cookies;
-
         render(document);
     }
 

@@ -26,7 +26,8 @@ namespace Web
         NodeList leaf_nodes;
         Http::CookieList http_cookies;
 
-        void Initialize(std::shared_ptr<Document> document, std::shared_ptr<Web::Client> client);
+        Page(std::shared_ptr<Document> document, std::shared_ptr<Web::Client> client);
+
         bool find_link(UnicodeStringRef pattern, std::shared_ptr<Web::Link>* result);
         bool find_form(UnicodeStringRef pattern, std::shared_ptr<Web::Form>* result);
     };

@@ -9,14 +9,16 @@ namespace Tls
 
     HandshakeFrame::HandshakeFrame(Handshake* handshake) :
         handshake(handshake),
-        type_frame(&this->handshake->msg_type),
-        length_frame(&this->handshake->length)
+        type_frame(&this->handshake->msg_type), // order of declaration is important
+        length_frame(&this->handshake->length) // order of declaration is important
     {
     }
 
     void HandshakeFrame::reset()
     {
         __super::reset();
+        this->type_frame.reset();
+        this->length_frame.reset();
     }
 
     void HandshakeFrame::consider_event(IEvent* event)

@@ -17,6 +17,7 @@ namespace Tls
     RecordLayer::RecordLayer(std::shared_ptr<IProcess> application_stream, bool server, std::shared_ptr<ICertificate> certificate) :
         record_frame(&record)
     {
+        // $$ make member initializers
         this->application_stream = application_stream;
         this->application_connected = false;
         this->server = server;
@@ -107,8 +108,8 @@ namespace Tls
             break;
 
         case State::receive_record_state:
-            switch_to_state(State::record_frame_pending_state);
             this->record_frame.reset();
+            switch_to_state(State::record_frame_pending_state);
             break;
 
         case State::record_frame_pending_state:
@@ -156,7 +157,7 @@ namespace Tls
     void RecordLayer::CloseTransport()
     {
         this->transport_peer->write_eof();
-        this->transport_peer = 0;
+        this->transport_peer.reset();
     }
 
     void RecordLayer::WriteChangeCipherSpec()

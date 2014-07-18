@@ -22,8 +22,11 @@ namespace Web
 
     void Server::start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate)
     {
+        // keep ourself alive until we decide to self-destruct
+        this->self = this->shared_from_this();
+
         std::shared_ptr<ServerSocket> server_socket;
-        Web::globals->CreateServerSocket(certificate, this->shared_from_this(), &server_socket, &this->peer);
+        Web::globals->CreateServerSocket(certificate, this->self, &server_socket, &this->peer);
 
         listen_socket->StartAccept(server_socket);
     }
@@ -33,7 +36,10 @@ namespace Web
         __super::switch_to_state(state);
 
         if (!this->in_progress())
+        {
             this->peer->write_eof();
+            this->self.reset();
+        }
     }
 
     void Server::consider_event(IEvent* event)

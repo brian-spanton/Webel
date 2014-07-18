@@ -19,7 +19,7 @@ namespace Service
 
     AdminProtocol::AdminProtocol(std::shared_ptr<Basic::IStream<Codepoint> > peer) :
         client(std::make_shared<Web::Client>()),
-        command_frame(&this->command),
+        command_frame(&this->command), // order of declaration is important
         peer(peer)
     {
     }
@@ -65,8 +65,7 @@ namespace Service
 
             if (this->html_parser.get() != 0)
             {
-                this->current_page = std::make_shared<Web::Page>();
-                this->current_page->Initialize(this->html_parser->tree->document, this->client);
+                this->current_page = std::make_shared<Web::Page>(this->html_parser->tree->document, this->client);
 
                 writer.WriteLine("Get completed");
             }

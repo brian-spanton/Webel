@@ -55,11 +55,7 @@ namespace Basic
 
         if (codepoint == EOF)
         {
-            // $$ let's see what turns up
             HandleError("unexpected eof");
-
-            // $$ not sure if this is right thing to do
-            this->destination->write_eof();
             return;
         }
 
@@ -113,7 +109,6 @@ namespace Basic
         // I think eof is for the end of the bytes to encode, and should not propagate to the destination
         // because it might not at all be the last thing sent to the destination
 
-        // $$ let's see what turns up
         HandleError("unexpected eof");
     }
 

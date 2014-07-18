@@ -14,7 +14,7 @@ namespace Http
     RequestFrame::RequestFrame(Request* request) :
         request(request),
         resource_string(std::make_shared<UnicodeString>()),
-        resource_decoder(Basic::globals->ascii_index, resource_string.get()),
+        resource_decoder(Basic::globals->ascii_index, this->resource_string.get()),
         headers_frame(this->request->headers.get()),
         body_frame(this->request->headers)
     {

@@ -31,7 +31,7 @@ namespace Html
         bool use_additional_allowed_character;
         Codepoint additional_allowed_character;
         UnicodeString* value;
-        UnicodeStringRef not_consumed;
+        UnicodeStringRef leftovers;
         Codepoint number;
         std::shared_ptr<INumberStream<Codepoint> > number_stream;
         Html::StringMap::iterator match_value;
@@ -43,7 +43,7 @@ namespace Html
     public:
         CharacterReferenceFrame(Parser* parser);
 
-        void reset(bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeStringRef not_consumed);
+        void reset(bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeStringRef leftovers);
 
         virtual void IStream<Codepoint>::write_element(Codepoint element);
         virtual void IStream<Codepoint>::write_eof();

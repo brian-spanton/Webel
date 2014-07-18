@@ -10,8 +10,8 @@ namespace Tls
 
     ServerNameFrame::ServerNameFrame(ServerName* serverName) :
         serverName(serverName),
-        type_frame(&serverName->name_type),
-        name_frame(&serverName->name)
+        type_frame(&this->serverName->name_type), // order of declaration is important
+        name_frame(&this->serverName->name) // order of declaration is important
     {
     }
 

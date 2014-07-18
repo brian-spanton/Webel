@@ -71,7 +71,7 @@ namespace Tls
         static const uint32 max_record_length = 0x4000;
 
         ElementSource<byte> application_element_source;
-        std::weak_ptr<IProcess> application_stream; // $$ was shared_ptr
+        std::weak_ptr<IProcess> application_stream;
 
         ElementSource<byte> alert_element_source;
         std::shared_ptr<AlertProtocol> alert_protocol;

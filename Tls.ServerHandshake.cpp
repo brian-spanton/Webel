@@ -22,8 +22,8 @@ namespace Tls
 
     ServerHandshake::ServerHandshake(RecordLayer* session) :
         HandshakeProtocol(session),
-        client_hello_frame(&this->clientHello),
-        pre_master_secret_frame(&this->pre_master_secret_bytes)
+        client_hello_frame(&this->clientHello), // order of declaration is important
+        pre_master_secret_frame(&this->pre_master_secret_bytes) // order of declaration is important
     {
     }
 
@@ -33,8 +33,6 @@ namespace Tls
         {
         case State::start_state:
             Event::AddObserver<byte>(event, this->handshake_messages);
-
-            this->handshake_frame.reset();
             switch_to_state(State::expecting_client_hello_state);
             break;
 

@@ -19,6 +19,7 @@ namespace Http
             start_chunk_state = Start_State,
             expecting_LF_after_size_state,
             chunk_frame_pending_state,
+            expecting_CR_after_chunk_state,
             expecting_LF_after_chunk_state,
             done_state = Succeeded_State,
             start_chunk_error,
@@ -28,8 +29,8 @@ namespace Http
             expecting_LF_after_chunk_error,
         };
 
-        HexNumberStream<byte, uint32> size_stream;
         uint32 size;
+        HexNumberStream<byte, uint32> size_stream;
         LengthBodyFrame chunk_frame;
 
         virtual void IProcess::consider_event(IEvent* event);

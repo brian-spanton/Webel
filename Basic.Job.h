@@ -13,8 +13,8 @@ namespace Basic
     private:
         void complete(uint32 count, uint32 error);
 
-        std::shared_ptr<Job> self_ref;
-        std::shared_ptr<ICompleter> completer;
+        std::shared_ptr<Job> self;
+        std::weak_ptr<ICompleter> completer;
         std::shared_ptr<void> context;
 
     public:

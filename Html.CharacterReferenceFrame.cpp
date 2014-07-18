@@ -15,15 +15,16 @@ namespace Html
 
     CharacterReferenceFrame::CharacterReferenceFrame(Parser* parser) :
         number(0),
-        match_frame(Html::globals->named_character_references_table, &this->match_value),
+        match_frame(Html::globals->named_character_references_table, &this->match_value), // order of declaration is important
         number_stream(0),
         parser(parser)
     {
     }
 
-    void CharacterReferenceFrame::reset(bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeStringRef not_consumed)
+    void CharacterReferenceFrame::reset(bool part_of_an_attribute, bool use_additional_allowed_character, Codepoint additional_allowed_character, UnicodeString* value, UnicodeStringRef leftovers)
     {
         __super::reset();
+
         this->number = 0;
         this->match_frame.reset();
         this->number_stream = 0;
@@ -32,13 +33,13 @@ namespace Html
         this->use_additional_allowed_character = use_additional_allowed_character;
         this->additional_allowed_character = additional_allowed_character;
         this->value = value;
-        this->not_consumed = not_consumed;
-        this->not_consumed->reserve(0x100);
+        this->leftovers = leftovers;
+        this->leftovers->reserve(0x100);
     }
 
     void CharacterReferenceFrame::write_element(Codepoint c)
     {
-        this->not_consumed->write_element(c);
+        this->leftovers->write_element(c);
         WriteUnobserved(c);
     }
 
@@ -169,12 +170,12 @@ namespace Html
                         this->parser->ParseError("Html::CharacterReferenceFrame::handle_event bad character number reference");
                     }
 
-                    this->not_consumed->clear();
+                    this->leftovers->clear();
 
                     if (c != 0x003B)
                     {
                         this->parser->ParseError("character reference does not end with ;");
-                        this->not_consumed->push_back(c);
+                        this->leftovers->push_back(c);
                     }
 
                     switch_to_state(State::done_state);
@@ -213,7 +214,7 @@ namespace Html
                     this->value->append(this->match_value->second->begin(), this->match_value->second->end());
 
                     // we resolved a character reference, consume only the chars we used
-                    this->not_consumed->erase(this->not_consumed->begin(), this->not_consumed->begin() + this->match_value->first->size());
+                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + this->match_value->first->size());
                 }
 
                 switch_to_state(State::done_state);

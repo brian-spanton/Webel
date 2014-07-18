@@ -10,9 +10,9 @@ namespace Html
     using namespace Basic;
 
     TextNode::TextNode() :
-        Node(NodeType::TEXT_NODE)
+        Node(NodeType::TEXT_NODE),
+        data(std::make_shared<UnicodeString>())
     {
-        this->data = std::make_shared<UnicodeString>();
     }
 
     void TextNode::write_to_human(IStream<Codepoint>* stream, bool verbose)

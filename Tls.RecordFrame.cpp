@@ -9,9 +9,9 @@ namespace Tls
 
     RecordFrame::RecordFrame(Record* record) :
         record(record),
-        type_frame(&this->record->type),
-        version_frame(&this->record->version),
-        length_frame(&this->record->length)
+        type_frame(&this->record->type), // order of declaration is important
+        version_frame(&this->record->version), // order of declaration is important
+        length_frame(&this->record->length) // order of declaration is important
     {
     }
 

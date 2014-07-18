@@ -15,20 +15,20 @@ namespace Tls
         record_frame_length(0),
         extensions_length(0),
         clientHello(clientHello),
-        version_frame(&this->clientHello->client_version),
-        random_frame(&this->clientHello->random),
-        session_id_frame(&this->clientHello->session_id),
-        cipher_suites_frame(&this->clientHello->cipher_suites),
-        compression_methods_frame(&this->clientHello->compression_methods),
-        extensions_length_frame(&this->extensions_length),
-        extension_header_frame(&this->extension_header),
-        server_name_list_frame(&this->clientHello->server_name_list),
-        supported_signature_algorithms_frame(&this->clientHello->supported_signature_algorithms),
-        renegotiation_info_frame(&this->clientHello->renegotiation_info),
-        certificate_status_request_frame(&this->clientHello->certificate_status_request),
-        elliptic_curve_list_frame(&this->clientHello->elliptic_curve_list),
-        ec_point_format_list_frame(&this->clientHello->ec_point_format_list),
-        heartbeat_extension_frame(&this->clientHello->heartbeat_extension)
+        version_frame(&this->clientHello->client_version), // order of declaration is important
+        random_frame(&this->clientHello->random), // order of declaration is important
+        session_id_frame(&this->clientHello->session_id), // order of declaration is important
+        cipher_suites_frame(&this->clientHello->cipher_suites), // order of declaration is important
+        compression_methods_frame(&this->clientHello->compression_methods), // order of declaration is important
+        extensions_length_frame(&this->extensions_length), // order of declaration is important
+        extension_header_frame(&this->extension_header), // order of declaration is important
+        server_name_list_frame(&this->clientHello->server_name_list), // order of declaration is important
+        supported_signature_algorithms_frame(&this->clientHello->supported_signature_algorithms), // order of declaration is important
+        renegotiation_info_frame(&this->clientHello->renegotiation_info), // order of declaration is important
+        certificate_status_request_frame(&this->clientHello->certificate_status_request), // order of declaration is important
+        elliptic_curve_list_frame(&this->clientHello->elliptic_curve_list), // order of declaration is important
+        ec_point_format_list_frame(&this->clientHello->ec_point_format_list), // order of declaration is important
+        heartbeat_extension_frame(&this->clientHello->heartbeat_extension) // order of declaration is important
     {
         this->clientHello->heartbeat_extension_initialized = false;
     }

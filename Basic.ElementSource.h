@@ -54,6 +54,13 @@ namespace Basic
 
         void Read(uint32 count, const T** out_address, uint32* out_count)
         {
+            if (out_address == 0 && out_address == 0)
+            {
+                this->elements_read = this->count;
+                Observe();
+                return;
+            }
+
             if (count == 0)
                 throw FatalError("Basic::ElementSource::Read count == 0");
 
@@ -84,14 +91,6 @@ namespace Basic
             this->elements_read++;
 
             Observe();
-        }
-
-        void UndoReadNext()
-        {
-            if (this->elements_read == 0)
-                throw FatalError("Basic::ElementSource::UndoReadNext");
-
-            this->elements_read--;
         }
 
         void AddObserver(std::shared_ptr<IStream<T> > stream)

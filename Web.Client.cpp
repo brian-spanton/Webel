@@ -398,6 +398,9 @@ namespace Web
                 
                 if (this->response_body_frame->failed())
                 {
+                    // consume all remaining bytes (if any)
+                    Event::Read<byte>(event, 0xffffffff, 0, 0);
+
                     Retry(this->history.back().request);
                     QueuePlanned();
                     throw Yield("event consumed, new thread");

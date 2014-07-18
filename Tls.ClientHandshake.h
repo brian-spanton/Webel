@@ -56,8 +56,8 @@ namespace Tls
         };
 
         ServerHello serverHello;
-        Certificates certificates;
         ServerHelloFrame server_hello_frame;
+        Certificates certificates;
         VectorFrame<Certificates> certificates_frame;
 
         virtual void PartitionKeyMaterial(ByteString* key_material);

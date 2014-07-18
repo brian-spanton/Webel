@@ -9,7 +9,7 @@ namespace Tls
 
     HeartbeatExtensionFrame::HeartbeatExtensionFrame(HeartbeatExtension* heartbeat_extension) :
         heartbeat_extension(heartbeat_extension),
-        mode_frame(&this->heartbeat_extension->mode)
+        mode_frame(&this->heartbeat_extension->mode) // order of declaration is important
     {
     }
 

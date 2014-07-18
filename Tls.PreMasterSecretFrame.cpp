@@ -9,7 +9,7 @@ namespace Tls
 
     PreMasterSecretFrame::PreMasterSecretFrame(PreMasterSecret* pre_master_secret) :
         pre_master_secret(pre_master_secret),
-        version_frame(&this->pre_master_secret->client_version),
+        version_frame(&this->pre_master_secret->client_version), // order of declaration is important
         random_frame((byte*)&this->pre_master_secret->random, sizeof(this->pre_master_secret->random))
     {
     }

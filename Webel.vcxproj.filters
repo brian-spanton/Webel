@@ -827,6 +827,9 @@
     <Filter Include="Project">
       <UniqueIdentifier>{3cc562fd-369c-4160-a320-5e75a28611dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scrape">
+      <UniqueIdentifier>{cf565a85-1976-47da-9117-b596f0b04460}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.txt">

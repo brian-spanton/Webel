@@ -14,7 +14,7 @@ namespace Json
     ByteStreamDecoder::ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output) :
         charset(charset),
         output(output),
-        bom_frame(this->bom, sizeof(this->bom))
+        bom_frame(this->bom, sizeof(this->bom)) // order of declaration is important
     {
     }
 
@@ -22,11 +22,11 @@ namespace Json
     {
         switch (get_state())
         {
-        case State::unconsume_not_initialized_state:
+        case State::leftovers_not_initialized_state:
             {
-                this->not_consumed = std::make_shared<ByteString>();
-                this->not_consumed->reserve(1024);
-                Event::AddObserver<byte>(event, this->not_consumed);
+                this->leftovers = std::make_shared<ByteString>();
+                this->leftovers->reserve(1024);
+                Event::AddObserver<byte>(event, this->leftovers);
 
                 switch_to_state(State::bom_frame_pending_state);
             }
@@ -36,7 +36,7 @@ namespace Json
             {
                 delegate_event(&this->bom_frame, event);
             
-                Event::RemoveObserver<byte>(event, this->not_consumed);
+                Event::RemoveObserver<byte>(event, this->leftovers);
 
                 if (this->bom_frame.failed())
                 {
@@ -83,7 +83,7 @@ namespace Json
                 {
                     this->decoder->set_destination(this->output);
 
-                    this->decoder->write_elements(this->not_consumed->address(), this->not_consumed->size());
+                    this->decoder->write_elements(this->leftovers->address(), this->leftovers->size());
                     switch_to_state(State::decoding_byte_stream);
                 }
             }

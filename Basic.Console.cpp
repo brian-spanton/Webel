@@ -154,7 +154,6 @@ namespace Basic
 
     void Console::write_eof()
     {
-        // $$ let's see what turns up
         HandleError("unexpected eof");
     }
 }

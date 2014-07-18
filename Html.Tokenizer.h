@@ -26,7 +26,7 @@ namespace Html
         std::shared_ptr<IStream<TokenRef> > output;
         Parser* parser;
         UnicodeStringRef character_reference;
-        UnicodeStringRef character_reference_unconsume;
+        UnicodeStringRef character_reference_leftovers;
         std::shared_ptr<TagToken> current_tag_token;
         UnicodeStringRef temporary_buffer;
         UnicodeStringRef last_start_tag_name;
@@ -51,6 +51,7 @@ namespace Html
         void ParseError(Codepoint c);
         void ParseError(const char* error);
         void ParseError(Codepoint c, const char* error);
+        void consume_leftovers();
 
     public:
         friend class TreeConstruction;

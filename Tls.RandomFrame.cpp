@@ -9,8 +9,8 @@ namespace Tls
 
     RandomFrame::RandomFrame(Random* random) :
         random(random),
-        time_frame(&this->random->gmt_unix_time),
-        bytes_frame(this->random->random_bytes, sizeof(this->random->random_bytes))
+        time_frame(&this->random->gmt_unix_time), // order of declaration is important
+        bytes_frame(this->random->random_bytes, sizeof(this->random->random_bytes)) // order of declaration is important
     {
     }
 

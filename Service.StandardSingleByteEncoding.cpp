@@ -10,8 +10,8 @@ namespace Service
     StandardSingleByteEncoding::StandardSingleByteEncoding(std::shared_ptr<SingleByteEncodingIndex> index) :
         client(std::make_shared<Web::Client>()),
         index(index),
-        pointer_stream(&this->pointer),
-        codepoint_stream(&this->codepoint)
+        pointer_stream(&this->pointer), // order of declaration is important
+        codepoint_stream(&this->codepoint) // order of declaration is important
     {
     }
 
@@ -70,11 +70,17 @@ namespace Service
             }
             break;
 
+        default:
+            throw FatalError("Basic::StandardSingleByteEncoding::Complete unexpected state");
+        }
+    }
+
+    void StandardSingleByteEncoding::write_element(byte b)
+    {
+        switch (get_state())
+        {
         case State::line_start_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 if (b == '#')
                 {
                     switch_to_state(State::ignore_line_state);
@@ -88,9 +94,10 @@ namespace Service
                 }
                 else if (Http::globals->DIGIT[b])
                 {
-                    Event::UndoReadNext(event);
                     this->pointer_stream.reset();
                     switch_to_state(State::index_pending_state);
+                    write_element(b);
+                    return;
                 }
                 else
                 {
@@ -101,9 +108,6 @@ namespace Service
 
         case State::ignore_line_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 if (b == Http::globals->LF)
                 {
                     switch_to_state(State::line_start_state);
@@ -113,17 +117,15 @@ namespace Service
 
         case State::before_index_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 if (Http::globals->WSP[b])
                 {
                 }
                 else if (Http::globals->DIGIT[b])
                 {
-                    Event::UndoReadNext(event);
                     this->pointer_stream.reset();
                     switch_to_state(State::index_pending_state);
+                    write_element(b);
+                    return;
                 }
                 else
                 {
@@ -134,9 +136,6 @@ namespace Service
 
         case State::index_pending_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 bool success = this->pointer_stream.WriteDigit(b);
                 if (!success)
                 {
@@ -146,8 +145,9 @@ namespace Service
                     }
                     else
                     {
-                        Event::UndoReadNext(event);
                         switch_to_state(State::before_codepoint_state);
+                        write_element(b);
+                        return;
                     }
                 }
             }
@@ -155,9 +155,6 @@ namespace Service
 
         case State::before_codepoint_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 if (Http::globals->WSP[b])
                 {
                 }
@@ -178,9 +175,6 @@ namespace Service
 
         case State::codepoint_pending_state:
             {
-                byte b;
-                Event::ReadNext(event, &b);
-
                 bool success = this->codepoint_stream.WriteDigit(b);
                 if (!success)
                 {

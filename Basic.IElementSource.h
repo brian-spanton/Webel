@@ -11,7 +11,6 @@ namespace Basic
     {
         void Read(uint32 count, const T** out_address, uint32* out_count);
         void ReadNext(T* element);
-        void UndoReadNext();
         void AddObserver(std::shared_ptr<IStream<T> > stream);
         void RemoveObserver(std::shared_ptr<IStream<T> > stream);
     };

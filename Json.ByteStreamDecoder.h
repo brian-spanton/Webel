@@ -20,7 +20,7 @@ namespace Json
     private:
         enum State
         {
-            unconsume_not_initialized_state = Start_State,
+            leftovers_not_initialized_state = Start_State,
             bom_frame_pending_state,
             decoding_byte_stream,
             done_state = Succeeded_State,
@@ -33,7 +33,7 @@ namespace Json
         UnicodeStringRef charset;
         Tokenizer* output;
         byte bom[4];
-        ByteStringRef not_consumed;
+        ByteStringRef leftovers;
         std::shared_ptr<IDecoder> decoder;
         MemoryRange bom_frame;
 

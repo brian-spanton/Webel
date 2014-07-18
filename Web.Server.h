@@ -28,6 +28,7 @@ namespace Web
         std::shared_ptr<IProcess> accept_completion;
         ByteStringRef accept_cookie;
         std::shared_ptr<RequestFrame> request_frame;
+        std::shared_ptr<Server> self;
 
         void switch_to_state(State state);
 

@@ -11,7 +11,7 @@ namespace Http
 
     BodyFrame::BodyFrame(std::shared_ptr<NameValueCollection> headers) :
         headers(headers),
-        headers_frame(this->headers.get())
+        headers_frame(this->headers.get()) // order of declaration is important
     {
     }
 

@@ -134,11 +134,12 @@ namespace Basic
         {
             uint32 next = (this->bookmark + i) % _countof(this->tail);
 
-            UnicodeString entry;
-
             ByteString* bytes = this->tail[next].get();
-            utf_8_decode(bytes, &entry);
+            if (bytes == 0)
+                continue;
 
+            UnicodeString entry;
+            utf_8_decode(bytes, &entry);
             entry.write_to_stream(stream);
         }
     }

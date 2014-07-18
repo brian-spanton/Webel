@@ -23,7 +23,5 @@ namespace Basic
 
         template<typename element_type>
         static void RemoveObserver(IEvent* event, std::shared_ptr<IStream<element_type> > stream);
-    
-        static void UndoReadNext(IEvent* event);
     };
 }

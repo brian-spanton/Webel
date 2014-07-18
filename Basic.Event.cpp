@@ -125,20 +125,4 @@ namespace Basic
 
         throw FatalError("Basic::Event::RemoveObserver");
     }
-
-    void Event::UndoReadNext(IEvent* event)
-    {
-        if (event->get_type() == EventType::ready_for_read_bytes_event)
-        {
-            ReadyForReadBytesEvent* read_event = (ReadyForReadBytesEvent*)event;
-            return read_event->element_source->UndoReadNext();
-        }
-        else if (event->get_type() == EventType::ready_for_read_codepoints_event)
-        {
-            ReadyForReadCodepointsEvent* read_event = (ReadyForReadCodepointsEvent*)event;
-            return read_event->element_source->UndoReadNext();
-        }
-
-        throw FatalError("Basic::Event::UndoReadNext");
-    }
 }

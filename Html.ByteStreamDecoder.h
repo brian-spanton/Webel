@@ -42,7 +42,7 @@ namespace Html
         std::shared_ptr<IStream<Codepoint> > output;
         Parser* parser;
         byte bom[3];
-        ByteStringRef not_consumed;
+        ByteStringRef leftovers;
         std::shared_ptr<IDecoder> decoder;
         MemoryRange bom_frame;
         Confidence confidence;

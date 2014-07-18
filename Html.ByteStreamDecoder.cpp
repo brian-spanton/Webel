@@ -15,7 +15,7 @@ namespace Html
         parser(parser),
         transport_charset(transport_charset),
         output(output),
-        bom_frame(this->bom, sizeof(this->bom))
+        bom_frame(this->bom, sizeof(this->bom)) // order of declaration is important
     {
     }
 
@@ -25,9 +25,9 @@ namespace Html
         {
         case State::start_state:
             {
-                this->not_consumed = std::make_shared<ByteString>();
-                this->not_consumed->reserve(1024);
-                Event::AddObserver<byte>(event, this->not_consumed);
+                this->leftovers = std::make_shared<ByteString>();
+                this->leftovers->reserve(1024);
+                Event::AddObserver<byte>(event, this->leftovers);
 
                 switch_to_state(State::bom_state);
             }
@@ -39,7 +39,7 @@ namespace Html
             
                 if (this->bom_frame.failed())
                 {
-                    Event::RemoveObserver<byte>(event, this->not_consumed);
+                    Event::RemoveObserver<byte>(event, this->leftovers);
                     switch_to_state(State::bom_frame_failed);
                     return;
                 }
@@ -49,7 +49,7 @@ namespace Html
                     this->encoding = Basic::globals->utf_16_big_endian_label;
                     this->confidence = Confidence_Certain;
 
-                    this->not_consumed->erase(this->not_consumed->begin(), this->not_consumed->begin() + _countof(Basic::globals->utf_16_big_endian_bom));
+                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_16_big_endian_bom));
 
                     switch_to_state(State::sniff_done_state);
                 }
@@ -58,7 +58,7 @@ namespace Html
                     this->encoding = Basic::globals->utf_16_little_endian_label;
                     this->confidence = Confidence_Certain;
 
-                    this->not_consumed->erase(this->not_consumed->begin(), this->not_consumed->begin() + _countof(Basic::globals->utf_16_little_endian_bom));
+                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_16_little_endian_bom));
 
                     switch_to_state(State::sniff_done_state);
                 }
@@ -67,7 +67,7 @@ namespace Html
                     this->encoding = Basic::globals->utf_8_label;
                     this->confidence = Confidence_Certain;
 
-                    this->not_consumed->erase(this->not_consumed->begin(), this->not_consumed->begin() + _countof(Basic::globals->utf_8_bom));
+                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_8_bom));
 
                     switch_to_state(State::sniff_done_state);
                 }
@@ -127,7 +127,7 @@ namespace Html
 
         case State::sniff_done_state:
             {
-                Event::RemoveObserver<byte>(event, this->not_consumed);
+                Event::RemoveObserver<byte>(event, this->leftovers);
 
                 Basic::globals->GetDecoder(this->encoding, &this->decoder);
                 if (this->decoder.get() == 0)
@@ -138,7 +138,7 @@ namespace Html
                 {
                     this->decoder->set_destination(this->output.get());
 
-                    this->decoder->write_elements(this->not_consumed->address(), this->not_consumed->size());
+                    this->decoder->write_elements(this->leftovers->address(), this->leftovers->size());
                     switch_to_state(State::decoding_state);
                 }
             }

@@ -10,8 +10,8 @@ namespace Tls
 
     SignatureAndHashAlgorithmFrame::SignatureAndHashAlgorithmFrame(SignatureAndHashAlgorithm* signature_and_hash_algorithm) :
         signature_and_hash_algorithm(signature_and_hash_algorithm),
-        signature_algorithm_frame((byte*)&this->signature_and_hash_algorithm->signature, sizeof(this->signature_and_hash_algorithm->signature)),
-        hash_algorithm_frame((byte*)&this->signature_and_hash_algorithm->hash, sizeof(this->signature_and_hash_algorithm->hash))
+        signature_algorithm_frame((byte*)&this->signature_and_hash_algorithm->signature, sizeof(this->signature_and_hash_algorithm->signature)), // order of declaration is important
+        hash_algorithm_frame((byte*)&this->signature_and_hash_algorithm->hash, sizeof(this->signature_and_hash_algorithm->hash)) // order of declaration is important
     {
     }
 

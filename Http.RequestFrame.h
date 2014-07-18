@@ -30,11 +30,15 @@ namespace Http
             body_frame_failed,
         };
 
+        // order of declaration matters, see http://msdn.microsoft.com/en-us/library/f1h35k32.aspx
+        // and this class depends upon that order in it's constructor, in particular resource_string
+        // must come before resource_decoder, and request must come before headers_frame and body_frame.
+
         Request* request;
-        SingleByteDecoder resource_decoder;
         UnicodeStringRef resource_string;
-        BodyFrame body_frame;
+        SingleByteDecoder resource_decoder;
         HeadersFrame headers_frame;
+        BodyFrame body_frame;
 
         bool ParseError(byte b);
 

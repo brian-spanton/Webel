@@ -12,7 +12,7 @@ namespace Http
 
     BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream) :
         size(0),
-        size_stream(&this->size),
+        size_stream(&this->size), // order of declaration is important
         chunk_frame(body_stream)
     {
     }
@@ -34,7 +34,10 @@ namespace Http
                 {
                     bool success = this->size_stream.WriteDigit(b);
                     if (!success)
+                    {
                         switch_to_state(State::start_chunk_error);
+                        return;
+                    }
                 }
             }
             break;
@@ -44,40 +47,41 @@ namespace Http
                 byte b;
                 Event::ReadNext(event, &b);
 
-                if (b == Http::globals->LF)
+                if (b != Http::globals->LF)
                 {
-                    if (this->size == 0)
-                    {
-                        switch_to_state(State::done_state);
-                    }
-                    else
-                    {
-                        this->chunk_frame.reset(this->size);
-                        switch_to_state(State::chunk_frame_pending_state);
-                    }
+                    switch_to_state(State::expecting_LF_after_size_error);
+                    return;
+                }
+
+                if (this->size == 0)
+                {
+                    switch_to_state(State::done_state);
                 }
                 else
                 {
-                    switch_to_state(State::expecting_LF_after_size_error);
+                    this->chunk_frame.reset(this->size);
+                    switch_to_state(State::chunk_frame_pending_state);
                 }
             }
             break;
 
         case State::chunk_frame_pending_state:
-            {
-                delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
+            delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
+            switch_to_state(State::expecting_CR_after_chunk_state);
+            break;
 
+        case State::expecting_CR_after_chunk_state:
+            {
                 byte b;
                 Event::ReadNext(event, &b);
 
-                if (b == Http::globals->CR)
-                {
-                    switch_to_state(State::expecting_LF_after_chunk_state);
-                }
-                else
+                if (b != Http::globals->CR)
                 {
                     switch_to_state(State::expecting_CR_after_chunk_error);
+                    return;
                 }
+
+                switch_to_state(State::expecting_LF_after_chunk_state);
             }
             break;
 
@@ -86,15 +90,14 @@ namespace Http
                 byte b;
                 Event::ReadNext(event, &b);
 
-                if (b == Http::globals->LF)
-                {
-                    this->size_stream.reset();
-                    switch_to_state(State::start_chunk_state);
-                }
-                else
+                if (b != Http::globals->LF)
                 {
                     switch_to_state(State::expecting_LF_after_chunk_error);
+                    return;
                 }
+
+                this->size_stream.reset();
+                switch_to_state(State::start_chunk_state);
             }
             break;
 

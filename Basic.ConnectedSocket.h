@@ -14,7 +14,7 @@ namespace Basic
     class ConnectedSocket : public Socket, public IBufferedStream<byte>
     {
     protected:
-        std::weak_ptr<IProcess> protocol; // $$ was shared_ptr
+        std::weak_ptr<IProcess> protocol;
         ElementSource<byte> protocol_element_source;
         sockaddr_in remoteAddress;
 

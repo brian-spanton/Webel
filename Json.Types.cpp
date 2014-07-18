@@ -178,7 +178,7 @@ namespace Json
     void String::write_value(Basic::UnicodeStringRef value, Basic::IStream<Codepoint>* stream)
     {
         stream->write_element('\"');
-        // $$ escape special chars (for instance " )
+        // $$ escape special chars (for instance ")
         value->write_to_stream(stream);
         stream->write_element('\"');
     }

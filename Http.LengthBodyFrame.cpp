@@ -26,6 +26,8 @@ namespace Http
 
     void LengthBodyFrame::reset(uint32 bytes_expected)
     {
+        __super::reset();
+
         this->bytes_expected = bytes_expected;
         this->bytes_received = 0;
 

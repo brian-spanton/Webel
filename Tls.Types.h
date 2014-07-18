@@ -38,7 +38,6 @@ namespace Tls
 
         virtual void IStream<element_type>::write_eof()
         {
-            // $$ let's see what turns up
             HandleError("unexpected eof");
         }
 
@@ -1153,7 +1152,7 @@ namespace Tls
 
         VectorFrame(vector_type* items) :
             items(items),
-            length_frame(&encoded_length)
+            length_frame(&this->encoded_length) // order of declaration is important
         {
         }
 

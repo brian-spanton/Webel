@@ -14,7 +14,7 @@ namespace Basic
 
     TextWriter::TextWriter(IStream<Codepoint>* dest) :
         dest(dest),
-        decoder(Basic::globals->ascii_index, this->dest)
+        decoder(Basic::globals->ascii_index, this->dest) // order of declaration is important
     {
     }
 

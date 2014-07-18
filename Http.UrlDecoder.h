@@ -8,7 +8,7 @@ namespace Http
 {
     using namespace Basic;
 
-    class UrlDecoder : public UnitStream<byte> // $$ this class is unused at the moment
+    class UrlDecoder : public UnitStream<byte> // $ this class is untested
     {
     private:
         enum State

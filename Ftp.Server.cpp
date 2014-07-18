@@ -13,7 +13,7 @@ namespace Ftp
     Server::Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
         accept_completion(completion),
         accept_cookie(cookie),
-        command_frame(&this->command)
+        command_frame(&this->command) // order of declaration is important
     {
     }
 
@@ -42,12 +42,11 @@ namespace Ftp
             {
                 Basic::globals->DebugWriter()->WriteLine("accepted");
 
-                std::shared_ptr<IProcess> completion = this->accept_completion;
-                this->accept_completion = 0;
+                std::shared_ptr<IProcess> completion; // $$$ all completion pointers should be weak_ptr
+                completion.swap(this->accept_completion);
 
                 Http::AcceptCompleteEvent event;
-                event.cookie = this->accept_cookie;
-                this->accept_cookie = 0;
+                event.cookie.swap(this->accept_cookie);
 
                 if (completion.get() != 0)
                     produce_event(completion.get(), &event);
@@ -74,7 +73,7 @@ namespace Ftp
 
                 if (this->command_frame.failed())
                 {
-                    // $$$ nyi
+                    // $$ nyi
                 }
 
                 switch_to_state(State::command_frame_start_state);

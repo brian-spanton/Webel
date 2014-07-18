@@ -31,13 +31,15 @@ namespace Basic
             dictionary(dictionary),
             value(value),
             matched_chars(0),
-            best_complete_match_so_far(this->dictionary->end())
+            best_complete_match_so_far(this->dictionary->end()) // order of declaration is important
         {
             (*this->value) = this->best_complete_match_so_far;
         }
 
         void reset()
         {
+            __super::reset();
+
             this->matched_chars = 0;
             this->best_complete_match_so_far = this->dictionary->end();
             (*this->value) = this->best_complete_match_so_far;
