@@ -9,8 +9,8 @@ namespace Tls
 
     OCSPStatusRequestFrame::OCSPStatusRequestFrame(OCSPStatusRequest* ocsp_status_request) :
         ocsp_status_request(ocsp_status_request),
-        list_frame(&this->ocsp_status_request->responder_id_list), // order of declaration is important
-        extensions_frame(&this->ocsp_status_request->request_extensions) // order of declaration is important
+        list_frame(&this->ocsp_status_request->responder_id_list), // initialization is in order of declaration in class def
+        extensions_frame(&this->ocsp_status_request->request_extensions) // initialization is in order of declaration in class def
     {
     }
 

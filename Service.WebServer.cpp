@@ -1,7 +1,7 @@
 // Copyright © 2013 Brian Spanton
 
 #include "stdafx.h"
-#include "Service.HttpServer.h"
+#include "Service.WebServer.h"
 #include "Basic.ServerSocket.h"
 #include "Basic.FrameStream.h"
 #include "Basic.LogStream.h"
@@ -16,12 +16,12 @@ namespace Service
 {
     using namespace Basic;
 
-    HttpServer::HttpServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+    WebServer::WebServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
         Server(completion, cookie)
     {
     }
 
-    void HttpServer::handle_event()
+    void WebServer::handle_event()
     {
         if (this->request->resource->path.size() > 0)
         {
@@ -52,7 +52,7 @@ namespace Service
         }
     }
 
-    void HttpServer::AdminRequest(Request* request, Response* response)
+    void WebServer::AdminRequest(Request* request, Response* response)
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
         {
@@ -91,7 +91,7 @@ namespace Service
         }
     }
 
-    void HttpServer::EchoRequest(Request* request, Response* response)
+    void WebServer::EchoRequest(Request* request, Response* response)
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
         {
@@ -112,7 +112,7 @@ namespace Service
         }
     }
 
-    void HttpServer::QuestionRequest(Request* request, Response* response)
+    void WebServer::QuestionRequest(Request* request, Response* response)
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
         {
@@ -157,6 +157,8 @@ namespace Service
             NameValueCollection formData;
 
             // $ replace with proper form handling
+            // $ later note: i don't remember what wasn't proper; i think that comment was from the time i was implementing Web::Form
+
             //FormDataFrame frame;
             //frame.Initialize(&formData);
 

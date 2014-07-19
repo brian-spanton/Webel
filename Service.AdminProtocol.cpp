@@ -19,7 +19,7 @@ namespace Service
 
     AdminProtocol::AdminProtocol(std::shared_ptr<Basic::IStream<Codepoint> > peer) :
         client(std::make_shared<Web::Client>()),
-        command_frame(&this->command), // order of declaration is important
+        command_frame(&this->command), // initialization is in order of declaration in class def
         peer(peer)
     {
     }

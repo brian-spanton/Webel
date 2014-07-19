@@ -16,7 +16,7 @@
 #include "Basic.SuffixArray.h"
 #include "Service.StandardEncodings.h"
 #include "Tls.ICertificate.h"
-#include "Service.HttpServer.h"
+#include "Service.WebServer.h"
 #include "Service.HtmlNamedCharacterReferences.h"
 #include "Web.Globals.h"
 #include "Ftp.Server.h"
@@ -188,7 +188,7 @@ namespace Service
                 return false;
         }
 
-        SetThreadCount(1); // $$$ 1 is good for debugging, 0 is good for perf (matches CPU count)
+        SetThreadCount(0); // 1 is good for debugging, 0 is good for perf (matches CPU count)
 
         return true;
     }
@@ -392,7 +392,7 @@ namespace Service
 
         virtual void SpawnListener()
         {
-            std::shared_ptr<HttpServer> protocol = std::make_shared<HttpServer>(this->shared_from_this(), ByteStringRef());
+            std::shared_ptr<WebServer> protocol = std::make_shared<WebServer>(this->shared_from_this(), ByteStringRef());
             protocol->start(this->listener.get(), this->certificate);
         }
     };

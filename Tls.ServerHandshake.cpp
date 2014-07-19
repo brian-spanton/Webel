@@ -22,8 +22,8 @@ namespace Tls
 
     ServerHandshake::ServerHandshake(RecordLayer* session) :
         HandshakeProtocol(session),
-        client_hello_frame(&this->clientHello), // order of declaration is important
-        pre_master_secret_frame(&this->pre_master_secret_bytes) // order of declaration is important
+        client_hello_frame(&this->clientHello), // initialization is in order of declaration in class def
+        pre_master_secret_frame(&this->pre_master_secret_bytes) // initialization is in order of declaration in class def
     {
     }
 

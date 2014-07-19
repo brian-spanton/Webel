@@ -8,8 +8,8 @@
 namespace Service
 {
     HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
-        characters_completion(completion),
-        characters_cookie(cookie),
+        completion(completion),
+        completion_cookie(cookie),
         client(std::make_shared<Web::Client>())
     {
         initialize_unicode(&this->codepoints_member_name, "codepoints");
@@ -22,7 +22,10 @@ namespace Service
         std::shared_ptr<Uri> url = std::make_shared<Uri>();
         url->Initialize("http://www.whatwg.org/specs/web-apps/current-work/multipage/entities.json");
 
-        this->client->Get(url, this->shared_from_this(), ByteStringRef());
+        // keep ourself alive until we decide to self-destruct
+        this->self = this->shared_from_this();
+
+        this->client->Get(url, this->self, ByteStringRef());
     }
 
     void HtmlNamedCharacterReferences::consider_event(IEvent* event)
@@ -116,15 +119,13 @@ namespace Service
 
                     Basic::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d HTML named character references\n", Html::globals->named_character_references_table->size());
 
-                    std::shared_ptr<IProcess> completion = this->characters_completion;
-                    this->characters_completion = 0;
-
-                    CharactersCompleteEvent event;
-                    event.cookie = this->characters_cookie;
-                    this->characters_cookie = 0;
-
+                    std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)
+                    {
+                        CharactersCompleteEvent event;
+                        event.cookie = this->completion_cookie;
                         produce_event(completion.get(), &event);
+                    }
 
                     switch_to_state(State::done_state);
                 }

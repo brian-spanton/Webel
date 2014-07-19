@@ -39,8 +39,8 @@ namespace Web
         this->retries = 0;
         this->redirects = 0;
 
-        this->client_completion = completion;
-        this->client_cookie = cookie;
+        this->completion = completion;
+        this->completion_cookie = cookie;
 
         this->planned_request = request;
 
@@ -105,15 +105,13 @@ namespace Web
         {
             Basic::globals->DebugWriter()->WriteLine("Complete");
 
-            std::shared_ptr<IProcess> completion = this->client_completion;
-            this->client_completion = 0;
-
-            ResponseCompleteEvent event;
-            event.cookie = this->client_cookie;
-            this->client_cookie = 0;
-
+            std::shared_ptr<IProcess> completion = this->completion.lock();
             if (completion.get() != 0)
+            {
+                ResponseCompleteEvent event;
+                event.cookie = this->completion_cookie;
                 produce_event(completion.get(), &event);
+            }
         }
         else if (state == State::headers_pending_state)
         {
@@ -374,8 +372,13 @@ namespace Web
 
                 if (this->planned_request.get() == 0)
                 {
-                    Http::ResponseHeadersEvent event;
-                    produce_event(this->client_completion.get(), &event);
+                    std::shared_ptr<IProcess> completion = this->completion.lock();
+                    if (completion.get() != 0)
+                    {
+                        Http::ResponseHeadersEvent event;
+                        event.cookie = this->completion_cookie;
+                        produce_event(completion.get(), &event);
+                    }
                 }
 
                 if (!body_expected)

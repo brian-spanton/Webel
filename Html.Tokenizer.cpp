@@ -21,7 +21,7 @@ namespace Html
         parser(parser),
         output(output),
         eof_token(std::make_shared<EndOfFileToken>()), // $ could be static
-        char_ref_frame(this->parser) // order of declaration is important
+        char_ref_frame(this->parser) // initialization is in order of declaration in class def
     {
     }
 

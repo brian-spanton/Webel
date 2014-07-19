@@ -23,7 +23,7 @@ namespace Tls
         security_parameters(std::make_shared<SecurityParameters>()),
         handshake_messages(std::make_shared<ByteString>()),
         session(session),
-        handshake_frame(&this->handshake) // order of declaration is important
+        handshake_frame(&this->handshake) // initialization is in order of declaration in class def
     {
         this->handshake_messages->reserve(0x1000);
     }

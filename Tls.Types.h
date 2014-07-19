@@ -1152,7 +1152,7 @@ namespace Tls
 
         VectorFrame(vector_type* items) :
             items(items),
-            length_frame(&this->encoded_length) // order of declaration is important
+            length_frame(&this->encoded_length) // initialization is in order of declaration in class def
         {
         }
 

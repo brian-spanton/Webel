@@ -12,7 +12,7 @@ namespace Http
 
     BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream) :
         size(0),
-        size_stream(&this->size), // order of declaration is important
+        size_stream(&this->size), // initialization is in order of declaration in class def
         chunk_frame(body_stream)
     {
     }

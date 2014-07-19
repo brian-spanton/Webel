@@ -75,7 +75,7 @@ namespace Basic
 
         virtual void IStream<element_type>::write_eof()
         {
-            HandleError("unexpected eof");
+            // ignore (by definition)
         }
     };
 }

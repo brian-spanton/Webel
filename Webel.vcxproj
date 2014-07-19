@@ -101,7 +101,7 @@
     <ClInclude Include="Ftp.Server.h" />
     <ClInclude Include="Service.Endpoint.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
-    <ClInclude Include="Service.HttpServer.h" />
+    <ClInclude Include="Service.WebServer.h" />
     <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
     <ClInclude Include="Tls.HeartbeatMessageFrame.h" />
     <ClInclude Include="Tls.HeartbeatProtocol.h" />
@@ -267,7 +267,7 @@
     <ClCompile Include="Basic.Socket.cpp" />
     <ClCompile Include="Service.Endpoint.cpp" />
     <ClCompile Include="Service.HtmlNamedCharacterReferences.cpp" />
-    <ClCompile Include="Service.HttpServer.cpp" />
+    <ClCompile Include="Service.WebServer.cpp" />
     <ClCompile Include="Service.StandardEncodings.cpp" />
     <ClCompile Include="Service.StandardSingleByteEncoding.cpp" />
     <ClCompile Include="Service.Types.cpp" />

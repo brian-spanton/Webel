@@ -9,8 +9,8 @@ namespace Tls
 
     AlertFrame::AlertFrame(Alert* alert) :
         alert(alert),
-        level_frame(&this->alert->level), // order of declaration is important
-        description_frame(&this->alert->description) // order of declaration is important
+        level_frame(&this->alert->level), // initialization is in order of declaration in class def
+        description_frame(&this->alert->description) // initialization is in order of declaration in class def
     {
     }
 

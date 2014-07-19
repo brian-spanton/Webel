@@ -482,7 +482,7 @@ namespace Web
         (*result) = bytes_result;
     }
 
-    bool Form::Submit(Web::Client* client, std::shared_ptr<IProcess> client_completion, ByteStringRef client_cookie)
+    bool Form::Submit(Web::Client* client, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie)
     {
         FormDataSet form_data_set;
         construct_form_data_set(&this->controls, &form_data_set);
@@ -492,7 +492,7 @@ namespace Web
         if (!success)
             return false;
 
-        client->Get(request, client_completion, client_cookie);
+        client->Get(request, completion, completion_cookie);
         return true;
     }
 

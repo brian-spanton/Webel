@@ -31,7 +31,7 @@ namespace Basic
             dictionary(dictionary),
             value(value),
             matched_chars(0),
-            best_complete_match_so_far(this->dictionary->end()) // order of declaration is important
+            best_complete_match_so_far(this->dictionary->end()) // initialization is in order of declaration in class def
         {
             (*this->value) = this->best_complete_match_so_far;
         }

@@ -14,8 +14,8 @@ namespace Http
     ResponseHeadersFrame::ResponseHeadersFrame(UnicodeStringRef method, Response* response) :
         method(method),
         response(response),
-        number_stream(&this->response->code), // order of declaration is important
-        headers_frame(this->response->headers.get()) // order of declaration is important
+        number_stream(&this->response->code), // initialization is in order of declaration in class def
+        headers_frame(this->response->headers.get()) // initialization is in order of declaration in class def
     {
     }
 

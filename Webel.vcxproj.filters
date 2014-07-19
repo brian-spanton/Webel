@@ -391,9 +391,6 @@
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h">
       <Filter>Service</Filter>
     </ClInclude>
-    <ClInclude Include="Service.HttpServer.h">
-      <Filter>Service</Filter>
-    </ClInclude>
     <ClInclude Include="Service.StandardEncodings.h">
       <Filter>Service</Filter>
     </ClInclude>
@@ -438,6 +435,9 @@
     </ClInclude>
     <ClInclude Include="Basic.Job.h">
       <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.WebServer.h">
+      <Filter>Service</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -756,9 +756,6 @@
     <ClCompile Include="Service.HtmlNamedCharacterReferences.cpp">
       <Filter>Service</Filter>
     </ClCompile>
-    <ClCompile Include="Service.HttpServer.cpp">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="Service.StandardEncodings.cpp">
       <Filter>Service</Filter>
     </ClCompile>
@@ -797,6 +794,9 @@
     </ClCompile>
     <ClCompile Include="Basic.Job.cpp">
       <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.WebServer.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

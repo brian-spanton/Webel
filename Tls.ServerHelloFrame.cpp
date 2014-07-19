@@ -12,14 +12,14 @@ namespace Tls
         record_frame_length(0),
         extensions_length(0),
         serverHello(serverHello),
-        version_frame(&this->serverHello->server_version), // order of declaration is important
-        random_frame(&this->serverHello->random), // order of declaration is important
-        session_id_frame(&this->serverHello->session_id), // order of declaration is important
-        cipher_suite_frame(&this->serverHello->cipher_suite), // order of declaration is important
-        compression_method_frame(&this->serverHello->compression_method), // order of declaration is important
-        extensions_length_frame(&this->extensions_length), // order of declaration is important
-        extension_header_frame(&this->extension_header), // order of declaration is important
-        heartbeat_extension_frame(&this->serverHello->heartbeat_extension) // order of declaration is important
+        version_frame(&this->serverHello->server_version), // initialization is in order of declaration in class def
+        random_frame(&this->serverHello->random), // initialization is in order of declaration in class def
+        session_id_frame(&this->serverHello->session_id), // initialization is in order of declaration in class def
+        cipher_suite_frame(&this->serverHello->cipher_suite), // initialization is in order of declaration in class def
+        compression_method_frame(&this->serverHello->compression_method), // initialization is in order of declaration in class def
+        extensions_length_frame(&this->extensions_length), // initialization is in order of declaration in class def
+        extension_header_frame(&this->extension_header), // initialization is in order of declaration in class def
+        heartbeat_extension_frame(&this->serverHello->heartbeat_extension) // initialization is in order of declaration in class def
     {
         this->serverHello->heartbeat_extension_initialized = false;
     }

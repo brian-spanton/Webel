@@ -31,8 +31,8 @@ namespace Web
 
     private:
         std::shared_ptr<IBufferedStream<byte> > peer;
-        std::shared_ptr<IProcess> client_completion;
-        ByteStringRef client_cookie;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
         std::shared_ptr<ResponseHeadersFrame> response_headers_frame;
         std::shared_ptr<BodyFrame> response_body_frame;
         std::shared_ptr<MediaType> media_type;

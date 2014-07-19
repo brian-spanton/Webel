@@ -19,10 +19,11 @@ namespace Service
             done_state = Succeeded_State,
         };
 
+        std::shared_ptr<StandardEncodings> self;
         std::shared_ptr<Web::Client> client;
         std::shared_ptr<Json::Parser> json_parser;
-        std::shared_ptr<IProcess> encodings_completion;
-        ByteStringRef encodings_cookie;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
 
         UnicodeStringRef Name_encodings;
         UnicodeStringRef Name_heading;

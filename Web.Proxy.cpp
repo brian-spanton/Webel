@@ -15,8 +15,8 @@ namespace Web
 
     Proxy::Proxy(std::shared_ptr<IProcess> completion, ByteStringRef cookie, std::shared_ptr<Uri> server_url) :
         server_url(server_url),
-        accept_completion(completion),
-        accept_cookie(cookie)
+        completion(completion),
+        completion_cookie(cookie)
     {
     }
 
@@ -61,15 +61,13 @@ namespace Web
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
 
-                std::shared_ptr<IProcess> completion = this->accept_completion;
-                this->accept_completion = 0;
-
-                AcceptCompleteEvent event;
-                event.cookie = this->accept_cookie;
-                this->accept_cookie = 0;
-
+                std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)
+                {
+                    AcceptCompleteEvent event;
+                    event.cookie = this->completion_cookie;
                     produce_event(completion.get(), &event);
+                }
 
                 this->buffer = std::make_shared<ByteString>();
 

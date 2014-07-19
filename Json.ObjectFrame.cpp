@@ -14,7 +14,7 @@ namespace Json
 
     ObjectFrame::ObjectFrame(std::shared_ptr<Html::Node> domain, Object* value) :
         domain(domain),
-        element_domain(this->domain), // order of declaration is important
+        element_domain(this->domain), // initialization is in order of declaration in class def
         value(value)
     {
     }

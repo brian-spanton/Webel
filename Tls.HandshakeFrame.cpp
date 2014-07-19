@@ -9,8 +9,8 @@ namespace Tls
 
     HandshakeFrame::HandshakeFrame(Handshake* handshake) :
         handshake(handshake),
-        type_frame(&this->handshake->msg_type), // order of declaration is important
-        length_frame(&this->handshake->length) // order of declaration is important
+        type_frame(&this->handshake->msg_type), // initialization is in order of declaration in class def
+        length_frame(&this->handshake->length) // initialization is in order of declaration in class def
     {
     }
 

@@ -9,8 +9,8 @@ namespace Tls
 
     ExtensionHeaderFrame::ExtensionHeaderFrame(ExtensionHeader* extension) :
         extension(extension),
-        type_frame(&this->extension->type), // order of declaration is important
-        length_frame(&this->extension->length) // order of declaration is important
+        type_frame(&this->extension->type), // initialization is in order of declaration in class def
+        length_frame(&this->extension->length) // initialization is in order of declaration in class def
     {
     }
 

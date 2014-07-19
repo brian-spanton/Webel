@@ -34,6 +34,7 @@ namespace Service
             malformed_content_error,
         };
 
+        std::shared_ptr<StandardSingleByteEncoding> self;
         std::shared_ptr<Web::Client> client;
         std::shared_ptr<Json::Value> json_value;
         byte pointer;
@@ -49,5 +50,6 @@ namespace Service
 
         void start(std::shared_ptr<Uri> index_url);
         virtual void IStream<byte>::write_element(byte element);
+        virtual void IStream<byte>::write_eof();
     };
 }

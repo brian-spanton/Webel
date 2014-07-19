@@ -11,8 +11,8 @@
 namespace Service
 {
     StandardEncodings::StandardEncodings(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
-        encodings_completion(completion),
-        encodings_cookie(cookie),
+        completion(completion),
+        completion_cookie(cookie),
         client(std::make_shared<Web::Client>())
     {
         initialize_unicode(&Name_encodings, "encodings");
@@ -28,7 +28,10 @@ namespace Service
         std::shared_ptr<Uri> encodings_url = std::make_shared<Uri>();
         encodings_url->Initialize("http://encoding.spec.whatwg.org/encodings.json");
 
-        this->client->Get(encodings_url, this->shared_from_this(), ByteStringRef());
+        // keep ourself alive until we decide to self-destruct
+        this->self = this->shared_from_this();
+
+        this->client->Get(encodings_url, this->self, ByteStringRef());
     }
 
     void StandardEncodings::consider_event(IEvent* event)
@@ -227,15 +230,13 @@ namespace Service
 
                     Service::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d encodings\n", Basic::globals->decoder_map.size());
 
-                    std::shared_ptr<IProcess> completion = this->encodings_completion;
-                    this->encodings_completion = 0;
-
-                    EncodingsCompleteEvent event;
-                    event.cookie = this->encodings_cookie;
-                    this->encodings_cookie = 0;
-
+                    std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)
+                    {
+                        EncodingsCompleteEvent event;
+                        event.cookie = this->completion_cookie;
                         produce_event(completion.get(), &event);
+                    }
 
                     switch_to_state(State::done_state);
                 }

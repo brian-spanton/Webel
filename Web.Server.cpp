@@ -15,8 +15,8 @@ namespace Web
     using namespace Basic;
 
     Server::Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
-        accept_completion(completion),
-        accept_cookie(cookie)
+        completion(completion),
+        completion_cookie(cookie)
     {
     }
 
@@ -56,15 +56,13 @@ namespace Web
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
 
-                std::shared_ptr<IProcess> completion = this->accept_completion;
-                this->accept_completion = 0;
-
-                AcceptCompleteEvent event;
-                event.cookie = this->accept_cookie;
-                this->accept_cookie = 0;
-
+                std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)
+                {
+                    AcceptCompleteEvent event;
+                    event.cookie = this->completion_cookie;
                     produce_event(completion.get(), &event);
+                }
 
                 switch_to_state(State::new_request_state);
             }

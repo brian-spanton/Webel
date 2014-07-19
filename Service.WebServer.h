@@ -11,7 +11,7 @@ namespace Service
 {
     using namespace Http;
 
-    class HttpServer : public Web::Server
+    class WebServer : public Web::Server
     {
     private:
         static void AdminRequest(Request* request, Response* response);
@@ -19,7 +19,7 @@ namespace Service
         static void QuestionRequest(Request* request, Response* response);
 
     public:
-        HttpServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        WebServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
         virtual void handle_event();
     };

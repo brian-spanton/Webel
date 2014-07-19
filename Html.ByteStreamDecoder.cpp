@@ -15,7 +15,7 @@ namespace Html
         parser(parser),
         transport_charset(transport_charset),
         output(output),
-        bom_frame(this->bom, sizeof(this->bom)) // order of declaration is important
+        bom_frame(this->bom, sizeof(this->bom)) // initialization is in order of declaration in class def
     {
     }
 

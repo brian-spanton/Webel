@@ -9,8 +9,8 @@ namespace Tls
 
     CertificateStatusRequestFrame::CertificateStatusRequestFrame(CertificateStatusRequest* certificate_status_request) :
         certificate_status_request(certificate_status_request),
-        type_frame(&this->certificate_status_request->status_type), // order of declaration is important
-        request_frame(&this->certificate_status_request->ocsp_status_request) // order of declaration is important
+        type_frame(&this->certificate_status_request->status_type), // initialization is in order of declaration in class def
+        request_frame(&this->certificate_status_request->ocsp_status_request) // initialization is in order of declaration in class def
     {
     }
 

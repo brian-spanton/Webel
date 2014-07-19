@@ -20,8 +20,8 @@ namespace Tls
 
     ClientHandshake::ClientHandshake(RecordLayer* session) :
         HandshakeProtocol(session),
-        server_hello_frame(&this->serverHello), // order of declaration is important
-        certificates_frame(&this->certificates) // order of declaration is important
+        server_hello_frame(&this->serverHello), // initialization is in order of declaration in class def
+        certificates_frame(&this->certificates) // initialization is in order of declaration in class def
     {
     }
 

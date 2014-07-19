@@ -10,14 +10,15 @@ namespace Service
     StandardSingleByteEncoding::StandardSingleByteEncoding(std::shared_ptr<SingleByteEncodingIndex> index) :
         client(std::make_shared<Web::Client>()),
         index(index),
-        pointer_stream(&this->pointer), // order of declaration is important
-        codepoint_stream(&this->codepoint) // order of declaration is important
+        pointer_stream(&this->pointer), // initialization is in order of declaration in class def
+        codepoint_stream(&this->codepoint) // initialization is in order of declaration in class def
     {
     }
 
     void StandardSingleByteEncoding::start(std::shared_ptr<Uri> index_url)
     {
-        this->client->Get(index_url, this->shared_from_this(), ByteStringRef());
+        this->self = this->shared_from_this();
+        this->client->Get(index_url, this->self, ByteStringRef());
     }
 
     void StandardSingleByteEncoding::consider_event(IEvent* event)
@@ -25,18 +26,6 @@ namespace Service
         if (event->get_type() == Http::EventType::response_complete_event)
         {
             switch_to_state(State::connection_lost_error);
-            return;
-        }
-
-        if (event->get_type() == Basic::EventType::element_stream_ending_event)
-        {
-            if (this->get_state() != State::line_start_state)
-            {
-                switch_to_state(State::malformed_content_error);
-                return;
-            }
-
-            switch_to_state(State::done_state);
             return;
         }
 
@@ -60,10 +49,7 @@ namespace Service
                     return;
                 }
 
-                std::shared_ptr<FrameStream<byte> > frame_stream = std::make_shared<FrameStream<byte> >();
-                frame_stream->Initialize(this);
-
-                this->client->set_body_stream(frame_stream);
+                this->client->set_body_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
                 throw Yield("event consumed");
@@ -195,5 +181,16 @@ namespace Service
         default:
             throw FatalError("Basic::StandardSingleByteEncoding::Complete unexpected state");
         }
+    }
+
+    void StandardSingleByteEncoding::write_eof()
+    {
+        if (this->get_state() != State::line_start_state)
+        {
+            switch_to_state(State::malformed_content_error);
+            return;
+        }
+
+        switch_to_state(State::done_state);
     }
 }

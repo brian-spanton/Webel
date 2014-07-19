@@ -22,8 +22,8 @@ namespace Ftp
         };
 
         std::shared_ptr<IBufferedStream<byte> > peer;
-        std::shared_ptr<IProcess> accept_completion;
-        ByteStringRef accept_cookie;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
         std::vector<Basic::ByteStringRef> command;
         Basic::CommandFrame<byte> command_frame;
 

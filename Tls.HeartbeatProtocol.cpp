@@ -12,7 +12,7 @@ namespace Tls
 
     HeartbeatProtocol::HeartbeatProtocol(RecordLayer* session) :
         session(session),
-        heartbeat_message_frame(&this->heartbeat_message) // order of declaration is important
+        heartbeat_message_frame(&this->heartbeat_message) // initialization is in order of declaration in class def
     {
     }
 

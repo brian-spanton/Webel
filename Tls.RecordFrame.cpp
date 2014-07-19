@@ -9,9 +9,9 @@ namespace Tls
 
     RecordFrame::RecordFrame(Record* record) :
         record(record),
-        type_frame(&this->record->type), // order of declaration is important
-        version_frame(&this->record->version), // order of declaration is important
-        length_frame(&this->record->length) // order of declaration is important
+        type_frame(&this->record->type), // initialization is in order of declaration in class def
+        version_frame(&this->record->version), // initialization is in order of declaration in class def
+        length_frame(&this->record->length) // initialization is in order of declaration in class def
     {
     }
 

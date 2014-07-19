@@ -9,8 +9,8 @@ namespace Tls
 
     HeartbeatMessageFrame::HeartbeatMessageFrame(HeartbeatMessage* heartbeat_message) :
         heartbeat_message(heartbeat_message),
-        type_frame(&this->heartbeat_message->type), // order of declaration is important
-        payload_length_frame(&this->heartbeat_message->payload_length), // order of declaration is important
+        type_frame(&this->heartbeat_message->type), // initialization is in order of declaration in class def
+        payload_length_frame(&this->heartbeat_message->payload_length), // initialization is in order of declaration in class def
         plaintext_length(0)
     {
     }

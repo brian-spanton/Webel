@@ -25,8 +25,8 @@ namespace Web
         };
 
         std::shared_ptr<IBufferedStream<byte> > peer;
-        std::shared_ptr<IProcess> accept_completion;
-        ByteStringRef accept_cookie;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
         std::shared_ptr<RequestFrame> request_frame;
         std::shared_ptr<Server> self;
 

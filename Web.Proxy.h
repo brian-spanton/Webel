@@ -24,8 +24,8 @@ namespace Web
 
         std::shared_ptr<IBufferedStream<byte> > client_peer;
         std::shared_ptr<IBufferedStream<byte> > server_peer;
-        std::shared_ptr<IProcess> accept_completion;
-        ByteStringRef accept_cookie;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
         std::shared_ptr<Uri> server_url;
         Lock lock;
         std::shared_ptr<ByteString> buffer;

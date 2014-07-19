@@ -14,12 +14,18 @@ namespace Json
     ByteStreamDecoder::ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output) :
         charset(charset),
         output(output),
-        bom_frame(this->bom, sizeof(this->bom)) // order of declaration is important
+        bom_frame(this->bom, sizeof(this->bom)) // initialization is in order of declaration in class def
     {
     }
 
     void ByteStreamDecoder::consider_event(IEvent* event)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+        {
+            switch_to_state(State::done_state);
+            return;
+        }
+
         switch (get_state())
         {
         case State::leftovers_not_initialized_state:
