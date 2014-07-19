@@ -333,8 +333,6 @@ namespace Http
 
     void CookieParser::write_eof()
     {
-         // $$ probably move logic to write_element and translate to EOF...
-
         switch (this->state)
         {
         case State::in_value_state:

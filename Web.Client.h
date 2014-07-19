@@ -36,6 +36,7 @@ namespace Web
         std::shared_ptr<ResponseHeadersFrame> response_headers_frame;
         std::shared_ptr<BodyFrame> response_body_frame;
         std::shared_ptr<MediaType> media_type;
+        uint8 max_retries;
         uint8 retries;
         uint8 redirects;
         std::shared_ptr<Request> planned_request;
@@ -54,8 +55,8 @@ namespace Web
         TransactionList history;
         CookieList http_cookies;
 
-        void Get(std::shared_ptr<Request> request, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
-        void Get(std::shared_ptr<Uri> url, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        void Get(std::shared_ptr<Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        void Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
         virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 

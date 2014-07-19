@@ -149,7 +149,7 @@ namespace Json
                     }
 
                     Json::String::write_value(it->first, stream);
-                    writer.write_literal(" "); // $$ isn't there a more efficient way to write a space?  change TextWriter to a set of global functions?
+                    writer.write_literal(" "); // $ isn't there a more efficient way to write a space?  change TextWriter to a set of global functions?
                     stream->write_element(Json::globals->name_separator);
                     writer.write_literal(" ");
                     it->second->write_to_stream(stream);
@@ -178,7 +178,7 @@ namespace Json
     void String::write_value(Basic::UnicodeStringRef value, Basic::IStream<Codepoint>* stream)
     {
         stream->write_element('\"');
-        // $$ escape special chars (for instance ")
+        // $$$ escape special chars (for instance ")
         value->write_to_stream(stream);
         stream->write_element('\"');
     }

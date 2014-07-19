@@ -255,8 +255,6 @@ namespace Http
 
     void MediaTypeStream::write_eof()
     {
-         // $$ probably move logic to write_element and translate to EOF...
-
         if (this->state == State::value_state)
         {
             NameValueCollection::value_type nv(this->name, this->value);

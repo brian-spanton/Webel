@@ -17,7 +17,7 @@ namespace Web
 {
     using namespace Basic;
 
-    void Client::Get(std::shared_ptr<Uri> url, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
+    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
         Hold hold(this->lock);
 
@@ -26,10 +26,10 @@ namespace Web
         request->method = Http::globals->get_method;
         request->resource = url;
 
-        Get(request, completion, cookie);
+        Get(request, max_retries, completion, cookie);
     }
 
-    void Client::Get(std::shared_ptr<Http::Request> request, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
+    void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
         Hold hold(this->lock);
 
@@ -43,6 +43,7 @@ namespace Web
         this->completion_cookie = cookie;
 
         this->planned_request = request;
+        this->max_retries = max_retries;
 
         QueuePlanned();
     }
@@ -85,7 +86,7 @@ namespace Web
 
     void Client::Retry(std::shared_ptr<Http::Request> request)
     {
-        if (this->retries == 0) // $$ was 2, need a way for users of Web::Client to specify desired retry behavior
+        if (this->retries == this->max_retries)
         {
             handle_error("retry error");
             this->planned_request = 0;

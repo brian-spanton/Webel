@@ -25,7 +25,7 @@ namespace Service
         // keep ourself alive until we decide to self-destruct
         this->self = this->shared_from_this();
 
-        this->client->Get(url, this->self, ByteStringRef());
+        this->client->Get(url, 0, this->self, ByteStringRef());
     }
 
     void HtmlNamedCharacterReferences::switch_to_state(State state)

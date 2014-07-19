@@ -31,7 +31,7 @@ namespace Service
         // keep ourself alive until we decide to self-destruct
         this->self = this->shared_from_this();
 
-        this->client->Get(encodings_url, this->self, ByteStringRef());
+        this->client->Get(encodings_url, 0, this->self, ByteStringRef());
     }
 
     void StandardEncodings::switch_to_state(State state)

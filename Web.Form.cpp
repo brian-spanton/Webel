@@ -492,7 +492,7 @@ namespace Web
         if (!success)
             return false;
 
-        client->Get(request, completion, completion_cookie);
+        client->Get(request, 0, completion, completion_cookie);
         return true;
     }
 

@@ -122,7 +122,7 @@ namespace Service
                             if (this->current_page.get() != 0)
                                 this->client->http_cookies = this->current_page->http_cookies;
 
-                            this->client->Get(url, this->shared_from_this(), this->get_cookie);
+                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie);
                         }
                     }
                     else
@@ -143,7 +143,7 @@ namespace Service
                             std::shared_ptr<Uri> url = this->current_page->links[index]->url;
                             this->get_cookie = std::make_shared<ByteString>();
                             this->client->http_cookies = this->current_page->http_cookies;
-                            this->client->Get(url, this->shared_from_this(), this->get_cookie);
+                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie);
                         }
                         else
                         {

@@ -18,7 +18,7 @@ namespace Service
     void StandardSingleByteEncoding::start(std::shared_ptr<Uri> index_url)
     {
         this->self = this->shared_from_this();
-        this->client->Get(index_url, this->self, ByteStringRef());
+        this->client->Get(index_url, 0, this->self, ByteStringRef());
     }
 
     void StandardSingleByteEncoding::switch_to_state(State state)
