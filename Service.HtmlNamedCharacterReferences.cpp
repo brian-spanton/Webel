@@ -28,6 +28,17 @@ namespace Service
         this->client->Get(url, this->self, ByteStringRef());
     }
 
+    void HtmlNamedCharacterReferences::switch_to_state(State state)
+    {
+        __super::switch_to_state(state);
+
+        if (!this->in_progress())
+        {
+            // so we don't leak ourself
+            this->self.reset();
+        }
+    }
+
     void HtmlNamedCharacterReferences::consider_event(IEvent* event)
     {
         switch (get_state())

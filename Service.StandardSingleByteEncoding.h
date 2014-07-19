@@ -44,6 +44,7 @@ namespace Service
         std::shared_ptr<SingleByteEncodingIndex> index;
 
         virtual void IProcess::consider_event(IEvent* event);
+        void switch_to_state(State state);
 
     public:
         StandardSingleByteEncoding(std::shared_ptr<SingleByteEncodingIndex> index);

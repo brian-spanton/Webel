@@ -21,6 +21,17 @@ namespace Service
         this->client->Get(index_url, this->self, ByteStringRef());
     }
 
+    void StandardSingleByteEncoding::switch_to_state(State state)
+    {
+        __super::switch_to_state(state);
+
+        if (!this->in_progress())
+        {
+            // so we don't leak ourself
+            this->self.reset();
+        }
+    }
+
     void StandardSingleByteEncoding::consider_event(IEvent* event)
     {
         if (event->get_type() == Http::EventType::response_complete_event)

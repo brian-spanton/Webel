@@ -34,6 +34,17 @@ namespace Service
         this->client->Get(encodings_url, this->self, ByteStringRef());
     }
 
+    void StandardEncodings::switch_to_state(State state)
+    {
+        __super::switch_to_state(state);
+
+        if (!this->in_progress())
+        {
+            // so we don't leak ourself
+            this->self.reset();
+        }
+    }
+
     void StandardEncodings::consider_event(IEvent* event)
     {
         bool found_ascii = false;

@@ -33,6 +33,7 @@ namespace Service
         UnicodeStringRef Name_labels;
 
         virtual void IProcess::consider_event(IEvent* event);
+        void switch_to_state(State state);
 
     public:
         StandardEncodings(std::shared_ptr<IProcess> completion, ByteStringRef cookie);

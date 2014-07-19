@@ -28,6 +28,7 @@ namespace Service
         UnicodeStringRef codepoints_member_name;
 
         virtual void IProcess::consider_event(IEvent* event);
+        void switch_to_state(State state);
 
     public:
         HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
