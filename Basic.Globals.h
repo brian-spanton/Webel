@@ -77,7 +77,7 @@ namespace Basic
         virtual Basic::TextWriter* DebugWriter();
 
         virtual void ICompletionQueue::BindToCompletionQueue(Socket* socket);
-        virtual void ICompletionQueue::BindToCompletionQueue(LogFile* log_file);
+        virtual void ICompletionQueue::BindToCompletionQueue(FileLog* log_file);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);
     };
 

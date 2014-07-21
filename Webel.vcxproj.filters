@@ -157,9 +157,6 @@
     <ClInclude Include="Basic.Lock.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.LogFile.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Basic.MemoryRange.h">
       <Filter>Basic</Filter>
     </ClInclude>
@@ -445,6 +442,24 @@
     <ClInclude Include="Service.WebServerEndpoint.h">
       <Filter>Service</Filter>
     </ClInclude>
+    <ClInclude Include="Basic.FileLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ConsoleLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.DebugLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ILog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.MemoryLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.TailLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -589,9 +604,6 @@
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.ListenSocket.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
-    <ClCompile Include="Basic.LogFile.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.MemoryRange.cpp">
@@ -812,6 +824,21 @@
     </ClCompile>
     <ClCompile Include="Service.WebServerEndpoint.cpp">
       <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.FileLog.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ConsoleLog.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.DebugLog.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.MemoryLog.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.TailLog.cpp">
+      <Filter>Basic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

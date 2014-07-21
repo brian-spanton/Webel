@@ -104,9 +104,9 @@ namespace Basic
         initialize_unicode(&dot_dot, "..");
         initialize_unicode(&dot, ".");
 
-        initialize_unicode(&text_plain_media_type, "text/plain");
-        initialize_unicode(&text_html_media_type, "text/html");
-        initialize_unicode(&application_json_media_type, "application/json");
+        initialize_unicode(&text_plain_media_type, "text/plain; charset=utf-8");
+        initialize_unicode(&text_html_media_type, "text/html; charset=utf-8");
+        initialize_unicode(&application_json_media_type, "application/json; charset=utf-8");
         initialize_unicode(&charset_parameter_name, "charset");
 
         ZeroMemory(this->simple_encode_anti_set, sizeof(this->simple_encode_anti_set));
@@ -211,7 +211,7 @@ namespace Basic
         return this->completion_queue->QueueJob(job);
     }
 
-    void Globals::BindToCompletionQueue(LogFile* log_file)
+    void Globals::BindToCompletionQueue(FileLog* log_file)
     {
         if (this->completion_queue.get() == 0)
             throw FatalError("no error handler set");

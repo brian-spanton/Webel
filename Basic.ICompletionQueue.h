@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Basic.Socket.h"
-#include "Basic.LogFile.h"
+#include "Basic.FileLog.h"
 #include "Basic.Job.h"
 
 namespace Basic
@@ -11,7 +11,7 @@ namespace Basic
     __interface ICompletionQueue
     {
         void BindToCompletionQueue(Socket* socket);
-        void BindToCompletionQueue(LogFile* log_file);
+        void BindToCompletionQueue(FileLog* log_file);
         void QueueJob(std::shared_ptr<Job> job);
     };
 }

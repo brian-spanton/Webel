@@ -3,18 +3,19 @@
 #pragma once
 
 #include "Basic.IStream.h"
-#include "Basic.LogFile.h"
+#include "Basic.ILog.h"
 
 namespace Basic
 {
     class LogStream : public UnitStream<Codepoint>
     {
     private:
-        std::shared_ptr<LogFile> log_file;
         UnicodeStringRef entry;
 
     public:
-        void Initialize(std::shared_ptr<LogFile> log_file);
+        typedef std::list<std::weak_ptr<ILog> > LogList;
+
+        LogList logs;
 
         virtual void IStream<Codepoint>::write_element(Codepoint element);
     };

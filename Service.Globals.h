@@ -17,6 +17,11 @@
 #include "Service.WebServerEndpoint.h"
 #include "Service.WebProxyEndpoint.h"
 #include "Service.FtpServerEndpoint.h"
+#include "Basic.ConsoleLog.h"
+#include "Basic.DebugLog.h"
+#include "Basic.FileLog.h"
+#include "Basic.MemoryLog.h"
+#include "Basic.TailLog.h"
 
 namespace Service
 {
@@ -58,7 +63,11 @@ namespace Service
         typedef std::vector<Basic::UnicodeStringRef> CommandList;
 
         std::shared_ptr<Basic::Console> console;
-        std::shared_ptr<Basic::LogFile> debugLog;
+        std::shared_ptr<Basic::FileLog> file_log;
+        std::shared_ptr<Basic::MemoryLog> memory_log;
+        std::shared_ptr<Basic::TailLog> tail_log;
+        std::shared_ptr<Basic::ConsoleLog> console_log;
+        std::shared_ptr<Basic::DebugLog> debug_log;
 
         std::string service_name;
         std::string self_sign_domain;
@@ -82,6 +91,7 @@ namespace Service
         Basic::UnicodeStringRef root_admin;
         Basic::UnicodeStringRef root_echo;
         Basic::UnicodeStringRef root_question;
+        Basic::UnicodeStringRef root_log;
 
         std::shared_ptr<AdminProtocol> adminProtocol;
 
@@ -134,7 +144,7 @@ namespace Service
         virtual Basic::TextWriter* IErrorHandler::DebugWriter();
 
         virtual void ICompletionQueue::BindToCompletionQueue(Socket* socket);
-        virtual void ICompletionQueue::BindToCompletionQueue(LogFile* log_file);
+        virtual void ICompletionQueue::BindToCompletionQueue(FileLog* log_file);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);
 
         virtual bool ICertificate::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);

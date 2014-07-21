@@ -100,7 +100,7 @@ namespace Service
                 }
                 else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_log.get()))
                 {
-                    Service::globals->debugLog->WriteTo(this->peer.get());
+                    Service::globals->tail_log->write_to_stream(this->peer.get());
                     handled = true;
                 }
                 else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_get.get()))

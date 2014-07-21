@@ -17,6 +17,7 @@ namespace Service
         static void AdminRequest(Request* request, Response* response);
         static void EchoRequest(Request* request, Response* response);
         static void QuestionRequest(Request* request, Response* response);
+        static void LogRequest(Request* request, Response* response);
 
     public:
         WebServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie);

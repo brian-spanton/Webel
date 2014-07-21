@@ -94,9 +94,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Basic.ConsoleLog.h" />
+    <ClInclude Include="Basic.DebugLog.h" />
+    <ClInclude Include="Basic.ILog.h" />
     <ClInclude Include="Basic.LogStream.h" />
     <ClInclude Include="Basic.ElementSource.h" />
     <ClInclude Include="Basic.IStreamWriter.h" />
+    <ClInclude Include="Basic.MemoryLog.h" />
+    <ClInclude Include="Basic.TailLog.h" />
     <ClInclude Include="Ftp.Globals.h" />
     <ClInclude Include="Ftp.Server.h" />
     <ClInclude Include="Service.Endpoint.h" />
@@ -142,7 +147,7 @@
     <ClInclude Include="Basic.IStream.h" />
     <ClInclude Include="Basic.ListenSocket.h" />
     <ClInclude Include="Basic.Lock.h" />
-    <ClInclude Include="Basic.LogFile.h" />
+    <ClInclude Include="Basic.FileLog.h" />
     <ClInclude Include="Basic.MemoryRange.h" />
     <ClInclude Include="Basic.NameValueCollection.h" />
     <ClInclude Include="Basic.IgnoreFrame.h" />
@@ -244,15 +249,19 @@
     <ClInclude Include="Basic.TextSanitizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Basic.ConsoleLog.cpp" />
+    <ClCompile Include="Basic.DebugLog.cpp" />
     <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />
     <ClCompile Include="Basic.Frame.cpp" />
     <ClCompile Include="Basic.FrameStream.cpp" />
     <ClCompile Include="Basic.Globals.cpp" />
+    <ClCompile Include="Basic.MemoryLog.cpp" />
     <ClCompile Include="Basic.SingleByteDecoder.cpp" />
     <ClCompile Include="Basic.SingleByteEncoder.cpp" />
     <ClCompile Include="Basic.SingleByteEncodingIndex.cpp" />
     <ClCompile Include="Basic.String.cpp" />
+    <ClCompile Include="Basic.TailLog.cpp" />
     <ClCompile Include="Basic.Types.cpp" />
     <ClCompile Include="Basic.Utf32LittleEndianDecoder.cpp" />
     <ClCompile Include="Basic.Utf8Encoder.cpp" />
@@ -264,7 +273,7 @@
     <ClCompile Include="Basic.HashAlgorithm.cpp" />
     <ClCompile Include="Basic.HashStream.cpp" />
     <ClCompile Include="Basic.ListenSocket.cpp" />
-    <ClCompile Include="Basic.LogFile.cpp" />
+    <ClCompile Include="Basic.FileLog.cpp" />
     <ClCompile Include="Basic.MemoryRange.cpp" />
     <ClCompile Include="Basic.Socket.cpp" />
     <ClCompile Include="Service.Endpoint.cpp" />

@@ -11,6 +11,7 @@
 #include "Http.HeadersFrame.h"
 #include "Html.ElementNode.h"
 #include "Service.Globals.h"
+#include "Basic.Utf8Encoder.h"
 
 namespace Service
 {
@@ -38,6 +39,10 @@ namespace Service
             else if (equals<UnicodeString, false>(resource.get(), Service::globals->root_question.get()))
             {
                 QuestionRequest(this->request.get(), this->response.get());
+            }
+            else if (equals<UnicodeString, false>(resource.get(), Service::globals->root_log.get()))
+            {
+                LogRequest(this->request.get(), this->response.get());
             }
             else
             {
@@ -76,8 +81,6 @@ namespace Service
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
 
-            // $ set charset in mediatype
-
             response->server_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_plain_media_type);
             response->code = 200;
@@ -111,6 +114,32 @@ namespace Service
         }
     }
 
+    struct LogWriter : public IStreamWriter<byte>
+    {
+        virtual void IStreamWriter<byte>::write_to_stream(IStream<byte>* stream) const
+        {
+            Utf8Encoder encoder;
+            encoder.set_destination(stream);
+            Service::globals->tail_log->write_to_stream(&encoder);
+        }
+    };
+
+    void WebServer::LogRequest(Request* request, Response* response)
+    {
+        if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
+        {
+            response->server_body = std::make_shared<LogWriter>();
+            response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_plain_media_type);
+            response->code = 200;
+            response->reason = Http::globals->reason_ok;
+        }
+        else
+        {
+            response->code = 405;
+            response->reason = Http::globals->reason_method;
+        }
+    }
+
     void WebServer::QuestionRequest(Request* request, Response* response)
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
@@ -125,8 +154,6 @@ namespace Service
 
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
-
-            // $ set charset in mediatype
 
             response->server_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_html_media_type);
@@ -182,8 +209,6 @@ namespace Service
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
             
-            // $ set charset in mediatype
-
             response->server_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_html_media_type);
             response->code = 200;

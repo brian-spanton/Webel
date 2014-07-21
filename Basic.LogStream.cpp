@@ -2,23 +2,17 @@
 
 #include "stdafx.h"
 #include "Basic.LogStream.h"
-#include "Basic.Event.h"
-#include "Basic.Frame.h"
 
 namespace Basic
 {
-    void LogStream::Initialize(std::shared_ptr<LogFile> log_file)
-    {
-        this->log_file = log_file;
-        this->entry = std::make_shared<UnicodeString>();
-        this->entry->reserve(0x400);
-    }
-
     void LogStream::write_element(Codepoint codepoint)
     {
         // prefix each line with some context
-        if (this->entry->size() == 0)
+        if (this->entry.get() == 0)
         {
+            this->entry = std::make_shared<UnicodeString>();
+            this->entry->reserve(0x100);
+
             TextWriter text(this->entry.get());
             text.WriteThreadId();
             text.write_literal(" ");
@@ -31,10 +25,16 @@ namespace Basic
         // when we get to the end of a line, write the entry out
         if (codepoint == '\n')
         {
-            this->log_file->write_entry(this->entry.get());
+            for (LogList::iterator it = this->logs.begin(); it != this->logs.end(); it++)
+            {
+                std::shared_ptr<ILog> log = it->lock();
+                if (log.get() == 0)
+                    continue;
 
-            // now the entry is ready to reuse
-            this->entry->clear();
+                log->write_entry(this->entry);
+            }
+
+            this->entry.reset();
         }
     }
 }

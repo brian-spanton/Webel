@@ -60,7 +60,10 @@ namespace Service
     {
         // these get used before Globals::Initialize is called
 
-        this->debugLog = std::make_shared<Basic::LogFile>();
+        this->console_log = std::make_shared<Basic::ConsoleLog>();
+        this->debug_log = std::make_shared<Basic::DebugLog>();
+        this->memory_log = std::make_shared<Basic::MemoryLog>();
+        this->tail_log = std::make_shared<Basic::TailLog>();
     }
 
     Globals::~Globals()
@@ -130,6 +133,7 @@ namespace Service
         initialize_unicode(&root_admin, "admin");
         initialize_unicode(&root_echo, "echo");
         initialize_unicode(&root_question, "question");
+        initialize_unicode(&root_log, "log");
 
         initialize_unicode(&title_property, "title"); // $ schema for search index
         initialize_unicode(&as_of_property, "as of"); // $ schema for search index
@@ -146,7 +150,8 @@ namespace Service
         char log_path[MAX_PATH + 0x100];
         GetFilePath("service.log", log_path);
 
-        this->debugLog->Initialize(log_path);
+        this->file_log = std::make_shared<Basic::FileLog>();
+        this->file_log->Initialize(log_path);
 
         DebugWriter()->WriteLine("initializing stop event");
 
@@ -504,7 +509,7 @@ namespace Service
             throw Basic::FatalError("Globals::QueueJob PostQueuedCompletionStatus", GetLastError());
     }
 
-    void Globals::BindToCompletionQueue(LogFile* log_file)
+    void Globals::BindToCompletionQueue(FileLog* log_file)
     {
         HANDLE handle = log_file->file;
 
@@ -602,7 +607,11 @@ namespace Service
         if (debug_stream == 0)
         {
             Basic::LogStream* log_stream = new Basic::LogStream();
-            log_stream->Initialize(this->debugLog);
+            log_stream->logs.push_back(this->console_log);
+            log_stream->logs.push_back(this->debug_log);
+            log_stream->logs.push_back(this->file_log);
+            log_stream->logs.push_back(this->memory_log);
+            log_stream->logs.push_back(this->tail_log);
 
             debug_stream = log_stream;
         }
