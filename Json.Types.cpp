@@ -178,8 +178,57 @@ namespace Json
     void String::write_value(Basic::UnicodeStringRef value, Basic::IStream<Codepoint>* stream)
     {
         stream->write_element('\"');
-        // $$$ escape special chars (for instance ")
-        value->write_to_stream(stream);
+
+        for (UnicodeString::iterator it = value->begin(); it != value->end(); it++)
+        {
+            switch (*it)
+            {
+            case 0x0022:
+                stream->write_element('\\');
+                stream->write_element('\"');
+                break;
+
+            case 0x005C:
+                stream->write_element('\\');
+                stream->write_element('\\');
+                break;
+
+            case 0x002F:
+                stream->write_element('\\');
+                stream->write_element('/');
+                break;
+
+            case 0x0008:
+                stream->write_element('\\');
+                stream->write_element('b');
+                break;
+
+            case 0x000C:
+                stream->write_element('\\');
+                stream->write_element('f');
+                break;
+
+            case 0x000A:
+                stream->write_element('\\');
+                stream->write_element('n');
+                break;
+
+            case 0x000D:
+                stream->write_element('\\');
+                stream->write_element('r');
+                break;
+
+            case 0x0009:
+                stream->write_element('\\');
+                stream->write_element('t');
+                break;
+
+            default:
+                stream->write_element(*it);
+                break;
+            }
+        }
+
         stream->write_element('\"');
     }
 
