@@ -21,6 +21,9 @@ namespace Html
 
     void ByteStreamDecoder::consider_event(IEvent* event)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+            throw Yield("event consumed");
+
         switch (get_state())
         {
         case State::start_state:

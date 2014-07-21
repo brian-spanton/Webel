@@ -14,6 +14,9 @@
 #include "Service.Types.h"
 #include "Basic.ICompletionQueue.h"
 #include "Tls.ICertificate.h"
+#include "Service.WebServerEndpoint.h"
+#include "Service.WebProxyEndpoint.h"
+#include "Service.FtpServerEndpoint.h"
 
 namespace Service
 {
@@ -87,6 +90,10 @@ namespace Service
         UnicodeStringRef source_property;
 
         std::shared_ptr<Index> index;
+
+        std::shared_ptr<WebServerEndpoint> http_endpoint;
+        std::shared_ptr<WebServerEndpoint> https_endpoint;
+        std::shared_ptr<FtpServerEndpoint> ftp_control_endpoint;
 
         Globals();
         ~Globals();

@@ -51,7 +51,9 @@ namespace Tls
                         if (error != 0)
                             throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
 
-                        serialize<HeartbeatMessage>()(&this->heartbeat_message, this->session);
+                        ByteString heartbeat_bytes;
+                        serialize<HeartbeatMessage>()(&this->heartbeat_message, &heartbeat_bytes);
+                        this->session->write_record_elements(ContentType::heartbeat_content_type, heartbeat_bytes.address(), heartbeat_bytes.size());
                     }
                     break;
 

@@ -31,10 +31,13 @@ namespace Tls
                 switch (this->alert.description)
                 {
                 case AlertDescription::close_notify:
-                    switch_to_state(State::alert_frame_peer_close_notify_state);
+                    this->session->DisconnectApplication();
+                    this->session->CloseTransport();
+                    switch_to_state(State::start_state);
                     break;
 
                 default:
+                    // $$ process other alerts
                     switch_to_state(State::start_state);
                     break;
                 }

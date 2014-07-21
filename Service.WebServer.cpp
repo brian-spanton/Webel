@@ -72,7 +72,6 @@ namespace Service
             }
 
             frame_stream.write_element(Http::globals->CR);
-            frame_stream.write_eof();
 
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());

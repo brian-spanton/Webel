@@ -7,11 +7,10 @@
 #include "Basic.IProcess.h"
 #include "Basic.ElementSource.h"
 #include "Basic.Lock.h"
-#include "Basic.IBufferedStream.h"
 
 namespace Basic
 {
-    class ConnectedSocket : public Socket, public IBufferedStream<byte>
+    class ConnectedSocket : public Socket, public IStream<byte>
     {
     protected:
         std::weak_ptr<IProcess> protocol;
@@ -31,7 +30,6 @@ namespace Basic
 
         virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
         virtual void IStream<byte>::write_element(byte element);
-        virtual void Flush();
         virtual void IStream<byte>::write_eof();
     };
 }

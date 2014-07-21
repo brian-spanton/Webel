@@ -123,19 +123,14 @@ namespace Http
         }
     }
 
-    void serialize_request_line(const Request* value, IStream<byte>* stream)
+    void render_request_line(const Request* value, IStream<byte>* stream)
     {
-        ascii_encode(value->method.get(), stream);
-
-        stream->write_element(Http::globals->SP);
-
         SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        value->resource->write_to_stream(&encoder, true, true);
+        value->method->write_to_stream(&encoder);
 
         stream->write_element(Http::globals->SP);
-
-        ascii_encode(value->protocol.get(), stream);
+        value->resource->write_to_stream(&encoder, true, true);
     }
 }

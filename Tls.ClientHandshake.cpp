@@ -31,6 +31,12 @@ namespace Tls
         {
         case State::start_state:
             {
+                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
+
                 Event::AddObserver<byte>(event, this->handshake_messages);
 
                 this->security_parameters->client_random.gmt_unix_time = 0;
@@ -44,26 +50,27 @@ namespace Tls
                 clientHello.random = this->security_parameters->client_random;
                 clientHello.cipher_suites = Tls::globals->supported_cipher_suites;
                 clientHello.compression_methods.push_back(CompressionMethod::cm_null);
-
-                if (this->session->send_heartbeats)
-                {
-                    clientHello.heartbeat_extension.mode = HeartbeatMode::peer_not_allowed_to_send;
-                    clientHello.heartbeat_extension_initialized = true;
-                }
+                clientHello.heartbeat_extension_initialized = false; // $$
 
                 Serializer<ClientHello> client_hello_serializer(&clientHello);
 
-                bool success = WriteMessage(this->session, HandshakeType::client_hello, &client_hello_serializer);
+                bool success = WriteMessage(HandshakeType::client_hello, &client_hello_serializer);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_1_failed);
                     return;
                 }
 
-                this->session->Flush();
+                // due to async nature, we can get called back even before write_record_elements returns, so be ready first...
 
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_server_hello_state);
+
+                ByteStringRef send_buffer = std::make_shared<ByteString>();
+                send_buffer.swap(this->send_buffer);
+
+                this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
+                throw Yield("event consumed");
             }
             break;
 
@@ -106,9 +113,12 @@ namespace Tls
 
                 if (this->serverHello.heartbeat_extension_initialized)
                 {
+                    this->session->receive_heartbeats = true;
+
                     switch (this->serverHello.heartbeat_extension.mode)
                     {
                     case HeartbeatMode::peer_allowed_to_send:
+                        this->session->send_heartbeats = true;
                         break;
 
                     case HeartbeatMode::peer_not_allowed_to_send:
@@ -262,21 +272,17 @@ namespace Tls
 
                     Serializer<EncryptedPreMasterSecret> encrypted_pre_master_secret_serializer(&pre_master_secret_encrypted);
 
-                    success = WriteMessage(this->session, HandshakeType::client_key_exchange, &encrypted_pre_master_secret_serializer);
+                    // $$ move this comment; do logging to a logging microservice instead of local file
+                    // $$ move this comment; pass peer in write bytes ready path
+
+                    success = WriteMessage(HandshakeType::client_key_exchange, &encrypted_pre_master_secret_serializer);
                     if (!success)
                     {
                         switch_to_state(State::WriteMessage_2_failed);
                         return;
                     }
 
-                    this->finished_sent = std::make_shared<ByteString>();
-                    this->finished_sent->resize(this->security_parameters->verify_data_length);
-
-                    CalculateVerifyData(&Tls::globals->client_finished_label, this->finished_sent->address(), (uint16)this->finished_sent->size());
-
-                    this->session->WriteChangeCipherSpec();
-
-                    success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent.get());
+                    success = WriteFinished(&Tls::globals->client_finished_label);
                     if (!success)
                     {
                         switch_to_state(State::WriteMessage_3_failed);
@@ -292,9 +298,15 @@ namespace Tls
                     ZeroMemory(this->handshake_messages->address(), this->handshake_messages->size());
                     this->handshake_messages->clear();
 
+                    // due to async nature, we can get called back even before write_record_elements returns, so be ready first...
+
                     switch_to_state(State::expecting_cipher_change_state);
 
-                    this->session->Flush();
+                    ByteStringRef send_buffer = std::make_shared<ByteString>();
+                    send_buffer.swap(this->send_buffer);
+
+                    this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
+                    throw Yield("event consumed");
                 }
             }
             break;
@@ -309,6 +321,7 @@ namespace Tls
 
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_finished_state);
+                throw Yield("event consumed");
             }
             break;
 

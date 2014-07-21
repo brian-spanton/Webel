@@ -23,8 +23,10 @@ namespace Tls
         security_parameters(std::make_shared<SecurityParameters>()),
         handshake_messages(std::make_shared<ByteString>()),
         session(session),
-        handshake_frame(&this->handshake) // initialization is in order of declaration in class def
+        handshake_frame(&this->handshake), // initialization is in order of declaration in class def
+        send_buffer(std::make_shared<ByteString>())
     {
+        // $$ find a way to optimize this - directly write into the hash stream instead?
         this->handshake_messages->reserve(0x1000);
     }
 
@@ -80,16 +82,26 @@ namespace Tls
 
         CalculateVerifyData(label, finished_data->address(), (uint16)finished_data->size());
 
+        // send the handshake buffer so far, before sending change cipher spec
+
+        if (this->send_buffer->size() > 0)
+        {
+            ByteStringRef send_buffer = std::make_shared<ByteString>();
+            send_buffer.swap(this->send_buffer);
+
+            this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
+        }
+
         this->session->WriteChangeCipherSpec();
 
-        bool success = WriteMessage(this->session, HandshakeType::finished, finished_data.get());
+        bool success = WriteMessage(HandshakeType::finished, finished_data.get());
         if (!success)
             return false;
 
         return true;
     }
 
-    bool HandshakeProtocol::WriteMessage(IStream<byte>* stream, HandshakeType msg_type, IStreamWriter<byte>* frame)
+    bool HandshakeProtocol::WriteMessage(HandshakeType msg_type, IStreamWriter<byte>* frame)
     {
         Handshake handshake;
         handshake.msg_type = msg_type;
@@ -103,12 +115,12 @@ namespace Tls
         }
 
         serialize<Handshake>()(&handshake, this->handshake_messages.get());
-        serialize<Handshake>()(&handshake, stream);
+        serialize<Handshake>()(&handshake, this->send_buffer.get());
 
         if (frame != 0)
         {
             frame->write_to_stream(this->handshake_messages.get());
-            frame->write_to_stream(stream);
+            frame->write_to_stream(this->send_buffer.get());
         }
 
         return true;

@@ -23,9 +23,6 @@ namespace Tls
         this->server = server;
         this->certificate = certificate;
 
-        this->record_buffer = std::make_shared<ByteString>();
-        this->record_buffer->reserve(0x400);
-
         this->version_low = 0x0301;
         this->version_high = 0x0302;
         this->version = this->version_high;
@@ -33,7 +30,7 @@ namespace Tls
 
         this->session_id.resize(32);
 
-        this->send_heartbeats = true; // $$
+        this->send_heartbeats = false;
         this->receive_heartbeats = false;
 
         NTSTATUS error = BCryptGenRandom(0, this->session_id.address(), this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
@@ -67,7 +64,7 @@ namespace Tls
         this->pending_write_state = std::make_shared<ConnectionState>();
     }
 
-    void RecordLayer::set_transport(std::shared_ptr<IBufferedStream<byte> > peer)
+    void RecordLayer::set_transport(std::shared_ptr<IStream<byte> > peer)
     {
         this->transport_peer = peer;
     }
@@ -90,8 +87,7 @@ namespace Tls
                     throw Yield("unexpected event");
                 }
 
-                this->current_type = ContentType::handshake;
-
+                // produce same event but with specific element source so that handshake_protocol can AddObserver
                 ReadyForWriteBytesEvent handshake_event;
                 handshake_event.Initialize(&this->handshake_element_source);
                 produce_event(this->handshake_protocol.get(), &handshake_event);
@@ -104,6 +100,8 @@ namespace Tls
                 {
                     switch_to_state(State::receive_record_state);
                 }
+
+                throw Yield("event consumed");
             }
             break;
 
@@ -141,10 +139,10 @@ namespace Tls
         alert.description = description;
         alert.level = level;
 
-        this->current_type = ContentType::alert;
-        serialize<Alert>()(&alert, this);
+        ByteString alert_bytes;
+        serialize<Alert>()(&alert, &alert_bytes);
 
-        Flush();
+        write_record_elements(ContentType::alert, alert_bytes.address(), alert_bytes.size());
     }
 
     void RecordLayer::write_eof()
@@ -164,9 +162,6 @@ namespace Tls
     {
         write_record_elements(ContentType::change_cipher_spec, &ChangeCipherSpec, sizeof(ChangeCipherSpec));
 
-        // make sure to actually send this record prior to changing the write states
-        FlushRecordBuffer();
-
         this->active_write_state = this->pending_write_state;
         this->pending_write_state = std::make_shared<ConnectionState>();
     }
@@ -178,7 +173,6 @@ namespace Tls
             throw State::application_lost_error_1;
 
         this->application_connected = true;
-        this->current_type = ContentType::application_data;
         ReadyForWriteBytesEvent event;
         event.Initialize(&this->application_element_source);
         produce_event(protocol.get(), &event);
@@ -205,9 +199,9 @@ namespace Tls
             if (error != 0)
                 throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
 
-            this->current_type = ContentType::heartbeat_content_type;
-            serialize<HeartbeatMessage>()(&heartbeat_message, this);
-            Flush();
+            ByteString heartbeat_bytes;
+            serialize<HeartbeatMessage>()(&heartbeat_message, &heartbeat_bytes);
+            this->write_record_elements(ContentType::heartbeat_content_type, heartbeat_bytes.address(), heartbeat_bytes.size());
         }
     }
 
@@ -285,7 +279,6 @@ namespace Tls
                 this->active_read_state = this->pending_read_state;
                 this->pending_read_state = std::make_shared<ConnectionState>();
 
-                this->current_type = ContentType::handshake;
                 ChangeCipherSpecEvent event;
                 produce_event(this->handshake_protocol.get(), &event);
 
@@ -305,8 +298,8 @@ namespace Tls
                 if (plaintext.length == 0)
                     throw State::alert_zero_fragment_error;
 
-                this->current_type = ContentType::alert;
                 this->alert_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
+
                 ReadyForReadBytesEvent event;
                 event.Initialize(&this->alert_element_source);
                 produce_event(this->alert_protocol.get(), &event);
@@ -323,8 +316,6 @@ namespace Tls
 
                 if (plaintext.length == 0)
                     throw State::heartbeat_zero_fragment_error;
-
-                this->current_type = ContentType::heartbeat_content_type;
 
                 this->heartbeat_protocol->SetPlaintextLength(plaintext.length);
 
@@ -350,7 +341,6 @@ namespace Tls
                 if (plaintext.length == 0)
                     throw State::handshake_zero_fragment_error;
 
-                this->current_type = ContentType::handshake;
                 this->handshake_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
                 ReadyForReadBytesEvent event;
@@ -379,7 +369,6 @@ namespace Tls
 
                 if (plaintext.length != 0)
                 {
-                    this->current_type = ContentType::application_data;
                     this->application_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
                     ReadyForReadBytesEvent event;
@@ -399,26 +388,11 @@ namespace Tls
 
     void RecordLayer::write_elements(const byte* elements, uint32 count)
     {
-        write_record_elements(this->current_type, elements, count);
-    }
-
-    void RecordLayer::write_element(byte element)
-    {
-        write_record_elements(this->current_type, &element, 1);
+        write_record_elements(ContentType::application_data, elements, count);
     }
 
     void RecordLayer::write_record_elements(ContentType type, const byte* elements, uint32 count)
     {
-        if (type != this->buffer_type)
-        {
-            if (this->record_buffer->size() > 0)
-            {
-                FlushRecordBuffer();
-            }
-
-            this->buffer_type = type;
-        }
-
         // The record layer fragments information blocks into TLSPlaintext
         // records carrying data in chunks of 2^14 bytes or less.  Client
         // message boundaries are not preserved in the record layer (i.e.,
@@ -428,25 +402,19 @@ namespace Tls
 
         while (true)
         {
-            uint32 remaining = max_record_length - this->record_buffer->size();
-            uint32 useable = (count > remaining) ? remaining : count;
+            uint32 useable = (count > max_record_length) ? max_record_length : count;
 
-            this->record_buffer->insert(this->record_buffer->end(), elements, elements + useable);
+            send_record(type, elements, useable);
 
             elements += useable;
             count -= useable;
-
-            if (this->record_buffer->size() == max_record_length)
-            {
-                FlushRecordBuffer();
-            }
 
             if (count == 0)
                 break;
         }
     }
 
-    void RecordLayer::FlushRecordBuffer()
+    void RecordLayer::send_record(ContentType type, const byte* elements, uint32 count)
     {
         // RFC 5246 section 6.2.1
         // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
@@ -454,22 +422,29 @@ namespace Tls
         // Application data MAY be sent as they are potentially useful as a
         // traffic analysis countermeasure.
 
-        if (this->buffer_type == ContentType::alert ||
-            this->buffer_type == ContentType::change_cipher_spec ||
-            this->buffer_type == ContentType::handshake)
+        if (type == ContentType::alert ||
+            type == ContentType::change_cipher_spec ||
+            type == ContentType::handshake)
         {
-            if (this->record_buffer->size() == 0)
+            if (count == 0)
                 throw State::send_zero_fragment_error;
         }
 
-        if (this->record_buffer->size() > max_record_length)
+        if (count > max_record_length)
             throw State::send_record_length_too_large_error;
 
+        // $$ optimize amount of buffering/copying in this section - probably have send_record take a ByteString directly,
+        // make sure it has enough reserved space, and use directly all the way through to transport.  no copying or further
+        // allocations required?
+
+        ByteStringRef buffer = std::make_shared<ByteString>();
+        buffer->write_elements(elements, count);
+
         Record plaintext;
-        plaintext.type = this->buffer_type;
+        plaintext.type = type;
         plaintext.version = this->version;
-        plaintext.fragment = this->record_buffer;
-        plaintext.length = (uint16)this->record_buffer->size();
+        plaintext.fragment = buffer;
+        plaintext.length = (uint16)buffer->size();
 
         Record compressed;
         Compress(&plaintext, &compressed);
@@ -477,21 +452,10 @@ namespace Tls
         Record encrypted;
         Encrypt(&compressed, &encrypted);
 
-        serialize<Record>()(&encrypted, &this->transport_buffer);
+        ByteString transport_buffer;
+        serialize<Record>()(&encrypted, &transport_buffer);
 
-        this->record_buffer->resize(0);
-    }
-
-    void RecordLayer::Flush()
-    {
-        if (this->record_buffer->size() > 0)
-        {
-            FlushRecordBuffer();
-        }
-
-        this->transport_buffer.write_to_stream(this->transport_peer.get());
-        this->transport_buffer.clear();
-        this->transport_peer->Flush();
+        transport_buffer.write_to_stream(this->transport_peer.get());
     }
 
     void RecordLayer::Compress(Record* plaintext, Record* compressed)

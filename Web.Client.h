@@ -8,7 +8,7 @@
 #include "Basic.Frame.h"
 #include "Basic.Lock.h"
 #include "Basic.ICompleter.h"
-#include "Basic.IBufferedStream.h"
+#include "Basic.IStream.h"
 
 namespace Web
 {
@@ -30,7 +30,7 @@ namespace Web
         };
 
     private:
-        std::shared_ptr<IBufferedStream<byte> > peer;
+        std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
         std::shared_ptr<ResponseHeadersFrame> response_headers_frame;

@@ -19,9 +19,7 @@
 #include "Service.WebServer.h"
 #include "Service.HtmlNamedCharacterReferences.h"
 #include "Web.Globals.h"
-#include "Ftp.Server.h"
 #include "Ftp.Globals.h"
-#include "Service.Endpoint.h"
 
 template <typename type>
 void make_immortal(type** pointer, std::shared_ptr<type>* ref)
@@ -378,61 +376,6 @@ namespace Service
         return true;
     }
 
-    class HttpServerEndpoint : public Endpoint, public std::enable_shared_from_this<HttpServerEndpoint>
-    {
-    private:
-        std::shared_ptr<Tls::ICertificate> certificate;
-
-    public:
-        HttpServerEndpoint(ListenSocket::Face face, short port, std::shared_ptr<Tls::ICertificate> certificate) :
-            Endpoint(face, port),
-            certificate(certificate)
-        {
-        }
-
-        virtual void SpawnListener()
-        {
-            std::shared_ptr<WebServer> protocol = std::make_shared<WebServer>(this->shared_from_this(), ByteStringRef());
-            protocol->start(this->listener.get(), this->certificate);
-        }
-    };
-
-    class HttpProxyEndpoint : public Endpoint, public std::enable_shared_from_this<HttpProxyEndpoint>
-    {
-    private:
-        std::shared_ptr<Tls::ICertificate> certificate;
-        std::shared_ptr<Uri> server_url;
-
-    public:
-        HttpProxyEndpoint(ListenSocket::Face face, short port, std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<Uri> server_url) :
-            Endpoint(face, port),
-            certificate(certificate),
-            server_url(server_url)
-        {
-        }
-
-        virtual void SpawnListener()
-        {
-            std::shared_ptr<Web::Proxy> protocol = std::make_shared<Web::Proxy>(this->shared_from_this(), ByteStringRef(), this->server_url);
-            protocol->start(this->listener.get(), this->certificate);
-        }
-    };
-
-    class FtpServerEndpoint : public Endpoint, public std::enable_shared_from_this<FtpServerEndpoint>
-    {
-    public:
-        FtpServerEndpoint(ListenSocket::Face face, short port) :
-            Endpoint(face, port)
-        {
-        }
-
-        virtual void SpawnListener()
-        {
-            std::shared_ptr<Ftp::Server> protocol = std::make_shared<Ftp::Server>(this->shared_from_this(), ByteStringRef());
-            protocol->start(this->listener.get());
-        }
-    };
-
     void Globals::consider_event(IEvent* event)
     {
         switch (get_state())
@@ -461,14 +404,14 @@ namespace Service
 
                 DebugWriter()->WriteLine("initializing endpoints");
 
-                std::shared_ptr<HttpServerEndpoint> http_endpoint = std::make_shared<HttpServerEndpoint>(Basic::ListenSocket::Face_Default, 81, std::shared_ptr<Tls::ICertificate>());
-                http_endpoint->SpawnListeners(20);
+                this->http_endpoint = std::make_shared<WebServerEndpoint>(Basic::ListenSocket::Face_Default, 81, std::shared_ptr<Tls::ICertificate>());
+                this->http_endpoint->SpawnListeners(20);
 
-                std::shared_ptr<HttpServerEndpoint> https_endpoint = std::make_shared<HttpServerEndpoint>(Basic::ListenSocket::Face_Default, 82, this->shared_from_this());
-                https_endpoint->SpawnListeners(20);
+                this->https_endpoint = std::make_shared<WebServerEndpoint>(Basic::ListenSocket::Face_Default, 82, this->shared_from_this());
+                this->https_endpoint->SpawnListeners(20);
 
-                std::shared_ptr<FtpServerEndpoint> ftp_control_endpoint = std::make_shared<FtpServerEndpoint>(Basic::ListenSocket::Face_Default, 21);
-                ftp_control_endpoint->SpawnListeners(20);
+                this->ftp_control_endpoint = std::make_shared<FtpServerEndpoint>(Basic::ListenSocket::Face_Default, 21);
+                this->ftp_control_endpoint->SpawnListeners(20);
 
                 switch_to_state(State::accepts_pending_state);
                 throw Yield("event consumed");

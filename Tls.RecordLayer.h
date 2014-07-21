@@ -9,7 +9,7 @@
 #include "Tls.ConnectionState.h"
 #include "Tls.AlertProtocol.h"
 #include "Tls.ServerHandshake.h"
-#include "Basic.IBufferedStream.h"
+#include "Basic.IStream.h"
 #include "Tls.ICertificate.h"
 #include "Tls.HeartbeatProtocol.h"
 
@@ -22,7 +22,7 @@ namespace Tls
     class ClientHandshake;
     class RecordStream;
 
-    class RecordLayer : public Frame, public IBufferedStream<byte>
+    class RecordLayer : public Frame, public ArrayStream<byte>
     {
     private:
         enum State
@@ -88,10 +88,7 @@ namespace Tls
         ProtocolVersion version_high;
         ProtocolVersion version;
         bool version_finalized;
-        std::shared_ptr<ByteString> record_buffer;
-        ContentType buffer_type;
-        ContentType current_type;
-        std::shared_ptr<IBufferedStream<byte> > transport_peer;
+        std::shared_ptr<IStream<byte> > transport_peer;
         RecordFrame record_frame;
         bool server;
         std::shared_ptr<ICertificate> certificate;
@@ -100,7 +97,6 @@ namespace Tls
         bool application_connected;
         //bool handshake_in_progress; // $$ set and use for error checking per RFC 4346
         //bool heartbeat_in_flight; // $$ set and use for error checking per RFC 6520
-        ByteString transport_buffer;
 
         std::shared_ptr<ConnectionState> pending_read_state;
         std::shared_ptr<ConnectionState> pending_write_state;
@@ -123,7 +119,7 @@ namespace Tls
         void Decrypt(Record* encrypted, Record* compressed);
         void DecryptStream(Record* encrypted, Record* compressed);
         void DecryptBlock(Record* encrypted, Record* compressed);
-        void FlushRecordBuffer();
+        void send_record(ContentType type, const byte* elements, uint32 count);
         void CloseTransport();
         void WriteAlert(AlertDescription description, AlertLevel level);
 
@@ -136,14 +132,14 @@ namespace Tls
         friend class Tls::ServerHandshake;
         friend class Tls::ClientHandshake;
         friend class Tls::RecordStream;
+        friend class Tls::HeartbeatProtocol;
+        friend class Tls::AlertProtocol;
 
         RecordLayer(std::shared_ptr<IProcess> application_stream, bool server, std::shared_ptr<ICertificate> certificate);
 
-        void set_transport(std::shared_ptr<IBufferedStream<byte> > peer);
+        void set_transport(std::shared_ptr<IStream<byte> > peer);
 
         virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
-        virtual void IStream<byte>::write_element(byte element);
         virtual void IStream<byte>::write_eof();
-        virtual void Flush();
     };
 }

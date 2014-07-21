@@ -148,9 +148,6 @@
     <ClInclude Include="Basic.Hold.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.IBufferedStream.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Basic.IStream.h">
       <Filter>Basic</Filter>
     </ClInclude>
@@ -437,6 +434,15 @@
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Service.WebServer.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.FtpServerEndpoint.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.WebProxyEndpoint.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.WebServerEndpoint.h">
       <Filter>Service</Filter>
     </ClInclude>
   </ItemGroup>
@@ -796,6 +802,15 @@
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Service.WebServer.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.FtpServerEndpoint.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.WebProxyEndpoint.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.WebServerEndpoint.cpp">
       <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>

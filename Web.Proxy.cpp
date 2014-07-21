@@ -23,7 +23,7 @@ namespace Web
     void Proxy::start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate)
     {
         std::shared_ptr<ServerSocket> server_socket;
-        Web::globals->CreateServerSocket(certificate, this->shared_from_this(), &server_socket, &this->client_peer);
+        Web::globals->CreateServerSocket(certificate, this->shared_from_this(), &server_socket, &this->client_transport);
 
         listen_socket->StartAccept(server_socket);
     }
@@ -34,11 +34,11 @@ namespace Web
 
         if (!this->in_progress())
         {
-            if (this->client_peer.get() != 0)
-                this->client_peer->write_eof();
+            if (this->client_transport.get() != 0)
+                this->client_transport->write_eof();
 
-            if (this->server_peer.get() != 0)
-                this->server_peer->write_eof();
+            if (this->server_transport.get() != 0)
+                this->server_transport->write_eof();
         }
     }
 
@@ -57,7 +57,10 @@ namespace Web
         case State::pending_client_connection_state:
             {
                 if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
-                    throw FatalError("unexpected event");
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
 
@@ -75,7 +78,7 @@ namespace Web
                 server_proxy->Initialize(this->shared_from_this());
 
                 std::shared_ptr<ClientSocket> client_socket;
-                Web::globals->CreateClientSocket(this->server_url->is_secure_scheme(), server_proxy, &client_socket, &this->server_peer);
+                Web::globals->CreateClientSocket(this->server_url->is_secure_scheme(), server_proxy, &client_socket, &this->server_transport);
 
                 sockaddr_in addr;
                 bool success = client_socket->Resolve(this->server_url->host, this->server_url->get_port(), &addr);
@@ -123,8 +126,7 @@ namespace Web
 
                 if (count > 0)
                 {
-                    this->server_peer->write_elements(bytes, count);
-                    this->server_peer->Flush();
+                    this->server_transport->write_elements(bytes, count);
                 }
             }
             break;
@@ -149,13 +151,15 @@ namespace Web
         case State::pending_server_connection_state:
             {
                 if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
-                    throw FatalError("unexpected event");
+                {
+                    HandleError("unexpected event");
+                    throw Yield("unexpected event");
+                }
 
                 if (this->buffer->size() > 0)
                 {
-                    this->buffer->write_to_stream(this->server_peer.get());
+                    this->buffer->write_to_stream(this->server_transport.get());
                     this->buffer->clear();
-                    this->server_peer->Flush();
                 }
 
                 switch_to_state(State::connected_state);
@@ -176,8 +180,7 @@ namespace Web
 
                 if (count > 0)
                 {
-                    this->client_peer->write_elements(bytes, count);
-                    this->client_peer->Flush();
+                    this->client_transport->write_elements(bytes, count);
                 }
             }
             break;

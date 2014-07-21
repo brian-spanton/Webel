@@ -26,9 +26,15 @@ namespace Web
         this->self = this->shared_from_this();
 
         std::shared_ptr<ServerSocket> server_socket;
-        Web::globals->CreateServerSocket(certificate, this->self, &server_socket, &this->peer);
+        Web::globals->CreateServerSocket(certificate, this->self, &server_socket, &this->transport);
 
         listen_socket->StartAccept(server_socket);
+    }
+
+    void Server::close_transport()
+    {
+        this->transport->write_eof();
+        this->transport.reset();
     }
 
     void Server::switch_to_state(State state)
@@ -37,13 +43,18 @@ namespace Web
 
         if (!this->in_progress())
         {
-            this->peer->write_eof();
             this->self.reset();
         }
     }
 
     void Server::consider_event(IEvent* event)
     {
+        if (event->get_type() == Basic::EventType::element_stream_ending_event)
+        {
+            switch_to_state(State::done_state);
+            throw Yield("event consumed");
+        }
+
         switch (get_state())
         {
         case State::pending_connection_state:
@@ -65,6 +76,7 @@ namespace Web
                 }
 
                 switch_to_state(State::new_request_state);
+                throw Yield("event consumed");
             }
             break;
 
@@ -84,7 +96,7 @@ namespace Web
                 delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
 
                 Basic::globals->DebugWriter()->write_literal("Request received: ");
-                serialize<Request>()(this->request.get(),  &Basic::globals->DebugWriter()->decoder);
+                render_request_line(this->request.get(),  &Basic::globals->DebugWriter()->decoder);
                 Basic::globals->DebugWriter()->WriteLine();
 
                 this->response = std::make_shared<Response>();
@@ -107,16 +119,14 @@ namespace Web
                     this->response->headers->set_base_10(Http::globals->header_content_length, 0);
                 }
 
-                Http::serialize<Response>()(this->response.get(), this->peer.get());
-                this->peer->Flush();
+                ByteString response_bytes;
+                Http::serialize<Response>()(this->response.get(), &response_bytes);
+                response_bytes.write_to_stream(this->transport.get());
 
                 switch_to_state(State::response_done_state);
 
-                ByteString response_bytes;
-                Http::serialize<Response>()(this->response.get(), &response_bytes);
-
                 Basic::globals->DebugWriter()->write_literal("Response sent: ");
-                Basic::globals->DebugWriter()->write_elements((const char*)response_bytes.address(), response_bytes.size());
+                render_response_line(this->response.get(), &Basic::globals->DebugWriter()->decoder);
                 Basic::globals->DebugWriter()->WriteLine();
             }
             break;
@@ -134,6 +144,7 @@ namespace Web
                     }
                 }
 
+                close_transport();
                 switch_to_state(State::done_state);
             }
             break;

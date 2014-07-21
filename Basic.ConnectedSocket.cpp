@@ -169,10 +169,6 @@ namespace Basic
         }
     }
 
-    void ConnectedSocket::Flush()
-    {
-    }
-
     void ConnectedSocket::write_eof()
     {
         Disconnect(0);

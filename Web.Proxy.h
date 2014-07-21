@@ -22,8 +22,8 @@ namespace Web
             done_state = Succeeded_State,
         };
 
-        std::shared_ptr<IBufferedStream<byte> > client_peer;
-        std::shared_ptr<IBufferedStream<byte> > server_peer;
+        std::shared_ptr<IStream<byte> > client_transport;
+        std::shared_ptr<IStream<byte> > server_transport;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
         std::shared_ptr<Uri> server_url;

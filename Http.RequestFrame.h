@@ -48,17 +48,25 @@ namespace Http
         RequestFrame(Request* request);
     };
 
-    void serialize_request_line(const Request* value, IStream<byte>* stream);
+    void render_request_line(const Request* value, IStream<byte>* stream);
 
     template <>
     struct __declspec(novtable) serialize<Request>
     {
         void operator()(const Request* value, IStream<byte>* stream) const
         {
-            serialize_request_line(value, stream);
+            SingleByteEncoder encoder;
+            encoder.Initialize(Basic::globals->ascii_index, stream);
+
+            value->method->write_to_stream(&encoder);
+
+            stream->write_element(Http::globals->SP);
+            value->resource->write_to_stream(&encoder, true, true);
+
+            stream->write_element(Http::globals->SP);
+            value->protocol->write_to_stream(&encoder);
 
             stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
-
             serialize<NameValueCollection>()(value->headers.get(), stream);
 
             if (value->client_body.get() != 0)

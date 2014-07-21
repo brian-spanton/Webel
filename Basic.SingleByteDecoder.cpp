@@ -88,8 +88,6 @@ namespace Basic
     {
         // I think eof is for the end of the encoded bytes, and should not propagate to the destination
         // because it might not at all be the last thing sent to the destination
-
-        HandleError("unexpected eof");
     }
 
     void SingleByteDecoder::Emit(Codepoint codepoint)

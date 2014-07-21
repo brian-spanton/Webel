@@ -80,7 +80,7 @@ namespace Html
 
     void Node::remove_from_parent()
     {
-        std::shared_ptr<Node> parent(this->parent);
+        std::shared_ptr<Node> parent = this->parent.lock();
 
         if (parent.get() != 0)
             parent->Remove(shared_from_this());

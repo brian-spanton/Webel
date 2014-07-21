@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Basic.Lock.h"
-#include "Basic.IBufferedStream.h"
+#include "Basic.IStream.h"
 #include "Basic.IProcess.h"
 #include "Basic.ElementSource.h"
 

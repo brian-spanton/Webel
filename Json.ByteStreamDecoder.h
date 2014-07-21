@@ -23,8 +23,7 @@ namespace Json
             leftovers_not_initialized_state = Start_State,
             bom_frame_pending_state,
             decoding_byte_stream,
-            done_state = Succeeded_State,
-            bom_frame_failed,
+            bom_frame_failed = Succeeded_State + 1,
             could_not_guess_encoding_error,
             could_not_find_decoder_error,
         };

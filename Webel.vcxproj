@@ -100,8 +100,11 @@
     <ClInclude Include="Ftp.Globals.h" />
     <ClInclude Include="Ftp.Server.h" />
     <ClInclude Include="Service.Endpoint.h" />
+    <ClInclude Include="Service.FtpServerEndpoint.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
+    <ClInclude Include="Service.WebProxyEndpoint.h" />
     <ClInclude Include="Service.WebServer.h" />
+    <ClInclude Include="Service.WebServerEndpoint.h" />
     <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
     <ClInclude Include="Tls.HeartbeatMessageFrame.h" />
     <ClInclude Include="Tls.HeartbeatProtocol.h" />
@@ -134,7 +137,6 @@
     <ClInclude Include="Basic.HashStream.h" />
     <ClInclude Include="Basic.HexNumberStream.h" />
     <ClInclude Include="Basic.Hold.h" />
-    <ClInclude Include="Basic.IBufferedStream.h" />
     <ClInclude Include="Basic.ICompleter.h" />
     <ClInclude Include="Basic.IProcess.h" />
     <ClInclude Include="Basic.IStream.h" />
@@ -266,7 +268,9 @@
     <ClCompile Include="Basic.MemoryRange.cpp" />
     <ClCompile Include="Basic.Socket.cpp" />
     <ClCompile Include="Service.Endpoint.cpp" />
+    <ClCompile Include="Service.FtpServerEndpoint.cpp" />
     <ClCompile Include="Service.HtmlNamedCharacterReferences.cpp" />
+    <ClCompile Include="Service.WebProxyEndpoint.cpp" />
     <ClCompile Include="Service.WebServer.cpp" />
     <ClCompile Include="Service.StandardEncodings.cpp" />
     <ClCompile Include="Service.StandardSingleByteEncoding.cpp" />
@@ -302,6 +306,7 @@
     <ClCompile Include="Basic.CountStream.cpp" />
     <ClCompile Include="Http.DisconnectBodyFrame.cpp" />
     <ClCompile Include="Http.BodyFrame.cpp" />
+    <ClCompile Include="Service.WebServerEndpoint.cpp" />
     <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatMessageFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatProtocol.cpp" />

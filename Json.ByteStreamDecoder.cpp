@@ -21,10 +21,7 @@ namespace Json
     void ByteStreamDecoder::consider_event(IEvent* event)
     {
         if (event->get_type() == EventType::element_stream_ending_event)
-        {
-            switch_to_state(State::done_state);
-            return;
-        }
+            throw Yield("event consumed");
 
         switch (get_state())
         {

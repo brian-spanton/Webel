@@ -20,7 +20,7 @@ namespace Web
     {
     }
 
-    void Globals::CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, std::shared_ptr<ServerSocket>* socket, std::shared_ptr<IBufferedStream<byte> >* peer)
+    void Globals::CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, std::shared_ptr<ServerSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
     {
         if (certificate.get() != 0)
         {
@@ -29,19 +29,19 @@ namespace Web
 
             tls_frame->set_transport(server_socket);
 
-            (*peer) = tls_frame;
+            (*transport) = tls_frame;
             (*socket) = server_socket;
         }
         else
         {
             std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(protocol);
 
-            (*peer) = server_socket;
+            (*transport) = server_socket;
             (*socket) = server_socket;
         }
     }
 
-    void Globals::CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, std::shared_ptr<ClientSocket>* socket, std::shared_ptr<IBufferedStream<byte> >* peer)
+    void Globals::CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, std::shared_ptr<ClientSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
     {
         if (secure)
         {
@@ -50,14 +50,14 @@ namespace Web
 
             tls_frame->set_transport(client_socket);
 
-            (*peer) = tls_frame;
+            (*transport) = tls_frame;
             (*socket) = client_socket;
         }
         else
         {
             std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(protocol);
 
-            (*peer) = client_socket;
+            (*transport) = client_socket;
             (*socket) = client_socket;
         }
     }

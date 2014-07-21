@@ -4,7 +4,7 @@
 
 #include "Basic.CommandFrame.h"
 #include "Basic.IProcess.h"
-#include "Basic.IBufferedStream.h"
+#include "Basic.IStream.h"
 #include "Basic.NameValueCollection.h"
 #include "Web.Client.h"
 #include "Html.Document.h"

@@ -19,9 +19,7 @@ namespace Tls
         {
             start_state = Start_State,
             alert_frame_pending_state,
-            done_state = Succeeded_State,
-            alert_frame_failed,
-            alert_frame_peer_close_notify_state,
+            alert_frame_failed = Succeeded_State + 1,
         };
 
         RecordLayer* session;

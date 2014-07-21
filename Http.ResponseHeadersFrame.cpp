@@ -123,20 +123,21 @@ namespace Http
         }
     }
 
-    void serialize_response_line(const Response* value, IStream<byte>* stream)
+    void render_response_line(const Response* value, IStream<byte>* stream)
     {
-        ascii_encode(value->protocol.get(), stream);
+        SingleByteEncoder encoder;
+        encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        stream->write_element(Http::globals->SP);
+        value->protocol->write_to_stream(&encoder);
 
         UnicodeString code;
         TextWriter writer(&code);
         writer.WriteFormat<0x10>("%d", value->code);
 
-        ascii_encode(&code, stream);
+        stream->write_element(Http::globals->SP);
+        code.write_to_stream(&encoder);
 
         stream->write_element(Http::globals->SP);
-
-        ascii_encode(value->reason.get(), stream);
+        value->reason->write_to_stream(&encoder);
     }
 }

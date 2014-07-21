@@ -32,8 +32,7 @@ namespace Html
             guess_state,
             sniff_done_state,
             decoding_state,
-            done_state = Succeeded_State,
-            bom_frame_failed,
+            bom_frame_failed = Succeeded_State + 1,
             get_decoder_failed,
         };
 
@@ -51,6 +50,5 @@ namespace Html
 
     public:
         ByteStreamDecoder(Parser* parser, UnicodeStringRef transport_charset, std::shared_ptr<IStream<Codepoint> > output);
-
     };
 }

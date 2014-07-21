@@ -24,13 +24,14 @@ namespace Web
             request_frame_failed,
         };
 
-        std::shared_ptr<IBufferedStream<byte> > peer;
+        std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
         std::shared_ptr<RequestFrame> request_frame;
         std::shared_ptr<Server> self;
 
         void switch_to_state(State state);
+        void close_transport();
 
     protected:
         std::shared_ptr<Request> request;

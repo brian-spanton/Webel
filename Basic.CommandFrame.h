@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Basic.Frame.h"
+#include "Basic.Event.h"
 
 namespace Basic
 {

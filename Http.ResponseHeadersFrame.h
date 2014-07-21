@@ -6,6 +6,8 @@
 #include "Basic.DecNumberStream.h"
 #include "Http.Types.h"
 #include "Http.HeadersFrame.h"
+#include "Basic.SingleByteEncoder.h"
+#include "Basic.SingleByteEncodingIndex.h"
 
 namespace Http
 {
@@ -41,17 +43,29 @@ namespace Http
         void WriteResponseLineTo(IStream<byte>* stream);
     };
 
-    void serialize_response_line(const Response* value, IStream<byte>* stream);
+    void render_response_line(const Response* value, IStream<byte>* stream);
 
     template <>
     struct __declspec(novtable) serialize<Response>
     {
         void operator()(const Response* value, IStream<byte>* stream) const
         {
-            serialize_response_line(value, stream);
+            SingleByteEncoder encoder;
+            encoder.Initialize(Basic::globals->ascii_index, stream);
+
+            value->protocol->write_to_stream(&encoder);
+
+            UnicodeString code;
+            TextWriter writer(&code);
+            writer.WriteFormat<0x10>("%d", value->code);
+
+            stream->write_element(Http::globals->SP);
+            code.write_to_stream(&encoder);
+
+            stream->write_element(Http::globals->SP);
+            value->reason->write_to_stream(&encoder);
 
             stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
-
             serialize<NameValueCollection>()(value->headers.get(), stream);
 
             if (value->server_body.get() != 0)

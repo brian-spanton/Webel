@@ -32,9 +32,15 @@ namespace Tls
         switch (get_state())
         {
         case State::start_state:
+            if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+            {
+                HandleError("unexpected event");
+                throw Yield("unexpected event");
+            }
+
             Event::AddObserver<byte>(event, this->handshake_messages);
             switch_to_state(State::expecting_client_hello_state);
-            break;
+            throw Yield("event consumed");
 
         case State::expecting_client_hello_state:
             {
@@ -139,7 +145,7 @@ namespace Tls
                 serverHello.server_version = this->session->version;
                 serverHello.session_id = this->session->session_id;
                 serverHello.random = this->security_parameters->server_random;
-                serverHello.heartbeat_extension_initialized = false;
+                serverHello.heartbeat_extension_initialized = false; // $$
 
                 if (this->clientHello.heartbeat_extension_initialized)
                 {
@@ -148,6 +154,7 @@ namespace Tls
                     switch (this->clientHello.heartbeat_extension.mode)
                     {
                     case HeartbeatMode::peer_allowed_to_send:
+                        this->session->send_heartbeats = true;
                         break;
 
                     case HeartbeatMode::peer_not_allowed_to_send:
@@ -167,7 +174,7 @@ namespace Tls
 
                 Serializer<ServerHello> server_hello_serializer(&serverHello);
 
-                success = WriteMessage(this->session, HandshakeType::server_hello, &server_hello_serializer);
+                success = WriteMessage(HandshakeType::server_hello, &server_hello_serializer);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_1_failed);
@@ -183,7 +190,7 @@ namespace Tls
                     {
                         Serializer<Certificates> certificates_serializer(session->certificate->Certificates());
 
-                        bool success = WriteMessage(this->session, HandshakeType::certificate, &certificates_serializer);
+                        bool success = WriteMessage(HandshakeType::certificate, &certificates_serializer);
                         if (!success)
                         {
                             switch_to_state(State::WriteMessage_4_failed);
@@ -198,7 +205,7 @@ namespace Tls
                 //        std::shared_ptr<CertificatesFrame> frame = std::make_shared<Tls::CertificatesFrame>();
                 //        frame->Initialize(session->certificate->Certificates());
 
-                //        bool success = WriteMessage(this->session, HandshakeType::certificate, frame);
+                //        bool success = WriteMessage(HandshakeType::certificate, frame);
                 //        if (!success)
                 //        {
                 //            switch_to_state(State::WriteMessage_5_failed);
@@ -208,7 +215,7 @@ namespace Tls
                 //        std::shared_ptr<ServerKeyExchangeFrame> frame = std::make_shared<Tls::ServerKeyExchangeFrame>();
                 //        frame->Initialize();
 
-                //        bool success = WriteMessage(this->session, HandshakeType::server_key_exchange, frame);
+                //        bool success = WriteMessage(HandshakeType::server_key_exchange, frame);
                 //        if (!success)
                 //        {
                 //            switch_to_state(State::WriteMessage_6_failed);
@@ -222,7 +229,7 @@ namespace Tls
                     return;
                 }
 
-                success = WriteMessage(this->session, HandshakeType::server_hello_done, 0);
+                success = WriteMessage(HandshakeType::server_hello_done, 0);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_2_failed);
@@ -232,7 +239,10 @@ namespace Tls
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_client_key_exchange_state);
 
-                this->session->Flush();
+                ByteStringRef send_buffer = std::make_shared<ByteString>();
+                send_buffer.swap(this->send_buffer);
+
+                this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
             }
             break;
 
@@ -312,6 +322,7 @@ namespace Tls
                 CalculateVerifyData(&Tls::globals->client_finished_label, finished_expected.address(), (uint16)finished_expected.size());
 
                 switch_to_state(State::expecting_cipher_change_state);
+                throw Yield("event consumed");
             }
             break;
 
@@ -325,6 +336,7 @@ namespace Tls
 
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_finished_state);
+                throw Yield("event consumed");
             }
             break;
 
@@ -362,32 +374,23 @@ namespace Tls
                     }
                 }
 
-                this->finished_sent = std::make_shared<ByteString>();
-                this->finished_sent->resize(this->security_parameters->verify_data_length);
-
-                Event::RemoveObserver<byte>(event, this->handshake_messages);
-
-                CalculateVerifyData(&Tls::globals->server_finished_label, this->finished_sent->address(), (uint16)this->finished_sent->size());
-
-                ZeroMemory(this->handshake_messages->address(), this->handshake_messages->size());
-                this->handshake_messages->resize(0);
-
-                this->session->WriteChangeCipherSpec();
-
-                bool success = WriteMessage(this->session, HandshakeType::finished, this->finished_sent.get());
+                bool success = WriteFinished(&Tls::globals->server_finished_label);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_3_failed);
                     return;
                 }
 
-                this->session->Flush();
-
                 Basic::globals->DebugWriter()->WriteFormat<0x100>("TLS server handshake successfully negotiated 0x%04X", this->session->version);
                 Basic::globals->DebugWriter()->WriteLine();
 
                 // $ handle renegotiates, etc.
                 switch_to_state(State::done_state);
+
+                ByteStringRef send_buffer = std::make_shared<ByteString>();
+                send_buffer.swap(this->send_buffer);
+
+                this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
             }
             break;
 

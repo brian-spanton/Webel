@@ -104,8 +104,6 @@ namespace Web
 
         if (state == State::inactive_state)
         {
-            Basic::globals->DebugWriter()->WriteLine("Complete");
-
             std::shared_ptr<IProcess> completion = this->completion.lock();
             if (completion.get() != 0)
             {
@@ -169,11 +167,12 @@ namespace Web
             if (cookie_header_value.get() != 0)
                 this->planned_request->headers->set_string(Http::globals->header_cookie, cookie_header_value);
 
-            Http::serialize<Request>()(this->planned_request.get(), this->peer.get());
-            this->peer->Flush();
+            ByteString request_bytes;
+            Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
+            request_bytes.write_to_stream(this->transport.get());
 
             Basic::globals->DebugWriter()->write_literal("Request sent: ");
-            Http::serialize<Request>()(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
+            render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
             Basic::globals->DebugWriter()->WriteLine();
 
             this->planned_request = 0;
@@ -210,7 +209,7 @@ namespace Web
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
-            this->peer = 0;
+            this->transport.reset();
 
             switch (get_state())
             {
@@ -268,20 +267,20 @@ namespace Web
                 if (this->history.size() > 0)
                     current_url = this->history.back().request->resource;
 
-                if (!(this->peer.get() != 0 &&
+                if (!(this->transport.get() != 0 &&
                     current_url.get() != 0 &&
                     equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()) && 
                     equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()) && 
                     equals<UnicodeString, true>(this->planned_request->resource->port.get(), current_url->port.get())))
                 {
-                    if (this->peer.get() != 0)
+                    if (this->transport.get() != 0)
                     {
-                        this->peer->write_eof();
-                        this->peer = 0;
+                        this->transport->write_eof();
+                        this->transport.reset();
                     }
 
                     std::shared_ptr<ClientSocket> client_socket;
-                    Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this->shared_from_this(), &client_socket, &this->peer);
+                    Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this->shared_from_this(), &client_socket, &this->transport);
 
                     sockaddr_in addr;
                     bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);
@@ -338,7 +337,8 @@ namespace Web
                 std::shared_ptr<Response> response = this->history.back().response;
 
                 Basic::globals->DebugWriter()->write_literal("Response received: ");
-                Http::serialize<Response>()(response.get(), &Basic::globals->DebugWriter()->decoder);
+                render_response_line(response.get(), &Basic::globals->DebugWriter()->decoder);
+                Basic::globals->DebugWriter()->WriteLine();
 
                 uint16 code = response->code;
 
