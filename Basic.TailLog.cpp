@@ -13,8 +13,6 @@ namespace Basic
 
     void TailLog::write_entry(UnicodeStringRef entry)
     {
-        Hold hold(lock);
-
         this->tail[this->bookmark] = entry;
 
         // advance the circular array bookmark
@@ -23,8 +21,6 @@ namespace Basic
 
     void TailLog::write_to_stream(IStream<Codepoint>* stream) const
     {
-        Hold hold(((TailLog*)this)->lock);
-
         for (uint32 i = 0; i < _countof(this->tail); i++)
         {
             uint32 next = (this->bookmark + i) % _countof(this->tail);
@@ -38,8 +34,6 @@ namespace Basic
 
     void TailLog::WriteTo(ILog* log)
     {
-        Hold hold(this->lock);
-
         for (uint32 i = 0; i < _countof(this->tail); i++)
         {
             uint32 next = (this->bookmark + i) % _countof(this->tail);

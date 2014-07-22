@@ -19,8 +19,6 @@ namespace Web
 
     void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
-        Hold hold(this->lock);
-
         std::shared_ptr<Request> request = std::make_shared<Request>();
         request->Initialize();
         request->method = Http::globals->get_method;
@@ -31,6 +29,8 @@ namespace Web
 
     void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
+        // $$$ reconsider how threading, eventing, job queueing and locking works with this class
+
         Hold hold(this->lock);
 
         if (get_state() != State::inactive_state)
@@ -502,11 +502,15 @@ namespace Web
 
     void Client::set_body_stream(std::shared_ptr<IStream<byte> > body_stream)
     {
+        Hold hold(this->lock);
+
         this->response_body_frame->set_body_stream(body_stream);
     }
 
     void Client::get_url(std::shared_ptr<Uri>* url)
     {
+        Hold hold(this->lock);
+
         (*url) = this->history.back().request->resource;
     }
 }

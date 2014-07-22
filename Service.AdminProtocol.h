@@ -31,7 +31,6 @@ namespace Service
             peer_flush_failed,
         };
 
-        Basic::Lock lock;
         std::vector<UnicodeStringRef> command;
         Basic::CommandFrame<Codepoint> command_frame;
         std::shared_ptr<Basic::IStream<Codepoint> > peer;

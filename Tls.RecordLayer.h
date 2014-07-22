@@ -88,7 +88,7 @@ namespace Tls
         ProtocolVersion version_high;
         ProtocolVersion version;
         bool version_finalized;
-        std::shared_ptr<IStream<byte> > transport_peer;
+        std::shared_ptr<IStream<byte> > transport;
         RecordFrame record_frame;
         bool server;
         std::shared_ptr<ICertificate> certificate;

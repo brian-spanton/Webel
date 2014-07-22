@@ -50,6 +50,10 @@ namespace Basic
         case SocketJobContext::accept_type:
             CompleteAccept(socket_context->server_socket.get(), socket_context->bytes, count, error);
             break;
+
+        case SocketJobContext::disconnect_type:
+            CompleteDisconnect();
+            break;
         }
     }
 
@@ -66,6 +70,10 @@ namespace Basic
     }
 
     void Socket::CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error)
+    {
+    }
+
+    void Socket::CompleteDisconnect()
     {
     }
 }

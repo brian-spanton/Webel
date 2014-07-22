@@ -8,19 +8,15 @@ namespace Json
 {
     using namespace Basic;
 
-    void Parser::Initialize(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset)
+    Parser::Parser(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset) :
+        text(std::make_shared<Text>(domain)),
+        tokenizer(std::make_shared<Tokenizer>(this->text)), // initialization is in order of declaration in class def
+        decoder(std::make_shared<ByteStreamDecoder>(charset, this->tokenizer.get())) // initialization is in order of declaration in class def
     {
-        this->text = std::make_shared<Text>(domain);
-        this->tokenizer = std::make_shared<Tokenizer>(this->text);
-        this->decoder = std::make_shared<ByteStreamDecoder>(charset, this->tokenizer.get());
-
-        __super::Initialize(this->decoder.get());
     }
 
-    bool Parser::ParseError(const char* error)
+    void Parser::write_element(byte b)
     {
-        std::string parse_error = "Parse error: ";
-        parse_error += error;
-        return Basic::globals->HandleError(parse_error.c_str(), 0);
+        this->decoder->write_element(b);
     }
 }

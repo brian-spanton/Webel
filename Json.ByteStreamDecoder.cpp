@@ -14,56 +14,63 @@ namespace Json
     ByteStreamDecoder::ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output) :
         charset(charset),
         output(output),
-        bom_frame(this->bom, sizeof(this->bom)) // initialization is in order of declaration in class def
+        lead_bytes_frame(this->lead_bytes, sizeof(this->lead_bytes)) // initialization is in order of declaration in class def
     {
     }
 
-    void ByteStreamDecoder::consider_event(IEvent* event)
+    void ByteStreamDecoder::write_element(byte b)
     {
-        if (event->get_type() == EventType::element_stream_ending_event)
-            throw Yield("event consumed");
-
-        switch (get_state())
+        switch (this->get_state())
         {
-        case State::leftovers_not_initialized_state:
+        case State::lead_bytes_frame_pending_state:
             {
-                this->leftovers = std::make_shared<ByteString>();
-                this->leftovers->reserve(1024);
-                Event::AddObserver<byte>(event, this->leftovers);
+                this->lead_bytes_frame.write_element(b);
 
-                switch_to_state(State::bom_frame_pending_state);
-            }
-            break;
+                if (this->lead_bytes_frame.in_progress())
+                    return;
 
-        case State::bom_frame_pending_state:
-            {
-                delegate_event(&this->bom_frame, event);
-            
-                Event::RemoveObserver<byte>(event, this->leftovers);
-
-                if (this->bom_frame.failed())
+                if (this->lead_bytes_frame.failed())
                 {
                     switch_to_state(State::bom_frame_failed);
                     return;
                 }
 
-                if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0 && bom[3] != 0)
+                if (this->lead_bytes[0] == 0 &&
+                    this->lead_bytes[1] == 0 &&
+                    this->lead_bytes[2] == 0 &&
+                    this->lead_bytes[3] != 0)
                 {
                     this->encoding = Basic::globals->utf_32_big_endian_label;
                 }
-                else if (bom[0] == 0 && bom[1] != 0 && bom[2] == 0 && bom[3] != 0)
+                else if (
+                    this->lead_bytes[0] == 0 &&
+                    this->lead_bytes[1] != 0 &&
+                    this->lead_bytes[2] == 0 &&
+                    this->lead_bytes[3] != 0)
                 {
                     this->encoding = Basic::globals->utf_16_big_endian_label;
                 }
-                else if (bom[0] != 0 && bom[1] == 0 && bom[2] == 0 && bom[3] == 0)
+                else if (
+                    this->lead_bytes[0] != 0 &&
+                    this->lead_bytes[1] == 0 &&
+                    this->lead_bytes[2] == 0 &&
+                    this->lead_bytes[3] == 0)
                 {
                     this->encoding = Basic::globals->utf_32_little_endian_label;
                 }
-                else if (bom[0] != 0 && bom[1] == 0 && bom[2] != 0 && bom[3] == 0)
+                else if (
+                    this->lead_bytes[0] != 0 &&
+                    this->lead_bytes[1] == 0 &&
+                    this->lead_bytes[2] != 0 &&
+                    this->lead_bytes[3] == 0)
                 {
                     this->encoding = Basic::globals->utf_16_little_endian_label;
                 }
-                else if (bom[0] != 0 && bom[1] != 0 && bom[2] != 0 && bom[3] != 0)
+                else if (
+                    this->lead_bytes[0] != 0 &&
+                    this->lead_bytes[1] != 0 &&
+                    this->lead_bytes[2] != 0 &&
+                    this->lead_bytes[3] != 0)
                 {
                     this->encoding = Basic::globals->utf_8_label;
                 }
@@ -81,26 +88,20 @@ namespace Json
                 if (this->decoder.get() == 0)
                 {
                     switch_to_state(State::could_not_find_decoder_error);
+                    return;
                 }
-                else
-                {
-                    this->decoder->set_destination(this->output);
 
-                    this->decoder->write_elements(this->leftovers->address(), this->leftovers->size());
-                    switch_to_state(State::decoding_byte_stream);
-                }
+                this->decoder->set_destination(this->output);
+                switch_to_state(State::decoding_byte_stream);
+
+                // recursion to re-process these bytes
+                this->write_elements(this->lead_bytes, _countof(this->lead_bytes));
+                return;
             }
             break;
 
         case State::decoding_byte_stream:
-            {
-                const byte* elements;
-                uint32 count;
-
-                Event::Read(event, 0xffffffff, &elements, &count);
-
-                this->decoder->write_elements(elements, count);
-            }
+            this->decoder->write_element(b);
             break;
 
         default:

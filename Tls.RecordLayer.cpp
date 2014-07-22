@@ -66,7 +66,7 @@ namespace Tls
 
     void RecordLayer::set_transport(std::shared_ptr<IStream<byte> > peer)
     {
-        this->transport_peer = peer;
+        this->transport = peer;
     }
 
     void RecordLayer::consider_event(IEvent* event)
@@ -154,8 +154,8 @@ namespace Tls
 
     void RecordLayer::CloseTransport()
     {
-        this->transport_peer->write_eof();
-        this->transport_peer.reset();
+        this->transport->write_eof();
+        this->transport.reset();
     }
 
     void RecordLayer::WriteChangeCipherSpec()
@@ -455,7 +455,7 @@ namespace Tls
         ByteString transport_buffer;
         serialize<Record>()(&encrypted, &transport_buffer);
 
-        transport_buffer.write_to_stream(this->transport_peer.get());
+        transport_buffer.write_to_stream(this->transport.get());
     }
 
     void RecordLayer::Compress(Record* plaintext, Record* compressed)

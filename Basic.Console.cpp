@@ -102,7 +102,6 @@ namespace Basic
                             {
                                 write_elements(Basic::globals->CRLF->address(), Basic::globals->CRLF->size());
 
-                                Hold hold(this->lock);
                                 this->protocol_element_source.Initialize(&b, 1);
 
                                 ReadyForReadCodepointsEvent event;
@@ -115,7 +114,6 @@ namespace Basic
                             {
                                 write_element(b);
 
-                                Hold hold(this->lock);
                                 this->protocol_element_source.Initialize(&b, 1);
 
                                 ReadyForReadCodepointsEvent event;

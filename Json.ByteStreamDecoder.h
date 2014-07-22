@@ -15,13 +15,12 @@ namespace Json
 
     class Parser;
 
-    class ByteStreamDecoder : public Frame
+    class ByteStreamDecoder : public StateMachine, public UnitStream<byte>
     {
     private:
         enum State
         {
-            leftovers_not_initialized_state = Start_State,
-            bom_frame_pending_state,
+            lead_bytes_frame_pending_state = Start_State,
             decoding_byte_stream,
             bom_frame_failed = Succeeded_State + 1,
             could_not_guess_encoding_error,
@@ -31,14 +30,13 @@ namespace Json
         UnicodeStringRef encoding;
         UnicodeStringRef charset;
         Tokenizer* output;
-        byte bom[4];
-        ByteStringRef leftovers;
+        byte lead_bytes[4];
         std::shared_ptr<IDecoder> decoder;
-        MemoryRange bom_frame;
-
-        virtual void IProcess::consider_event(IEvent* event);
+        MemoryRange lead_bytes_frame;
 
     public:
         ByteStreamDecoder(UnicodeStringRef charset, Tokenizer* output);
+
+        virtual void IStream<byte>::write_element(byte element);
     };
 }

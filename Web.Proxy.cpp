@@ -35,10 +35,16 @@ namespace Web
         if (!this->in_progress())
         {
             if (this->client_transport.get() != 0)
+            {
                 this->client_transport->write_eof();
+                this->client_transport.reset();
+            }
 
             if (this->server_transport.get() != 0)
+            {
                 this->server_transport->write_eof();
+                this->server_transport.reset();
+            }
         }
     }
 

@@ -10,7 +10,6 @@ namespace Basic
     class TailLog : public ILog, public IStreamWriter<Codepoint>
     {
     private:
-        Lock lock;
         std::shared_ptr<UnicodeString> tail[0x100];
         uint32 bookmark;
 

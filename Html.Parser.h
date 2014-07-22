@@ -13,7 +13,7 @@ namespace Html
 {
     using namespace Basic;
 
-    class Parser : public FrameStream<byte>
+    class Parser : public UnitStream<byte>
     {
     private:
         friend class ByteStreamDecoder;
@@ -22,15 +22,19 @@ namespace Html
         friend class TreeConstruction;
         friend class CharacterReferenceFrame;
 
-        std::shared_ptr<ByteStreamDecoder> decoder;
-        std::shared_ptr<InputStreamPreprocessor> preprocessor;
+    public:
+        std::shared_ptr<TreeConstruction> tree;
+
+    private:
         std::shared_ptr<Tokenizer> tokenizer;
+        std::shared_ptr<InputStreamPreprocessor> preprocessor;
+        std::shared_ptr<ByteStreamDecoder> decoder;
 
         bool ParseError(const char* error);
 
     public:
-        std::shared_ptr<TreeConstruction> tree;
+        Parser(std::shared_ptr<Uri> url, UnicodeStringRef charset);
 
-        void Initialize(std::shared_ptr<Uri> url, UnicodeStringRef charset);
+        virtual void IStream<byte>::write_element(byte element);
     };
 }

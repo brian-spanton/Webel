@@ -33,8 +33,6 @@ namespace Service
 
     void AdminProtocol::consider_event(Basic::IEvent* event)
     {
-        Hold hold(this->lock);
-
         TextWriter writer(this->peer.get());
 
         if (event->get_type() == Service::EventType::task_complete_event)
@@ -49,8 +47,7 @@ namespace Service
             UnicodeStringRef charset;
             this->client->get_content_type_charset(&charset);
 
-            this->html_parser = std::make_shared<Html::Parser>();
-            this->html_parser->Initialize(url, charset);
+            this->html_parser = std::make_shared<Html::Parser>(url, charset);
 
             this->client->set_body_stream(this->html_parser);
 

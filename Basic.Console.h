@@ -12,7 +12,6 @@ namespace Basic
     class Console : public ArrayStream<Codepoint>
     {
     private:
-        Lock lock;
         HANDLE output;
         HANDLE input;
         DWORD originalMode;

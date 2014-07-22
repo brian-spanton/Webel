@@ -162,10 +162,7 @@ namespace Service
         DebugWriter()->WriteLine("initializing console");
 
         this->console = std::make_shared<Basic::Console>();
-
-        this->adminProtocol = std::make_shared<AdminProtocol>(this->console);
-
-        this->console->Initialize(this->adminProtocol, &this->consoleThread);
+        this->console->Initialize(std::make_shared<AdminProtocol>(this->console), &this->consoleThread);
 
         DebugWriter()->WriteLine("initializing socket library");
 

@@ -16,13 +16,12 @@ namespace Html
 
     class Parser;
 
-    class ByteStreamDecoder : public Frame
+    class ByteStreamDecoder : public StateMachine, public UnitStream<byte>
     {
     private:
         enum State
         {
-            start_state = Start_State,
-            bom_state,
+            bom_frame_pending_state = Start_State,
             media_type_state,
             prescan_state,
             nested_browsing_context_state,
@@ -41,14 +40,13 @@ namespace Html
         std::shared_ptr<IStream<Codepoint> > output;
         Parser* parser;
         byte bom[3];
-        ByteStringRef leftovers;
         std::shared_ptr<IDecoder> decoder;
         MemoryRange bom_frame;
         Confidence confidence;
 
-        virtual void IProcess::consider_event(IEvent* event);
-
     public:
         ByteStreamDecoder(Parser* parser, UnicodeStringRef transport_charset, std::shared_ptr<IStream<Codepoint> > output);
+
+        virtual void IStream<byte>::write_element(byte element);
     };
 }

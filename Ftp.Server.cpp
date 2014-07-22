@@ -21,7 +21,7 @@ namespace Ftp
     {
         std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(this->shared_from_this());
 
-        this->peer = server_socket;
+        this->transport = server_socket;
         listen_socket->StartAccept(server_socket);
     }
 
@@ -30,7 +30,10 @@ namespace Ftp
         __super::switch_to_state(state);
 
         if (!this->in_progress())
-            this->peer->write_eof();
+        {
+            this->transport->write_eof();
+            this->transport.reset();
+        }
     }
 
     void Server::consider_event(IEvent* event)
@@ -50,7 +53,7 @@ namespace Ftp
                     produce_event(completion.get(), &event);
                 }
 
-                Ftp::globals->greeting->write_to_stream(this->peer.get());
+                Ftp::globals->greeting->write_to_stream(this->transport.get());
 
                 switch_to_state(State::command_frame_start_state);
             }

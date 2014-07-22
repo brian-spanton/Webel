@@ -19,143 +19,77 @@ namespace Html
     {
     }
 
-    void ByteStreamDecoder::consider_event(IEvent* event)
+    void ByteStreamDecoder::write_element(byte b)
     {
-        if (event->get_type() == EventType::element_stream_ending_event)
-            throw Yield("event consumed");
-
         switch (get_state())
         {
-        case State::start_state:
+        case State::bom_frame_pending_state:
             {
-                this->leftovers = std::make_shared<ByteString>();
-                this->leftovers->reserve(1024);
-                Event::AddObserver<byte>(event, this->leftovers);
+                this->bom_frame.write_element(b);
 
-                switch_to_state(State::bom_state);
-            }
-            break;
+                if (this->bom_frame.in_progress())
+                    return;
 
-        case State::bom_state:
-            {
-                delegate_event(&this->bom_frame, event);
-            
                 if (this->bom_frame.failed())
                 {
-                    Event::RemoveObserver<byte>(event, this->leftovers);
                     switch_to_state(State::bom_frame_failed);
                     return;
                 }
+
+                uint8 consumed = 0;
 
                 if (memcmp(this->bom, Basic::globals->utf_16_big_endian_bom, sizeof(Basic::globals->utf_16_big_endian_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_16_big_endian_label;
                     this->confidence = Confidence_Certain;
-
-                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_16_big_endian_bom));
-
-                    switch_to_state(State::sniff_done_state);
+                    consumed = _countof(Basic::globals->utf_16_big_endian_bom);
                 }
                 else if (memcmp(this->bom, Basic::globals->utf_16_little_endian_bom, sizeof(Basic::globals->utf_16_little_endian_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_16_little_endian_label;
                     this->confidence = Confidence_Certain;
-
-                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_16_little_endian_bom));
-
-                    switch_to_state(State::sniff_done_state);
+                    consumed = _countof(Basic::globals->utf_16_little_endian_bom);
                 }
                 else if (memcmp(this->bom, Basic::globals->utf_8_bom, sizeof(Basic::globals->utf_8_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_8_label;
                     this->confidence = Confidence_Certain;
-
-                    this->leftovers->erase(this->leftovers->begin(), this->leftovers->begin() + _countof(Basic::globals->utf_8_bom));
-
-                    switch_to_state(State::sniff_done_state);
+                    consumed = _countof(Basic::globals->utf_8_bom);
                 }
-                else
-                {
-                    switch_to_state(State::media_type_state);
-                }
-            }
-            break;
-
-        case State::media_type_state:
-            {
-                if (this->transport_charset.get() == 0)
-                {
-                    switch_to_state(State::prescan_state);
-                }
-                else
+                else if (this->transport_charset.get() != 0)
                 {
                     this->encoding = this->transport_charset;
                     this->confidence = Confidence_Certain;
-                    switch_to_state(State::sniff_done_state);
                 }
-            }
-            break;
-
-        case State::prescan_state:
-            // $ NYI
-            switch_to_state(State::nested_browsing_context_state);
-            break;
-
-        case State::nested_browsing_context_state:
-            // $ NYI
-            switch_to_state(State::previous_sniff_state);
-            break;    
-
-        case State::previous_sniff_state:
-            // $ NYI
-            switch_to_state(State::frequency_analysis_state);
-            break;    
-
-        case State::frequency_analysis_state:
-            // $ NYI
-            switch_to_state(State::locale_state);
-            break;    
-
-        case State::locale_state:
-            // $ NYI
-            switch_to_state(State::guess_state);
-            break;    
-
-        case State::guess_state:
-            this->encoding = Basic::globals->utf_8_label;
-            this->confidence = Confidence_Tentative;
-
-            switch_to_state(State::sniff_done_state);
-            break;
-
-        case State::sniff_done_state:
-            {
-                Event::RemoveObserver<byte>(event, this->leftovers);
+                // $ NYI: prescan
+                // $ NYI: nested_browsing_context
+                // $ NYI: previous_sniff
+                // $ NYI: frequency_analysis
+                // $ NYI: locale
+                else
+                {
+                    this->encoding = Basic::globals->utf_8_label;
+                    this->confidence = Confidence_Tentative;
+                }
 
                 Basic::globals->GetDecoder(this->encoding, &this->decoder);
                 if (this->decoder.get() == 0)
                 {
                     switch_to_state(State::get_decoder_failed);
+                    return;
                 }
-                else
-                {
-                    this->decoder->set_destination(this->output.get());
 
-                    this->decoder->write_elements(this->leftovers->address(), this->leftovers->size());
-                    switch_to_state(State::decoding_state);
-                }
+                this->decoder->set_destination(this->output.get());
+                switch_to_state(State::decoding_state);
+
+                // recursion to re-process these bytes
+                this->write_elements(this->bom + consumed, _countof(this->bom) - consumed);
+                return;
             }
             break;
 
         case State::decoding_state:
-            {
-                const byte* elements;
-                uint32 count;
-
-                Event::Read(event, 0xffffffff, &elements, &count);
-
-                this->decoder->write_elements(elements, count);
-            }
+            this->decoder->write_element(b);
             break;
 
         default:

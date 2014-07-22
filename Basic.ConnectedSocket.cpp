@@ -99,8 +99,6 @@ namespace Basic
 
     void ConnectedSocket::Disconnect(std::shared_ptr<IProcess>* protocol)
     {
-        Hold hold(this->lock);
-
         if (socket != INVALID_SOCKET)
         {
             shutdown(socket, SD_BOTH);
@@ -171,7 +169,9 @@ namespace Basic
 
     void ConnectedSocket::write_eof()
     {
-        Disconnect(0);
+        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::disconnect_type);
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
+        Basic::globals->QueueJob(job);
     }
 
     void ConnectedSocket::CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error)
@@ -190,5 +190,10 @@ namespace Basic
             if (socket != INVALID_SOCKET)
                 StartReceive(bytes);
         }
+    }
+
+    void ConnectedSocket::CompleteDisconnect()
+    {
+        Disconnect(0);
     }
 }

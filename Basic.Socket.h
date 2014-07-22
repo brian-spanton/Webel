@@ -16,6 +16,7 @@ namespace Basic
             send_type,
             receive_type,
             accept_type,
+            disconnect_type,
         };
 
         Type type;
@@ -37,6 +38,7 @@ namespace Basic
         virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
         virtual void CompleteReadyForSend();
         virtual void CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
+        virtual void CompleteDisconnect();
 
     public:
         SOCKET socket;

@@ -72,8 +72,7 @@ namespace Service
                     UnicodeStringRef charset;
                     this->client->get_content_type_charset(&charset);
 
-                    this->json_parser = std::make_shared<Json::Parser>();
-                    this->json_parser->Initialize(std::shared_ptr<Html::Node>(), charset);
+                    this->json_parser = std::make_shared<Json::Parser>(std::shared_ptr<Html::Node>(), charset);
 
                     this->client->set_body_stream(this->json_parser);
 

@@ -64,10 +64,10 @@ namespace Service
             // $ should send it back chunked instead of buffering
             UnicodeStringRef response_body = std::make_shared<UnicodeString>();
 
-            Service::globals->adminProtocol->reset(response_body);
+            AdminProtocol admin_protocol(response_body);
 
             FrameStream<Codepoint> frame_stream;
-            frame_stream.Initialize(Service::globals->adminProtocol.get());
+            frame_stream.Initialize(&admin_protocol);
 
             if (request->resource->query.get() != 0)
             {

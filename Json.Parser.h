@@ -11,21 +11,23 @@ namespace Json
 {
     using namespace Basic;
 
-    class Parser : public FrameStream<byte>
+    class Parser : public UnitStream<byte>
     {
     private:
         friend class ByteStreamDecoder;
         friend class Tokenizer;
         friend class Text;
 
-        std::shared_ptr<ByteStreamDecoder> decoder;
-        std::shared_ptr<Tokenizer> tokenizer;
-
-        bool ParseError(const char* error);
-
     public:
         std::shared_ptr<Text> text;
 
-        void Initialize(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset);
+    private:
+        std::shared_ptr<Tokenizer> tokenizer;
+        std::shared_ptr<ByteStreamDecoder> decoder;
+
+    public:
+        Parser(std::shared_ptr<Html::Node> domain, UnicodeStringRef charset);
+
+        virtual void IStream<byte>::write_element(byte element);
     };
 }

@@ -24,6 +24,7 @@ namespace Basic
         void Disconnect(std::shared_ptr<IProcess>* protocol);
         void DisconnectAndNotifyProtocol();
         virtual void CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error);
+        virtual void CompleteDisconnect();
 
     public:
         ConnectedSocket(std::shared_ptr<IProcess> protocol);

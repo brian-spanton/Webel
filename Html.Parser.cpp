@@ -13,14 +13,17 @@ namespace Html
 {
     using namespace Basic;
 
-    void Parser::Initialize(std::shared_ptr<Uri> url, UnicodeStringRef charset)
+    Parser::Parser(std::shared_ptr<Uri> url, UnicodeStringRef charset) :
+        tree(std::make_shared<TreeConstruction>(this, url)),
+        tokenizer(std::make_shared<Tokenizer>(this, this->tree)), // initialization is in order of declaration in class def
+        preprocessor(std::make_shared<InputStreamPreprocessor>(this, this->tokenizer)), // initialization is in order of declaration in class def
+        decoder(std::make_shared<ByteStreamDecoder>(this, charset, this->preprocessor)) // initialization is in order of declaration in class def
     {
-        this->tree = std::make_shared<TreeConstruction>(this, url);
-        this->tokenizer = std::make_shared<Tokenizer>(this, this->tree);
-        this->preprocessor = std::make_shared<InputStreamPreprocessor>(this, this->tokenizer);
-        this->decoder = std::make_shared<ByteStreamDecoder>(this, charset, this->preprocessor);
+    }
 
-        __super::Initialize(this->decoder.get());
+    void Parser::write_element(byte b)
+    {
+        this->decoder->write_element(b);
     }
 
     bool Parser::ParseError(const char* error)

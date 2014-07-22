@@ -134,15 +134,15 @@ namespace Tls
 
     void Globals::Hash(Basic::HashAlgorithm* hashAlgorithm, byte* secret, uint32 secret_length, IStreamWriter<byte>** seed, uint32 seed_count, byte* output, uint32 output_max)
     {
-        std::shared_ptr<HashStream> hashStream = std::make_shared<HashStream>();
-        hashStream->Initialize(hashAlgorithm, secret, secret_length, output, output_max);
+        std::shared_ptr<HashStream> hash_stream = std::make_shared<HashStream>();
+        hash_stream->Initialize(hashAlgorithm, secret, secret_length, output, output_max);
 
         for (uint32 i = 0; i < seed_count; i++)
         {
-            seed[i]->write_to_stream(hashStream.get());
+            seed[i]->write_to_stream(hash_stream.get());
         }
 
-        hashStream->write_eof();
+        hash_stream->write_eof();
     }
 
     bool Globals::SelectCipherSuite(CipherSuites* proposed_cipher_suites, CipherSuite* selected_cipher_suite)

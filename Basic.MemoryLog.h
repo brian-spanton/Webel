@@ -11,7 +11,6 @@ namespace Basic
     private:
         typedef std::list<UnicodeStringRef> EntryList;
 
-        Lock lock;
         EntryList entries;
 
     public:

@@ -93,8 +93,6 @@ namespace Service
         Basic::UnicodeStringRef root_question;
         Basic::UnicodeStringRef root_log;
 
-        std::shared_ptr<AdminProtocol> adminProtocol;
-
         UnicodeStringRef title_property;
         UnicodeStringRef as_of_property;
         UnicodeStringRef source_property;

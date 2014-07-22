@@ -21,7 +21,7 @@ namespace Ftp
             done_state = Succeeded_State,
         };
 
-        std::shared_ptr<IStream<byte> > peer;
+        std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
         std::vector<Basic::ByteStringRef> command;
