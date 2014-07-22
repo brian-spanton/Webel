@@ -16,7 +16,7 @@ namespace Http
         std::shared_ptr<Uri> resource;
         UnicodeStringRef protocol;
         std::shared_ptr<NameValueCollection> headers;
-        std::shared_ptr<IStreamWriter<byte> > client_body;
+        std::shared_ptr<IStreamWriter<byte> > request_body;
 
         void Initialize();
         void Initialize(Request* request);
@@ -28,8 +28,7 @@ namespace Http
         uint16 code;
         UnicodeStringRef reason;
         std::shared_ptr<NameValueCollection> headers;
-
-        std::shared_ptr<IStreamWriter<byte>> server_body;
+        std::shared_ptr<IStreamWriter<byte> > response_body;
 
         void Initialize();
     };

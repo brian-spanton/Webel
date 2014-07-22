@@ -22,6 +22,6 @@ namespace Basic
 
         ListenSocket(Face face, short port);
 
-        void StartAccept(std::shared_ptr<ServerSocket> acceptPeer);
+        void start_accept(std::shared_ptr<ServerSocket> acceptPeer, bool receive_with_connect);
     };
 }

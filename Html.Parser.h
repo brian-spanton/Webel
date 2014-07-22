@@ -7,7 +7,6 @@
 #include "Html.InputStreamPreprocessor.h"
 #include "Html.Tokenizer.h"
 #include "Html.TreeConstruction.h"
-#include "Basic.FrameStream.h"
 
 namespace Html
 {

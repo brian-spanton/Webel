@@ -14,6 +14,7 @@
 #include "Html.Document.h"
 #include "Html.CommentNode.h"
 #include "Html.FormattingElement.h"
+#include "Basic.Globals.h"
 
 namespace Html
 {

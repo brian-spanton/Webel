@@ -16,6 +16,7 @@ namespace Basic
         std::weak_ptr<IProcess> protocol;
         ElementSource<byte> protocol_element_source;
         sockaddr_in remoteAddress;
+        uint32 receive_buffer_size;
 
         void StartReceive(std::shared_ptr<ByteString> bytes);
         void Received(ByteString* bytes);
@@ -27,7 +28,7 @@ namespace Basic
         virtual void CompleteDisconnect();
 
     public:
-        ConnectedSocket(std::shared_ptr<IProcess> protocol);
+        ConnectedSocket(std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size);
 
         virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
         virtual void IStream<byte>::write_element(byte element);

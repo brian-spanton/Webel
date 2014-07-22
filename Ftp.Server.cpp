@@ -19,10 +19,10 @@ namespace Ftp
 
     void Server::start(ListenSocket* listen_socket)
     {
-        std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(this->shared_from_this());
+        std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(this->shared_from_this(), 0x400);
 
         this->transport = server_socket;
-        listen_socket->StartAccept(server_socket);
+        listen_socket->start_accept(server_socket, false);
     }
 
     void Server::switch_to_state(State state)

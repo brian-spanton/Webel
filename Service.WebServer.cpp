@@ -81,7 +81,7 @@ namespace Service
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
 
-            response->server_body = encoded;
+            response->response_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_plain_media_type);
             response->code = 200;
             response->reason = Http::globals->reason_ok;
@@ -97,12 +97,12 @@ namespace Service
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
         {
-            ByteStringRef body = std::make_shared<ByteString>();
-            body->reserve(0x400);
+            ByteStringRef response_body = std::make_shared<ByteString>();
+            response_body->reserve(0x400);
 
-            Http::serialize<Request>()(request, body.get());
+            Http::serialize<Request>()(request, response_body.get());
 
-            response->server_body = body;
+            response->response_body = response_body;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_plain_media_type);
             response->code = 200;
             response->reason = Http::globals->reason_ok;
@@ -128,7 +128,7 @@ namespace Service
     {
         if (equals<UnicodeString, true>(request->method.get(), Http::globals->get_method.get()))
         {
-            response->server_body = std::make_shared<LogWriter>();
+            response->response_body = std::make_shared<LogWriter>();
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_plain_media_type);
             response->code = 200;
             response->reason = Http::globals->reason_ok;
@@ -155,7 +155,7 @@ namespace Service
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
 
-            response->server_body = encoded;
+            response->response_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_html_media_type);
             response->code = 200;
             response->reason = Http::globals->reason_ok;
@@ -209,7 +209,7 @@ namespace Service
             ByteStringRef encoded = std::make_shared<ByteString>();
             utf_8_encode(response_body.get(), encoded.get());
             
-            response->server_body = encoded;
+            response->response_body = encoded;
             response->headers->set_string(Http::globals->header_content_type, Basic::globals->text_html_media_type);
             response->code = 200;
             response->reason = Http::globals->reason_ok;

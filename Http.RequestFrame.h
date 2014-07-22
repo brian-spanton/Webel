@@ -69,8 +69,8 @@ namespace Http
             stream->write_elements(Http::globals->CRLF, _countof(Http::globals->CRLF));
             serialize<NameValueCollection>()(value->headers.get(), stream);
 
-            if (value->client_body.get() != 0)
-                value->client_body->write_to_stream(stream);
+            if (value->request_body.get() != 0)
+                value->request_body->write_to_stream(stream);
         }
     };
 }

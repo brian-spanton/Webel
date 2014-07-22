@@ -9,6 +9,7 @@
 #include "Html.CharacterToken.h"
 #include "Html.EndOfFileToken.h"
 #include "Html.Parser.h"
+#include "Basic.Globals.h"
 
 namespace Html
 {

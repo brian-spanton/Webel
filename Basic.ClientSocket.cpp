@@ -7,8 +7,8 @@
 
 namespace Basic
 {
-    ClientSocket::ClientSocket(std::shared_ptr<IProcess> protocol) :
-        ConnectedSocket(protocol),
+    ClientSocket::ClientSocket(std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size) :
+        ConnectedSocket(protocol, receive_buffer_size),
         state(State::new_state)
     {
     }

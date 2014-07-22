@@ -41,7 +41,7 @@ namespace Basic
         Basic::globals->DebugWriter()->WriteLine();
     }
 
-    void ListenSocket::StartAccept(std::shared_ptr<ServerSocket> server_socket)
+    void ListenSocket::start_accept(std::shared_ptr<ServerSocket> server_socket, bool receive_with_connect)
     {
         std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::accept_type);
         job_context->bytes = std::make_shared<ByteString>();
@@ -50,8 +50,9 @@ namespace Basic
         // wait for data to be sent before completion of the accept.  It is slightly more
         // efficient to wait for data, but that presumes the protocol expects the client
         // to send upon connection.  not all protocols work this way (ftp for instance).
-        // $ this could be configurable by the endpoint or protocol somehow...
-        job_context->bytes->resize(addressLength * 2);
+        uint32 receive_buffer_size = receive_with_connect ? server_socket->receive_buffer_size : 0;
+
+        job_context->bytes->resize(receive_buffer_size + addressLength * 2);
 
         job_context->wsabuf.buf = (char*)job_context->bytes->address();
         job_context->wsabuf.len = job_context->bytes->size();

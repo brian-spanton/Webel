@@ -27,7 +27,7 @@ namespace Http
         this->resource = request->resource;
         this->protocol = request->protocol;
         this->headers = request->headers;
-        this->client_body = request->client_body;
+        this->request_body = request->request_body;
     }
 
     void Response::Initialize()

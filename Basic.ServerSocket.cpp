@@ -7,8 +7,8 @@
 
 namespace Basic
 {
-    ServerSocket::ServerSocket(std::shared_ptr<IProcess> protocol) :
-        ConnectedSocket(protocol)
+    ServerSocket::ServerSocket(std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size) :
+        ConnectedSocket(protocol, receive_buffer_size)
     {
     }
 

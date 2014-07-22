@@ -78,7 +78,7 @@ namespace Web
             //been added for servers that wish to make unambiguously clear which
             //kind of reaction is expected of the client.
             request->method = Http::globals->get_method;
-            request->client_body = 0;
+            request->request_body = 0;
 
             this->planned_request = request;
         }
@@ -124,7 +124,7 @@ namespace Web
 
             this->planned_request->protocol = Http::globals->HTTP_1_1;
 
-            if (this->planned_request->client_body.get() == 0)
+            if (this->planned_request->request_body.get() == 0)
             {
                 this->planned_request->headers->set_base_10(Http::globals->header_content_length, 0);
                 this->planned_request->headers->erase(Http::globals->header_content_type);
@@ -132,7 +132,7 @@ namespace Web
             else
             {
                 CountStream<byte> count_stream;
-                this->planned_request->client_body->write_to_stream(&count_stream);
+                this->planned_request->request_body->write_to_stream(&count_stream);
                 this->planned_request->headers->set_base_10(Http::globals->header_content_length, count_stream.count);
             }
 
@@ -280,7 +280,7 @@ namespace Web
                     }
 
                     std::shared_ptr<ClientSocket> client_socket;
-                    Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this->shared_from_this(), &client_socket, &this->transport);
+                    Web::globals->CreateClientSocket(this->planned_request->resource->is_secure_scheme(), this->shared_from_this(), 0x400, &client_socket, &this->transport);
 
                     sockaddr_in addr;
                     bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);

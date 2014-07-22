@@ -8,6 +8,7 @@
 #include "Html.EndTagToken.h"
 #include "Html.CharacterToken.h"
 #include "Html.EndOfFileToken.h"
+#include "Basic.Globals.h"
 
 namespace Html
 {

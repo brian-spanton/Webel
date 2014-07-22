@@ -26,9 +26,9 @@ namespace Web
         this->self = this->shared_from_this();
 
         std::shared_ptr<ServerSocket> server_socket;
-        Web::globals->CreateServerSocket(certificate, this->self, &server_socket, &this->transport);
+        Web::globals->CreateServerSocket(certificate, this->self, 0x400, &server_socket, &this->transport);
 
-        listen_socket->StartAccept(server_socket);
+        listen_socket->start_accept(server_socket, true);
     }
 
     void Server::close_transport()
@@ -106,11 +106,11 @@ namespace Web
 
                 this->response->protocol = Http::globals->HTTP_1_1;
 
-                if (this->response->server_body.get() != 0)
+                if (this->response->response_body.get() != 0)
                 {
                     Basic::CountStream<byte> count;
 
-                    this->response->server_body->write_to_stream(&count);
+                    this->response->response_body->write_to_stream(&count);
 
                     this->response->headers->set_base_10(Http::globals->header_content_length, count.count);
                 }

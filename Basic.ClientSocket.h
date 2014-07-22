@@ -24,7 +24,7 @@ namespace Basic
         virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
 
     public:
-        ClientSocket(std::shared_ptr<IProcess> protocol);
+        ClientSocket(std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size);
 
         bool Resolve(UnicodeStringRef host, uint16 port, sockaddr_in* remoteAddress);
         void Initialize();

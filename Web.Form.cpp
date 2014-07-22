@@ -616,7 +616,7 @@ namespace Web
                     request->resource = url;
                     request->method = Http::globals->post_method;
                     request->headers->set_string(Http::globals->header_content_type, Http::globals->application_x_www_form_urlencoded_media_type);
-                    request->client_body = encoded;
+                    request->request_body = encoded;
 
                     (*request_result) = request;
                 }

@@ -17,8 +17,8 @@ namespace Web
 
         void Initialize();
 
-        void CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, std::shared_ptr<Basic::ServerSocket>* socket, std::shared_ptr<IStream<byte> >* transport);
-        void CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, std::shared_ptr<Basic::ClientSocket>* socket, std::shared_ptr<IStream<byte> >* transport);
+        void CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size, std::shared_ptr<Basic::ServerSocket>* socket, std::shared_ptr<IStream<byte> >* transport);
+        void CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size, std::shared_ptr<Basic::ClientSocket>* socket, std::shared_ptr<IStream<byte> >* transport);
     };
 
     extern Globals* globals;

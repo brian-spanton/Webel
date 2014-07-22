@@ -20,12 +20,12 @@ namespace Web
     {
     }
 
-    void Globals::CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, std::shared_ptr<ServerSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
+    void Globals::CreateServerSocket(std::shared_ptr<Tls::ICertificate> certificate, std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size, std::shared_ptr<ServerSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
     {
         if (certificate.get() != 0)
         {
             std::shared_ptr<Tls::RecordLayer> tls_frame = std::make_shared<Tls::RecordLayer>(protocol, true, certificate);
-            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(tls_frame);
+            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(tls_frame, receive_buffer_size);
 
             tls_frame->set_transport(server_socket);
 
@@ -34,19 +34,19 @@ namespace Web
         }
         else
         {
-            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(protocol);
+            std::shared_ptr<ServerSocket> server_socket = std::make_shared<ServerSocket>(protocol, receive_buffer_size);
 
             (*transport) = server_socket;
             (*socket) = server_socket;
         }
     }
 
-    void Globals::CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, std::shared_ptr<ClientSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
+    void Globals::CreateClientSocket(bool secure, std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size, std::shared_ptr<ClientSocket>* socket, std::shared_ptr<IStream<byte> >* transport)
     {
         if (secure)
         {
             std::shared_ptr<Tls::RecordLayer> tls_frame = std::make_shared<Tls::RecordLayer>(protocol, false, std::shared_ptr<Tls::ICertificate>());
-            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(tls_frame);
+            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(tls_frame, receive_buffer_size);
 
             tls_frame->set_transport(client_socket);
 
@@ -55,7 +55,7 @@ namespace Web
         }
         else
         {
-            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(protocol);
+            std::shared_ptr<ClientSocket> client_socket = std::make_shared<ClientSocket>(protocol, receive_buffer_size);
 
             (*transport) = client_socket;
             (*socket) = client_socket;

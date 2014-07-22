@@ -16,6 +16,6 @@ namespace Basic
         void CompleteAccept(std::shared_ptr<ByteString> bytes, uint32 count);
 
     public:
-        ServerSocket(std::shared_ptr<IProcess> protocol);
+        ServerSocket(std::shared_ptr<IProcess> protocol, uint32 receive_buffer_size);
     };
 }

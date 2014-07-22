@@ -23,9 +23,9 @@ namespace Web
     void Proxy::start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate)
     {
         std::shared_ptr<ServerSocket> server_socket;
-        Web::globals->CreateServerSocket(certificate, this->shared_from_this(), &server_socket, &this->client_transport);
+        Web::globals->CreateServerSocket(certificate, this->shared_from_this(), 0x400, &server_socket, &this->client_transport);
 
-        listen_socket->StartAccept(server_socket);
+        listen_socket->start_accept(server_socket, true);
     }
 
     void Proxy::switch_to_state(State state)
@@ -84,7 +84,7 @@ namespace Web
                 server_proxy->Initialize(this->shared_from_this());
 
                 std::shared_ptr<ClientSocket> client_socket;
-                Web::globals->CreateClientSocket(this->server_url->is_secure_scheme(), server_proxy, &client_socket, &this->server_transport);
+                Web::globals->CreateClientSocket(this->server_url->is_secure_scheme(), server_proxy, 0x400, &client_socket, &this->server_transport);
 
                 sockaddr_in addr;
                 bool success = client_socket->Resolve(this->server_url->host, this->server_url->get_port(), &addr);
