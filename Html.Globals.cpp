@@ -267,5 +267,7 @@ namespace Html
 
         SelectScope.push_back(HTML_optgroup);
         SelectScope.push_back(HTML_option);
+
+        this->eof_token = std::make_shared<EndOfFileToken>();
     }
 }

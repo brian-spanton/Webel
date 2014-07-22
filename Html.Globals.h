@@ -6,6 +6,7 @@
 #include "Html.CharacterToken.h"
 #include "Html.ElementName.h"
 #include "Html.Node.h"
+#include "Html.EndOfFileToken.h"
 
 namespace Html
 {
@@ -223,6 +224,8 @@ namespace Html
         std::shared_ptr<ElementName> SVG_foreignObject;
         std::shared_ptr<ElementName> SVG_svg;
         std::shared_ptr<ElementName> SVG_title;
+
+        std::shared_ptr<EndOfFileToken> eof_token;
     };
 
     extern Globals* globals;

@@ -39,7 +39,6 @@ namespace Html
         UnicodeStringRef markup_declaration_open;
         std::shared_ptr<DocTypeToken> doctype_token;
         UnicodeStringRef after_doctype_name;
-        std::shared_ptr<EndOfFileToken> eof_token;
         CharacterReferenceFrame char_ref_frame;
 
         void Emit(TokenRef token);

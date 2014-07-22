@@ -21,7 +21,6 @@ namespace Html
         after_doctype_name(std::make_shared<UnicodeString>()),
         parser(parser),
         output(output),
-        eof_token(std::make_shared<EndOfFileToken>()), // $ could be static
         char_ref_frame(this->parser) // initialization is in order of declaration in class def
     {
     }
@@ -185,7 +184,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(this->eof_token);
+                    Emit(Html::globals->eof_token);
                     break;
 
                 default:
@@ -240,7 +239,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(this->eof_token);
+                    Emit(Html::globals->eof_token);
                     break;
 
                 default:
@@ -288,7 +287,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(this->eof_token);
+                    Emit(Html::globals->eof_token);
                     break;
 
                 default:
@@ -312,7 +311,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(this->eof_token);
+                    Emit(Html::globals->eof_token);
                     break;
 
                 default:
@@ -332,7 +331,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    Emit(this->eof_token);
+                    Emit(Html::globals->eof_token);
                     break;
 
                 default:
