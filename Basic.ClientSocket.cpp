@@ -21,18 +21,24 @@ namespace Basic
             return false;
         }
 
-        ADDRINFOEXA hints = {0};
+        ADDRINFOEXW hints = {0};
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
 
-        ADDRINFOEXA* results;
+        ADDRINFOEXW* results;
 
-        ByteString host_bytes;
-        ascii_encode(host.get(), &host_bytes);
+		std::wstring wide_string;
+		wide_string.reserve(host->size());
+
+		// $ flawed conversion from utf-32 to utf-16
+		for (uint32 i = 0; i < host->size(); i++)
+		{
+			wide_string.push_back((wchar_t)host->at(i));
+		}
 
         // $ this DNS lookup isn't async, but should be.  possibly implement from scratch?
-        int error = GetAddrInfoExA((const char*)host_bytes.address(), 0, NS_DNS, 0, &hints, &results, 0, 0, 0, 0);
+        int error = GetAddrInfoExW(wide_string.c_str(), 0, NS_DNS, 0, &hints, &results, 0, 0, 0, 0);
         if (error != NO_ERROR)
         {
             Basic::globals->HandleError("ClientSocket::Resolve WSAIoctl", WSAGetLastError());

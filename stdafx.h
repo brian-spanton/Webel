@@ -66,7 +66,8 @@
 #include <MSWSock.h>
 #include <ws2tcpip.h>
 #include <ntstatus.h>
-#include <SslProvider.h>
+#include <NCrypt.h>
+#include <Wincrypt.h>
 #include <stdio.h>
 
 #undef CreateFile
