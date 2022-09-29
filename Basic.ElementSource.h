@@ -54,7 +54,7 @@ namespace Basic
 
         void Read(uint32 count, const T** out_address, uint32* out_count)
         {
-            if (out_address == 0 && out_address == 0)
+            if (out_address == 0 && out_count == 0)
             {
                 this->elements_read = this->count;
                 Observe();

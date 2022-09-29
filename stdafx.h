@@ -46,6 +46,8 @@
 #define NODEFERWINDOWPOS  // DeferWindowPos routines
 #define NOMCX             // Modem Configuration Extensions
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // TODO remove
+
 #include <SDKDDKVer.h>
 
 #include <string>
@@ -57,7 +59,6 @@
 #include <cstring>
 #include <unordered_map>
 #include <unordered_set>
-#include <hash_set>
 #include <algorithm>
 #include <memory>
 

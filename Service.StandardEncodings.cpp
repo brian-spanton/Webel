@@ -26,7 +26,7 @@ namespace Service
     void StandardEncodings::start()
     {
         std::shared_ptr<Uri> encodings_url = std::make_shared<Uri>();
-        encodings_url->Initialize("http://encoding.spec.whatwg.org/encodings.json");
+        encodings_url->Initialize("https://encoding.spec.whatwg.org/encodings.json");
 
         // keep ourself alive until we decide to self-destruct
         this->self = this->shared_from_this();

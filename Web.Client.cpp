@@ -426,7 +426,7 @@ namespace Web
 
                 std::shared_ptr<Response> response = this->history.back().response;
 
-                NameValueCollection::_Pairii range = response->headers->equal_range(Http::globals->header_set_cookie);
+                auto range = response->headers->equal_range(Http::globals->header_set_cookie);
 
                 for (NameValueCollection::iterator it = range.first; it != range.second; it++)
                 {

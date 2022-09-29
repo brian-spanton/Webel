@@ -572,7 +572,7 @@ namespace Service
                 TextWriter writer(as_of->value.get());
                 writer.WriteTimestamp();
 
-                Json::MemberList::_Pairib as_of_result = object->members.insert(Json::MemberList::value_type(as_of_property, as_of));
+                auto as_of_result = object->members.insert(Json::MemberList::value_type(as_of_property, as_of));
                 if (as_of_result.second == false)
                     as_of_result.first->second = as_of;
 
