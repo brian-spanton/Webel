@@ -20,7 +20,7 @@ namespace Service
     void HtmlNamedCharacterReferences::start()
     {
         std::shared_ptr<Uri> url = std::make_shared<Uri>();
-        url->Initialize("https://whatwg.org/specs/web-apps/current-work/multipage/entities.json");
+        url->Initialize("https://html.spec.whatwg.org/entities.json");
 
         // keep ourself alive until we decide to self-destruct
         this->self = this->shared_from_this();

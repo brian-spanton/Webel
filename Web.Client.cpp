@@ -355,6 +355,11 @@ namespace Web
                         bool success = location_url->Parse(location_string.get(), this->history.back().request->resource.get());
                         if (success)
                         {
+                            this->history.back().request->resource->write_to_stream(Basic::globals->LogStream(), 0, 0);
+                            Basic::globals->DebugWriter()->WriteFormat<24>(" redirected with %d to ", code);
+                            location_url->write_to_stream(Basic::globals->LogStream(), 0, 0);
+                            Basic::globals->DebugWriter()->WriteLine();
+
                             Redirect(location_url);
                         }
                     }
