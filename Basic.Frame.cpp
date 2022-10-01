@@ -89,6 +89,7 @@ namespace Basic
 
     void delegate_event(IProcess* process, IEvent* event)
     {
+        // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
         for (uint64 i = 0; i != 0x100000; i++)
         {
             // doing this check first ensures that processes that have already failed or succeeded don't have to

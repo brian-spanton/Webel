@@ -40,7 +40,7 @@ namespace Basic
             return Basic::globals->HandleError("GetStdHandle", GetLastError());
 
         input = GetStdHandle(STD_INPUT_HANDLE);
-        if (output == INVALID_HANDLE_VALUE)
+        if (input == INVALID_HANDLE_VALUE)
             return Basic::globals->HandleError("GetStdHandle", GetLastError());
 
         bool success = (bool)GetConsoleMode(input, &originalMode);

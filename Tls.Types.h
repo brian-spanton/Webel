@@ -1180,8 +1180,8 @@ namespace Tls
 
                 this->items->clear();
 
-                // since each item must be at list 1 byte big, may as well
-                // reserve at least that much.  in the case where sizeof(vector_type::element_type) == 1
+                // since each item must be at least 1 byte big, may as well
+                // reserve at that much.  in the case where sizeof(vector_type::element_type) == 1
                 // this should be all the space ever needed
                 this->items->reserve(this->encoded_length);
 
