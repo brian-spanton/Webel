@@ -59,7 +59,7 @@ namespace Web
         {
         case State::pending_connection_state:
             {
-                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
                     throw Yield("unexpected event");

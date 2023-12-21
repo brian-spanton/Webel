@@ -34,8 +34,8 @@ namespace Basic
 
         switch(socket_context->type)
         {
-        case SocketJobContext::ready_for_send_type:
-            CompleteReadyForSend();
+        case SocketJobContext::can_send_bytes_event:
+            CompleteConnectionAccepted();
             break;
 
         case SocketJobContext::send_type:
@@ -65,7 +65,7 @@ namespace Basic
     {
     }
 
-    void Socket::CompleteReadyForSend()
+    void Socket::CompleteConnectionAccepted()
     {
     }
 

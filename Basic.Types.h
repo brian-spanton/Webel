@@ -89,10 +89,10 @@ namespace Basic
     enum EventType
     {
         process_event,
-        ready_for_read_bytes_event,
-        ready_for_write_bytes_event,
-        ready_for_read_codepoints_event,
-        ready_for_write_codepoints_event,
+        received_bytes_event,
+        can_send_bytes_event,
+        received_codepoints_event,
+        can_send_codepoints_event,
         element_stream_ending_event,
         request_headers_event,
         request_complete_event,
@@ -104,40 +104,40 @@ namespace Basic
         virtual uint32 get_type();
     };
 
-    struct ReadyForReadBytesEvent : public IEvent
+    struct ReceivedBytesEvent : public IEvent
     {
     public:
-        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
+        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
         void Initialize(IElementSource<byte>* element_source);
     };
 
-    struct ReadyForWriteBytesEvent : public IEvent
+    struct CanSendBytesEvent : public IEvent
     {
     public:
-        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
+        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
         void Initialize(IElementSource<byte>* element_source);
     };
 
-    struct ReadyForReadCodepointsEvent : public IEvent
+    struct ReceivedCodepointsEvent : public IEvent
     {
     public:
-        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
+        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
         void Initialize(IElementSource<Codepoint>* element_source);
     };
 
-    struct ReadyForWriteCodepointsEvent : public IEvent
+    struct CanSendCodepointsEvent : public IEvent
     {
     public:
-        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only every live on the stack
+        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 

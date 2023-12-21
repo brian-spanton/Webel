@@ -78,18 +78,18 @@ namespace Basic
 
         InitializePeer(&remoteAddress);
 
-        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::ready_for_send_type);
+        std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::can_send_bytes_event);
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), job_context);
 
         Basic::globals->QueueJob(job);
     }
 
-    void ClientSocket::CompleteReadyForSend()
+    void ClientSocket::CompleteConnectionAccepted()
     {
         std::shared_ptr<IProcess> protocol = this->protocol.lock();
         if (protocol.get() != 0)
         {
-            ReadyForWriteBytesEvent event;
+            CanSendBytesEvent event;
             event.Initialize(&this->protocol_element_source);
             produce_event(protocol.get(), &event);
         }

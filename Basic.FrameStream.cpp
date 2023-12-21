@@ -9,7 +9,7 @@ namespace Basic
     {
         this->element_source.Initialize(elements, count);
 
-        ReadyForReadBytesEvent event;
+        ReceivedBytesEvent event;
         event.Initialize(&this->element_source);
 
         produce_event(this->frame, &event);
@@ -19,7 +19,7 @@ namespace Basic
     {
         this->element_source.Initialize(elements, count);
 
-        ReadyForReadCodepointsEvent event;
+        ReceivedCodepointsEvent event;
         event.Initialize(&this->element_source);
 
         produce_event(this->frame, &event);

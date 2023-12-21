@@ -51,12 +51,12 @@ namespace Basic
 
                 this->protocol_element_source.Initialize(bytes->address(), bytes->size());
 
-                ReadyForReadBytesEvent event;
+                ReceivedBytesEvent event;
                 event.Initialize(&this->protocol_element_source);
                 produce_event(protocol.get(), &event);
 
                 if (!this->protocol_element_source.Exhausted() && !protocol->failed())
-                    throw FatalError("Basic::ReadyForReadBytesEvent::Consume this->elements_read < this->count");
+                    throw FatalError("Basic::ReceivedBytesEvent::Consume this->elements_read < this->count");
             }
         }
     }

@@ -38,7 +38,7 @@ namespace Basic
             {
             case State::word_state:
                 {
-                    if (event->get_type() == EventType::ready_for_write_codepoints_event)
+                    if (event->get_type() == EventType::can_send_codepoints_event)
                         throw Yield("event consumed");
 
                     element_type b;

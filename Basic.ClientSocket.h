@@ -20,7 +20,7 @@ namespace Basic
         State state;
         ByteStringRef sendBuffer;
 
-        virtual void CompleteReadyForSend();
+        virtual void CompleteConnectionAccepted();
         virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
 
     public:

@@ -81,14 +81,14 @@ namespace Tls
         {
         case State::unconnected_state:
             {
-                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
                     throw Yield("unexpected event");
                 }
 
                 // produce same event but with specific element source so that handshake_protocol can AddObserver
-                ReadyForWriteBytesEvent handshake_event;
+                CanSendBytesEvent handshake_event;
                 handshake_event.Initialize(&this->handshake_element_source);
                 produce_event(this->handshake_protocol.get(), &handshake_event);
 
@@ -114,7 +114,7 @@ namespace Tls
             {
                 delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
 
-                try
+                try // $$ remove dependency on exceptions
                 {
                     ProcessRecord(&this->record);
                 }
@@ -173,7 +173,7 @@ namespace Tls
             throw State::application_lost_error_1;
 
         this->application_connected = true;
-        ReadyForWriteBytesEvent event;
+        CanSendBytesEvent event;
         event.Initialize(&this->application_element_source);
         produce_event(protocol.get(), &event);
 
@@ -300,7 +300,7 @@ namespace Tls
 
                 this->alert_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
-                ReadyForReadBytesEvent event;
+                ReceivedBytesEvent event;
                 event.Initialize(&this->alert_element_source);
                 produce_event(this->alert_protocol.get(), &event);
 
@@ -321,7 +321,7 @@ namespace Tls
 
                 this->heartbeat_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
-                ReadyForReadBytesEvent event;
+                ReceivedBytesEvent event;
                 event.Initialize(&this->heartbeat_element_source);
                 produce_event(this->heartbeat_protocol.get(), &event);
 
@@ -343,7 +343,7 @@ namespace Tls
 
                 this->handshake_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
-                ReadyForReadBytesEvent event;
+                ReceivedBytesEvent event;
                 event.Initialize(&this->handshake_element_source);
                 produce_event(this->handshake_protocol.get(), &event);
 
@@ -371,7 +371,7 @@ namespace Tls
                 {
                     this->application_element_source.Initialize(plaintext.fragment->address(), plaintext.length);
 
-                    ReadyForReadBytesEvent event;
+                    ReceivedBytesEvent event;
                     event.Initialize(&this->application_element_source);
                     produce_event(protocol.get(), &event);
 

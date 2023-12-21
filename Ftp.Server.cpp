@@ -41,7 +41,7 @@ namespace Ftp
         switch (get_state())
         {
         case State::pending_connection_state:
-            if (event->get_type() == Basic::EventType::ready_for_write_bytes_event)
+            if (event->get_type() == Basic::EventType::can_send_bytes_event)
             {
                 Basic::globals->DebugWriter()->WriteLine("accepted");
 

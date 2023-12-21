@@ -26,42 +26,42 @@ namespace Basic
         return EventType::process_event;
     }
 
-    uint32 ReadyForReadBytesEvent::get_type()
+    uint32 ReceivedBytesEvent::get_type()
     {
-        return EventType::ready_for_read_bytes_event;
+        return EventType::received_bytes_event;
     }
 
-    void ReadyForReadBytesEvent::Initialize(IElementSource<byte>* element_source)
-    {
-        this->element_source = element_source;
-    }
-
-    uint32 ReadyForWriteBytesEvent::get_type()
-    {
-        return EventType::ready_for_write_bytes_event;
-    }
-
-    void ReadyForWriteBytesEvent::Initialize(IElementSource<byte>* element_source)
+    void ReceivedBytesEvent::Initialize(IElementSource<byte>* element_source)
     {
         this->element_source = element_source;
     }
 
-    uint32 ReadyForReadCodepointsEvent::get_type()
+    uint32 CanSendBytesEvent::get_type()
     {
-        return EventType::ready_for_read_codepoints_event;
+        return EventType::can_send_bytes_event;
     }
 
-    void ReadyForReadCodepointsEvent::Initialize(IElementSource<Codepoint>* element_source)
+    void CanSendBytesEvent::Initialize(IElementSource<byte>* element_source)
     {
         this->element_source = element_source;
     }
 
-    uint32 ReadyForWriteCodepointsEvent::get_type()
+    uint32 ReceivedCodepointsEvent::get_type()
     {
-        return EventType::ready_for_write_codepoints_event;
+        return EventType::received_codepoints_event;
     }
 
-    void ReadyForWriteCodepointsEvent::Initialize(IElementSource<Codepoint>* element_source)
+    void ReceivedCodepointsEvent::Initialize(IElementSource<Codepoint>* element_source)
+    {
+        this->element_source = element_source;
+    }
+
+    uint32 CanSendCodepointsEvent::get_type()
+    {
+        return EventType::can_send_codepoints_event;
+    }
+
+    void CanSendCodepointsEvent::Initialize(IElementSource<Codepoint>* element_source)
     {
         this->element_source = element_source;
     }

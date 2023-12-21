@@ -493,6 +493,7 @@ step_8:
         for (ElementList::const_iterator it = this->open_elements.cbegin(); it != this->open_elements.cend(); it++)
         {
             result.push_back('/');
+            // $$ bad form convering Unicode chars to ascii chars
             result.insert(result.end(), (*it)->element_name->name->cbegin(), (*it)->element_name->name->cbegin() + (*it)->element_name->name->size());
         }
 

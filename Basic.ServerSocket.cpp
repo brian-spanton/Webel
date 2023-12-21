@@ -39,7 +39,7 @@ namespace Basic
             return;
         }
 
-        ReadyForWriteBytesEvent event;
+        CanSendBytesEvent event;
         event.Initialize(&this->protocol_element_source);
         produce_event(protocol.get(), &event);
 

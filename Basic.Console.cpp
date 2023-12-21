@@ -51,7 +51,7 @@ namespace Basic
         if (!success)
             return Basic::globals->HandleError("SetConsoleMode", GetLastError());
 
-        ReadyForWriteCodepointsEvent event;
+        CanSendCodepointsEvent event;
         event.Initialize(&this->protocol_element_source);
         produce_event(this->protocol.get(), &event);
 
@@ -104,7 +104,7 @@ namespace Basic
 
                                 this->protocol_element_source.Initialize(&b, 1);
 
-                                ReadyForReadCodepointsEvent event;
+                                ReceivedCodepointsEvent event;
                                 event.Initialize(&this->protocol_element_source);
                                 produce_event(this->protocol.get(), &event);
                             }
@@ -116,7 +116,7 @@ namespace Basic
 
                                 this->protocol_element_source.Initialize(&b, 1);
 
-                                ReadyForReadCodepointsEvent event;
+                                ReceivedCodepointsEvent event;
                                 event.Initialize(&this->protocol_element_source);
                                 produce_event(this->protocol.get(), &event);
                             }

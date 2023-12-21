@@ -306,7 +306,7 @@ namespace Web
 
         case State::connection_pending_state:
             {
-                if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+                if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
                     throw Yield("unexpected event");
@@ -319,7 +319,7 @@ namespace Web
 
         case State::headers_pending_state:
             {
-                if (event->get_type() != Basic::EventType::ready_for_read_bytes_event)
+                if (event->get_type() != Basic::EventType::received_bytes_event)
                 {
                     HandleError("unexpected event");
                     throw Yield("unexpected event");
@@ -400,7 +400,7 @@ namespace Web
 
         case State::body_pending_state:
             {
-                if (event->get_type() != Basic::EventType::ready_for_read_bytes_event)
+                if (event->get_type() != Basic::EventType::received_bytes_event)
                     throw FatalError("unexpected event");
 
                 delegate_event(this->response_body_frame.get(), event);

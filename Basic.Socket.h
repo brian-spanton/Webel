@@ -12,7 +12,7 @@ namespace Basic
     {
         enum Type
         {
-            ready_for_send_type,
+            can_send_bytes_event,
             send_type,
             receive_type,
             accept_type,
@@ -36,7 +36,7 @@ namespace Basic
 
         virtual void CompleteReceive(std::shared_ptr<ByteString> bytes, uint32 error);
         virtual void CompleteSend(std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
-        virtual void CompleteReadyForSend();
+        virtual void CompleteConnectionAccepted();
         virtual void CompleteAccept(ServerSocket* server_socket, std::shared_ptr<ByteString> bytes, uint32 count, uint32 error);
         virtual void CompleteDisconnect();
 

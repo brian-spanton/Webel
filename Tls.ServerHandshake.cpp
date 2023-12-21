@@ -32,7 +32,7 @@ namespace Tls
         switch (get_state())
         {
         case State::start_state:
-            if (event->get_type() != Basic::EventType::ready_for_write_bytes_event)
+            if (event->get_type() != Basic::EventType::can_send_bytes_event)
             {
                 HandleError("unexpected event");
                 throw Yield("unexpected event");
