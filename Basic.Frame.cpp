@@ -90,7 +90,7 @@ namespace Basic
             // handle further events...
             // $$ could this hide some transgressions though?
             if (!process->in_progress())
-                return EventResult::event_result_continue;
+                return EventResult::event_result_yield;
 
             if (process->consider_event(event) == event_result_yield)
                 return EventResult::event_result_yield;
@@ -111,6 +111,8 @@ namespace Basic
 
     void produce_event(IProcess* process, IEvent* event)
     {
-        delegate_event(process, event);
+        EventResult result = delegate_event(process, event);
+        if (result != EventResult::event_result_yield)
+            throw FatalError("incomplete event processing");
     }
 }
