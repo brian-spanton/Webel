@@ -10,7 +10,7 @@ namespace Http
 {
     using namespace Basic;
 
-    // RFC 2616 3.6.1
+    // RFC2616 3.6.1
     class BodyChunksFrame : public Frame
     {
     private:

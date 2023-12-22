@@ -130,7 +130,7 @@ namespace Tls
                         break;
 
                     default:
-                        // RFC 6520 section 2:
+                        // RFC6520 section 2:
                         // Upon reception of an unknown mode, an error Alert message using
                         // illegal_parameter as its AlertDescription MUST be sent in response.
 

@@ -252,7 +252,7 @@ namespace Tls
 
     void RecordLayer::ProcessRecord(Record* record)
     {
-        // From http://www.ietf.org/rfc/rfc2246.txt section 6.2.1:
+        // From RFC2246 section 6.2.1:
         //     The length (in bytes) of the following TLSPlaintext.fragment.
         //     The length should not exceed 2^14 (0x4000).
         // brian: since it is only _should_, and I see some records in real life come back at 0x4020, let's
@@ -273,7 +273,7 @@ namespace Tls
         {
         case ContentType::change_cipher_spec:
             {
-                // RFC 5246 section 6.2.1
+                // RFC5246 section 6.2.1
                 // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
                 // Alert, or ChangeCipherSpec content types.  Zero-length fragments of
                 // Application data MAY be sent as they are potentially useful as a
@@ -295,7 +295,7 @@ namespace Tls
 
         case ContentType::alert:
             {
-                // RFC 5246 section 6.2.1
+                // RFC5246 section 6.2.1
                 // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
                 // Alert, or ChangeCipherSpec content types.  Zero-length fragments of
                 // Application data MAY be sent as they are potentially useful as a
@@ -338,7 +338,7 @@ namespace Tls
 
         case ContentType::handshake:
             {
-                // RFC 5246 section 6.2.1
+                // RFC5246 section 6.2.1
                 // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
                 // Alert, or ChangeCipherSpec content types.  Zero-length fragments of
                 // Application data MAY be sent as they are potentially useful as a
@@ -367,7 +367,7 @@ namespace Tls
                 if (protocol.get() == 0)
                     throw State::application_lost_error_2;
 
-                // RFC 5246 section 6.2.1
+                // RFC5246 section 6.2.1
                 // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
                 // Alert, or ChangeCipherSpec content types.  Zero-length fragments of
                 // Application data MAY be sent as they are potentially useful as a
@@ -422,7 +422,7 @@ namespace Tls
 
     void RecordLayer::send_record(ContentType type, const byte* elements, uint32 count)
     {
-        // RFC 5246 section 6.2.1
+        // RFC5246 section 6.2.1
         // Implementations MUST NOT send zero-length fragments of HandshakeProtocol,
         // Alert, or ChangeCipherSpec content types.  Zero-length fragments of
         // Application data MAY be sent as they are potentially useful as a

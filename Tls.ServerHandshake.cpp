@@ -166,7 +166,7 @@ namespace Tls
                         break;
 
                     default:
-                        // RFC 6520 section 2:
+                        // RFC6520 section 2:
                         // Upon reception of an unknown mode, an error Alert message using
                         // illegal_parameter as its AlertDescription MUST be sent in response.
 
@@ -440,7 +440,7 @@ namespace Tls
                 if (!success)
                     return false;
 
-                // rfc 5246 section 7.4.7.1:
+                // RFC5246 section 7.4.7.1:
                 //Note: The version number in the PreMasterSecret is the version
                 //offered by the client in the ClientHello.client_version, not the
                 //version negotiated for the connection.  This feature is designed to

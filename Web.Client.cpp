@@ -70,7 +70,7 @@ namespace Web
             request->Initialize(this->history.back().request.get());
             request->resource = url;
 
-            //Note: RFC 1945 and RFC 2068 specify that the client is not allowed
+            //Note: RFC1945 and RFC2068 specify that the client is not allowed
             //to change the method on the redirected request.  However, most
             //existing user agent implementations treat 302 as if it were a 303
             //response, performing a GET on the Location field-value regardless

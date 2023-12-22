@@ -28,7 +28,7 @@ namespace Tls
 
     bool SecurityParameters::InitializeCipherSuite(ProtocolVersion version, CipherSuite cipher_suite, KeyExchangeAlgorithm* key_exchange_algorithm)
     {
-        //rfc 5246 section 7.4.9:
+        //RFC5246 section 7.4.9:
         //In previous versions of TLS, the verify_data was always 12 octets
         //long.  In the current version of TLS, it depends on the cipher
         //suite.  Any cipher suite which does not explicitly specify

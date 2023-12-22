@@ -95,8 +95,8 @@ namespace Tls
         bool send_heartbeats;
         bool receive_heartbeats;
         bool application_connected;
-        //bool handshake_in_progress; // $$ set and use for error checking per RFC 4346
-        //bool heartbeat_in_flight; // $$ set and use for error checking per RFC 6520
+        //bool handshake_in_progress; // $$ set and use for error checking per RFC4346
+        //bool heartbeat_in_flight; // $$ set and use for error checking per RFC6520
 
         std::shared_ptr<ConnectionState> pending_read_state;
         std::shared_ptr<ConnectionState> pending_write_state;

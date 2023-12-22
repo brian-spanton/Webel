@@ -42,7 +42,7 @@ namespace Tls
 
                 uint32 non_padding_length = this->heartbeat_message->payload_length + 3;
 
-                // RFC 6520 section 4
+                // RFC6520 section 4
                 // If the payload_length of a received HeartbeatMessage is too large,
                 // the received HeartbeatMessage MUST be discarded silently.
                 if (non_padding_length > this->plaintext_length)
@@ -53,7 +53,7 @@ namespace Tls
 
                 this->padding_length = this->plaintext_length - non_padding_length;
 
-                // RFC 6520 section 4
+                // RFC6520 section 4
                 // The padding_length MUST be at least 16.
                 if (this->padding_length < 16)
                 {
@@ -61,7 +61,7 @@ namespace Tls
                     return EventResult::event_result_continue;
                 }
 
-                // RFC 6520 section 4
+                // RFC6520 section 4
                 // The total length of a HeartbeatMessage MUST NOT exceed 2^14 or
                 // max_fragment_length when negotiated as defined in [RFC6066].
                 if (this->plaintext_length > 0x4000)
