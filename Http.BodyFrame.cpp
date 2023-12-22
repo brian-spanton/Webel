@@ -47,7 +47,7 @@ namespace Http
                 bool success = this->headers->get_string(Http::globals->header_content_type, &contentType);
                 if (!success)
                 {
-                    // $ in what real-world scenario will content-type be missing?
+                    // content-type can be missing if there is no body, for instance in a typical a 3xx response
                     switch_to_state(State::done_state);
                     return EventResult::event_result_continue;
                 }
