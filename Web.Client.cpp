@@ -227,18 +227,23 @@ namespace Web
                 return EventResult::event_result_yield; // event consumed, new thread
 
             case State::body_pending_state:
-                delegate_event(this->response_body_frame.get(), event);
-
-                if (this->response_body_frame->failed())
                 {
-                    Retry(this->history.back().request);
-                    QueuePlanned();
-                    return EventResult::event_result_yield; // event consumed, new thread
-                }
+                    EventResult result = delegate_event(this->response_body_frame.get(), event);
+                    if (result == event_result_yield)
+                        return EventResult::event_result_yield;
 
-                switch_to_state(State::response_complete_state);
-                QueueJob();
-                return EventResult::event_result_yield; // event consumed
+                    if (this->response_body_frame->failed())
+                    {
+                        Retry(this->history.back().request);
+                        QueuePlanned();
+                        return EventResult::event_result_yield; // event consumed, new thread
+                    }
+
+                    switch_to_state(State::response_complete_state);
+                    QueueJob();
+                    return EventResult::event_result_yield; // event consumed
+                }
+                break;
 
             case State::response_complete_state:
                 return EventResult::event_result_yield; // event consumed
