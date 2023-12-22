@@ -86,11 +86,10 @@ namespace Basic
         // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
         for (uint64 i = 0; i != 0x100000; i++)
         {
-            // doing this check first ensures that processes that have already failed or succeeded don't have to
-            // handle further events...
-            // $$ could this hide some transgressions though?
+            // doing this check first so that inactive processes never receive events.
+            // this simplifies process state machines.
             if (!process->in_progress())
-                return EventResult::event_result_yield;
+                return EventResult::event_result_process_inactive;
 
             if (process->consider_event(event) == event_result_yield)
                 return EventResult::event_result_yield;
@@ -109,10 +108,11 @@ namespace Basic
         return result;
     }
 
+    // an event producer calls this guy, which doesn't care whether the event is fully consumed
     void produce_event(IProcess* process, IEvent* event)
     {
         EventResult result = delegate_event(process, event);
-        if (result != EventResult::event_result_yield)
+        if (result == EventResult::event_result_continue)
             throw FatalError("incomplete event processing");
     }
 }

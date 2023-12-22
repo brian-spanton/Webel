@@ -6,10 +6,11 @@ namespace Basic
 {
     __interface IEvent;
 
-    enum EventResult : bool
+    enum EventResult
     {
-        event_result_yield = false,
-        event_result_continue = true,
+        event_result_yield = 0,
+        event_result_continue,
+        event_result_process_inactive,
     };
 
     __interface IProcess
