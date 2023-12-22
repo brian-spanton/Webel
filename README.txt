@@ -33,7 +33,7 @@ web browser, load simulation, http proxy, or higher level applications.
 - 100% async and non-blocking and multi-threaded
 - efficient logging subsystem
 - modern suffix tree implementation
-- excellent smart pointer implementation
+- modern smart pointer implementation
 - good protocol framework for protocol implementation and layering
 - cleanly decoupled namespaces for major subsystems
 - readable code with verbose but clean naming conventions
