@@ -68,9 +68,9 @@ namespace Basic
         return StateMachine::failed();
     }
 
-    event_result Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
+    EventResult Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
     {
-        event_result result = delegate_event(process, event);
+        EventResult result = delegate_event(process, event);
 
         if (process->failed())
         {
@@ -81,7 +81,7 @@ namespace Basic
         return result;
     }
 
-    event_result delegate_event(IProcess* process, IEvent* event)
+    EventResult delegate_event(IProcess* process, IEvent* event)
     {
         // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
         for (uint64 i = 0; i != 0x100000; i++)
@@ -99,9 +99,9 @@ namespace Basic
         throw FatalError("runaway frame?");
     }
 
-    event_result delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
+    EventResult delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
     {
-        event_result result = delegate_event(process, event);
+        EventResult result = delegate_event(process, event);
 
         if (process->failed())
             throw FatalError("delegate_event_throw_error_on_fail process->failed()");

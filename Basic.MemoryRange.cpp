@@ -53,12 +53,12 @@ namespace Basic
         HandleError("unexpected eof");
     }
 
-    event_result MemoryRange::consider_event(IEvent* event)
+    EventResult MemoryRange::consider_event(IEvent* event)
     {
         const byte* elements;
         uint32 useable;
 
-        event_result result = Event::Read(event, this->count - this->received, &elements, &useable);
+        EventResult result = Event::Read(event, this->count - this->received, &elements, &useable);
         if (result == event_result_yield)
             return event_result_yield;
 

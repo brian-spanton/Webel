@@ -61,7 +61,7 @@ namespace Tls
         virtual void PartitionKeyMaterial(ByteString* key_material);
         bool ProcessClientKeyExchange(KeyExchangeAlgorithm key_exchange_algorithm);
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         ServerHandshake(RecordLayer* session);

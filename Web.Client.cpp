@@ -203,7 +203,7 @@ namespace Web
         }
     }
 
-    event_result Client::consider_event(IEvent* event)
+    EventResult Client::consider_event(IEvent* event)
     {
         Hold hold(this->lock);
 
@@ -327,7 +327,7 @@ namespace Web
                     return event_result_yield; // unexpected event
                 }
 
-                event_result result = delegate_event(this->response_headers_frame.get(), event);
+                EventResult result = delegate_event(this->response_headers_frame.get(), event);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -407,7 +407,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::received_bytes_event)
                     throw FatalError("unexpected event");
 
-                event_result result = delegate_event(this->response_body_frame.get(), event);
+                EventResult result = delegate_event(this->response_body_frame.get(), event);
                 if (result == event_result_yield)
                     return event_result_yield;
 

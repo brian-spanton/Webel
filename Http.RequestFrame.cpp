@@ -21,14 +21,14 @@ namespace Http
         this->resource_string->reserve(0x100);
     }
 
-    event_result RequestFrame::consider_event(IEvent* event)
+    EventResult RequestFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::receiving_method_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -50,7 +50,7 @@ namespace Http
         case State::receiving_resource_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -74,7 +74,7 @@ namespace Http
         case State::receiving_protocol_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -92,7 +92,7 @@ namespace Http
         case State::expecting_LF_after_protocol_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -109,7 +109,7 @@ namespace Http
 
         case State::headers_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -122,7 +122,7 @@ namespace Http
 
         case State::body_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->body_frame, event, State::body_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->body_frame, event, State::body_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 

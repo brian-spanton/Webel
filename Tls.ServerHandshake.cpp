@@ -27,7 +27,7 @@ namespace Tls
     {
     }
 
-    event_result ServerHandshake::consider_event(IEvent* event)
+    EventResult ServerHandshake::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -44,7 +44,7 @@ namespace Tls
 
         case State::expecting_client_hello_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_1_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_1_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -62,7 +62,7 @@ namespace Tls
 
         case State::hello_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->client_hello_frame, event, State::hello_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->client_hello_frame, event, State::hello_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -252,7 +252,7 @@ namespace Tls
 
         case State::expecting_client_key_exchange_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_2_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_2_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -288,7 +288,7 @@ namespace Tls
 
         case State::pre_master_secret_frame_pending:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->pre_master_secret_frame, event, State::pre_master_secret_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->pre_master_secret_frame, event, State::pre_master_secret_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -350,7 +350,7 @@ namespace Tls
 
         case State::expecting_finished_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_3_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_3_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -373,7 +373,7 @@ namespace Tls
 
         case State::finished_received_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->finished_received_frame, event, State::finished_received_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->finished_received_frame, event, State::finished_received_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 

@@ -47,7 +47,7 @@ namespace Web
         }
     }
 
-    event_result Server::consider_event(IEvent* event)
+    EventResult Server::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
@@ -93,7 +93,7 @@ namespace Web
 
         case State::request_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 

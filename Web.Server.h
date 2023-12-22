@@ -37,7 +37,7 @@ namespace Web
         std::shared_ptr<Request> request;
         std::shared_ptr<Response> response;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie);

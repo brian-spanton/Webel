@@ -25,7 +25,7 @@ namespace Tls
         NumberFrame<AlertLevel> level_frame;
         NumberFrame<AlertDescription> description_frame;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         AlertFrame(Alert* alert);

@@ -36,7 +36,7 @@ namespace Http
         DecNumberStream<byte, uint16> number_stream;
         HeadersFrame headers_frame;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         ResponseHeadersFrame(UnicodeStringRef method, Response* response);

@@ -37,9 +37,9 @@ namespace Tls
             Event::RemoveObserver<byte>(event, this->counter);
     }
 
-    event_result ServerHelloFrame::consider_event(IEvent* event)
+    EventResult ServerHelloFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

@@ -17,14 +17,14 @@ namespace Http
     {
     }
 
-    event_result BodyChunksFrame::consider_event(IEvent* event)
+    EventResult BodyChunksFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::start_chunk_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -47,7 +47,7 @@ namespace Http
         case State::expecting_LF_after_size_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -71,7 +71,7 @@ namespace Http
 
         case State::chunk_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -82,7 +82,7 @@ namespace Http
         case State::expecting_CR_after_chunk_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -99,7 +99,7 @@ namespace Http
         case State::expecting_LF_after_chunk_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 

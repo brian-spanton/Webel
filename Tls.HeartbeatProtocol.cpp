@@ -30,13 +30,13 @@ namespace Tls
         }
     }
 
-    event_result HeartbeatProtocol::consider_event(IEvent* event)
+    EventResult HeartbeatProtocol::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::heartbeat_message_frame_pending_state:
             {
-                event_result result = delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
                 if (result == event_result_yield)
                     return event_result_yield;
 

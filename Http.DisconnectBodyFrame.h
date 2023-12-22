@@ -20,7 +20,7 @@ namespace Http
 
         std::shared_ptr<IStream<byte> > body_stream;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         DisconnectBodyFrame(std::shared_ptr<IStream<byte> > body_stream);

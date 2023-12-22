@@ -30,9 +30,9 @@ namespace Http
         }
     }
 
-    event_result BodyFrame::consider_event(IEvent* event)
+    EventResult BodyFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

@@ -27,7 +27,7 @@ namespace Service
 
         UnicodeStringRef codepoints_member_name;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
         void switch_to_state(State state);
 
     public:

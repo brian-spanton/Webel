@@ -29,7 +29,7 @@ namespace Ftp
 
         void switch_to_state(State state);
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie);

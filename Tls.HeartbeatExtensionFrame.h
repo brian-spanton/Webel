@@ -22,7 +22,7 @@ namespace Tls
         HeartbeatExtension* heartbeat_extension;
         NumberFrame<HeartbeatMode> mode_frame;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         HeartbeatExtensionFrame(HeartbeatExtension* heartbeat_extension);

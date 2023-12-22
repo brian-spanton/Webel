@@ -32,7 +32,7 @@ namespace Service
         }
     }
 
-    event_result StandardSingleByteEncoding::consider_event(IEvent* event)
+    EventResult StandardSingleByteEncoding::consider_event(IEvent* event)
     {
         if (event->get_type() == Http::EventType::response_complete_event)
         {

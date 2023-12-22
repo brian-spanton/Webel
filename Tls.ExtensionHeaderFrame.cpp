@@ -21,9 +21,9 @@ namespace Tls
         length_frame.reset();
     }
 
-    event_result ExtensionHeaderFrame::consider_event(IEvent* event)
+    EventResult ExtensionHeaderFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

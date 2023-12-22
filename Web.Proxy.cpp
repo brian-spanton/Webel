@@ -48,7 +48,7 @@ namespace Web
         }
     }
 
-    event_result Proxy::consider_event(IEvent* event)
+    EventResult Proxy::consider_event(IEvent* event)
     {
         Hold hold(this->lock);
 
@@ -144,7 +144,7 @@ namespace Web
         return event_result_continue;
     }
 
-    event_result Proxy::consider_server_event(IEvent* event)
+    EventResult Proxy::consider_server_event(IEvent* event)
     {
         Hold hold(this->lock);
 
@@ -205,7 +205,7 @@ namespace Web
         this->proxy = proxy;
     }
 
-    event_result ServerProxy::consider_event(IEvent* event)
+    EventResult ServerProxy::consider_event(IEvent* event)
     {
         return this->proxy->consider_server_event(event);
     }

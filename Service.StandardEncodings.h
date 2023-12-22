@@ -32,7 +32,7 @@ namespace Service
         UnicodeStringRef Name_name;
         UnicodeStringRef Name_labels;
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
         void switch_to_state(State state);
 
     public:

@@ -15,14 +15,14 @@ namespace Http
     {
     }
 
-    event_result HeadersFrame::consider_event(IEvent* event)
+    EventResult HeadersFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::expecting_name_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -46,7 +46,7 @@ namespace Http
         case State::receiving_name_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -79,7 +79,7 @@ namespace Http
         case State::expecting_colon_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -100,7 +100,7 @@ namespace Http
         case State::expecting_value_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -122,7 +122,7 @@ namespace Http
         case State::receiving_value_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -140,7 +140,7 @@ namespace Http
         case State::expecting_LF_after_value_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -158,7 +158,7 @@ namespace Http
         case State::expecting_next_header_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 
@@ -198,7 +198,7 @@ namespace Http
         case State::expecting_LF_after_headers_state:
             {
                 byte b;
-                event_result result = Event::ReadNext(event, &b);
+                EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
                     return event_result_yield;
 

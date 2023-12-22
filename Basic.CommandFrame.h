@@ -32,7 +32,7 @@ namespace Basic
             this->word = std::make_shared<String<element_type> >();
         }
 
-        virtual event_result IProcess::consider_event(IEvent* event)
+        virtual EventResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -42,7 +42,7 @@ namespace Basic
                         return event_result_yield; // event consumed
 
                     element_type b;
-                    event_result result = Event::ReadNext(event, &b);
+                    EventResult result = Event::ReadNext(event, &b);
                     if (result == event_result_yield)
                         return event_result_yield;
 

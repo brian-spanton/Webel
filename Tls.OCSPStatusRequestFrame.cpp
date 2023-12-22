@@ -14,9 +14,9 @@ namespace Tls
     {
     }
 
-    event_result OCSPStatusRequestFrame::consider_event(IEvent* event)
+    EventResult OCSPStatusRequestFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

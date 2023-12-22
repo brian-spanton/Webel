@@ -15,9 +15,9 @@ namespace Tls
     {
     }
 
-    event_result SignatureAndHashAlgorithmFrame::consider_event(IEvent* event)
+    EventResult SignatureAndHashAlgorithmFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

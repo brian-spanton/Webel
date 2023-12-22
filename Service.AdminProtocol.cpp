@@ -31,7 +31,7 @@ namespace Service
         this->command_frame.reset();
     }
 
-    event_result AdminProtocol::consider_event(Basic::IEvent* event)
+    EventResult AdminProtocol::consider_event(Basic::IEvent* event)
     {
         TextWriter writer(this->peer.get());
 
@@ -83,7 +83,7 @@ namespace Service
 
         case State::command_frame_pending_state:
             {
-                event_result result = delegate_event_throw_error_on_fail(&this->command_frame, event);
+                EventResult result = delegate_event_throw_error_on_fail(&this->command_frame, event);
                 if (result == event_result_yield)
                     return event_result_yield;
 

@@ -13,7 +13,7 @@ namespace Http
     {
     }
 
-    event_result DisconnectBodyFrame::consider_event(IEvent* event)
+    EventResult DisconnectBodyFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -28,7 +28,7 @@ namespace Http
                 const byte* elements;
                 uint32 count;
 
-                event_result result = Event::Read(event, 0xffffffff, &elements, &count);
+                EventResult result = Event::Read(event, 0xffffffff, &elements, &count);
                 if (result == event_result_yield)
                     return event_result_yield;
 

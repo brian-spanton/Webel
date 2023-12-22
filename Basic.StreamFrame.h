@@ -30,7 +30,7 @@ namespace Basic
             this->received = 0;
         }
 
-        virtual event_result IProcess::consider_event(IEvent* event)
+        virtual EventResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -39,7 +39,7 @@ namespace Basic
                     const element_type* elements;
                     uint32 useable;
 
-                    event_result result = Event::Read(event, this->expected - this->received, &elements, &useable);
+                    EventResult result = Event::Read(event, this->expected - this->received, &elements, &useable);
                     if (result == event_result_yield)
                         return event_result_yield;
 

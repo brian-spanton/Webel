@@ -21,9 +21,9 @@ namespace Tls
         this->length_frame.reset();
     }
 
-    event_result HandshakeFrame::consider_event(IEvent* event)
+    EventResult HandshakeFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

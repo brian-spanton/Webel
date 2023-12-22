@@ -7,7 +7,7 @@
 namespace Basic
 {
     template <>
-    event_result Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
+    EventResult Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
     {
         if (event->get_type() != EventType::received_bytes_event)
         {
@@ -27,7 +27,7 @@ namespace Basic
     }
 
     template <>
-    event_result Event::ReadNext(IEvent* event, byte* element)
+    EventResult Event::ReadNext(IEvent* event, byte* element)
     {
         if (event->get_type() != EventType::received_bytes_event)
         {
@@ -80,7 +80,7 @@ namespace Basic
     }
 
     template <>
-    event_result Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
+    EventResult Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
     {
         if (event->get_type() != EventType::received_codepoints_event)
         {
@@ -100,7 +100,7 @@ namespace Basic
     }
 
     template <>
-    event_result Event::ReadNext(IEvent* event, Codepoint* element)
+    EventResult Event::ReadNext(IEvent* event, Codepoint* element)
     {
         if (event->get_type() != EventType::received_codepoints_event)
         {

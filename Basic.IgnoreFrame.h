@@ -20,7 +20,7 @@ namespace Basic
         uint64 expected;
         uint64 received;
 
-        virtual event_result IProcess::consider_event(IEvent* event)
+        virtual EventResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -32,7 +32,7 @@ namespace Basic
                     uint64 still_needed = this->expected - this->received;
                     uint32 count = still_needed > 0xffffffff ? 0xffffffff : (uint32)still_needed;
 
-                    event_result result = Event::Read(event, count, &elements, &useable);
+                    EventResult result = Event::Read(event, count, &elements, &useable);
                     if (result == event_result_yield)
                         return event_result_yield;
 

@@ -25,7 +25,7 @@ namespace Basic
         virtual void IStream<byte>::write_element(byte element);
         virtual void IStream<byte>::write_eof();
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
         virtual bool IProcess::in_progress();
         virtual bool IProcess::succeeded();
         virtual bool IProcess::failed();

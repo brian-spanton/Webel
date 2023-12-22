@@ -56,7 +56,7 @@ namespace Service
         bool CreateSelfSignCert();
         bool ExtractPrivateKey();
 
-        virtual event_result IProcess::consider_event(IEvent* event);
+        virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
         typedef Basic::StringMapCaseInsensitive<std::shared_ptr<Basic::ListenSocket> > Listeners;

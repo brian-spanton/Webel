@@ -20,9 +20,9 @@ namespace Tls
         this->plaintext_length = plaintext_length;
     }
 
-    event_result HeartbeatMessageFrame::consider_event(IEvent* event)
+    EventResult HeartbeatMessageFrame::consider_event(IEvent* event)
     {
-        event_result result;
+        EventResult result;
 
         switch (get_state())
         {

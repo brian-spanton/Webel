@@ -380,7 +380,7 @@ namespace Service
         return true;
     }
 
-    event_result Globals::consider_event(IEvent* event)
+    EventResult Globals::consider_event(IEvent* event)
     {
         switch (get_state())
         {

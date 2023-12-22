@@ -36,7 +36,7 @@ namespace Ftp
         }
     }
 
-    event_result Server::consider_event(IEvent* event)
+    EventResult Server::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -71,7 +71,7 @@ namespace Ftp
 
         case State::command_frame_pending_state:
             {
-                event_result result = delegate_event(&this->command_frame, event);
+                EventResult result = delegate_event(&this->command_frame, event);
                 if (result == event_result_yield)
                     return event_result_yield;
 

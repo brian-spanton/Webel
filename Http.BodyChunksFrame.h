@@ -33,7 +33,7 @@ namespace Http
         HexNumberStream<byte, uint32> size_stream;
         LengthBodyFrame chunk_frame;
 
-        event_result IProcess::consider_event(IEvent* event);
+        EventResult IProcess::consider_event(IEvent* event);
 
     public:
         BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream);
