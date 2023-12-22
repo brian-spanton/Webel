@@ -39,6 +39,7 @@ namespace Http
         initialize_unicode(&reason_bad_request, "bad request");
         initialize_unicode(&header_content_encoding, "content-encoding");
         initialize_unicode(&identity, "identity");
+        initialize_unicode(&identity, "gzip");
         initialize_unicode(&header_transfer_encoding, "transfer-encoding");
         initialize_unicode(&header_transfer_length, "transfer-length");
         initialize_unicode(&chunked, "chunked");

@@ -47,6 +47,7 @@ namespace Http
                 bool success = this->headers->get_string(Http::globals->header_content_type, &contentType);
                 if (!success)
                 {
+                    // $ in what real-world scenario will content-type be missing?
                     switch_to_state(State::done_state);
                     return EventResult::event_result_continue;
                 }
@@ -55,7 +56,17 @@ namespace Http
                 success = this->headers->get_string(Http::globals->header_content_encoding, &contentEncoding);
                 if (success)
                 {
-                    if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
+                    if (equals<UnicodeString, false>(contentEncoding.get(), Http::globals->gzip.get()))
+                    {
+                        // RFC1952 https://www.rfc-editor.org/rfc/rfc1952
+
+                        switch_to_state(State::unhandled_content_encoding_error);
+                        
+                        HandleError("content encoding gzip NYI");
+
+                        return EventResult::event_result_continue;
+                    }
+                    else if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
                     {
                         switch_to_state(State::unhandled_content_encoding_error);
 
@@ -86,6 +97,7 @@ namespace Http
                     }
                 }
 
+                // $ why does transfer-length take precedence over content-length? if we have both what should we do?
                 uint32 contentLength;
                 success = this->headers->get_base_10(Http::globals->header_transfer_length, &contentLength);
                 if (success)

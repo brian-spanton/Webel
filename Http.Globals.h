@@ -58,6 +58,7 @@ namespace Http
         UnicodeStringRef reason_bad_request;
         UnicodeStringRef header_content_encoding;
         UnicodeStringRef identity;
+        UnicodeStringRef gzip;
         UnicodeStringRef header_transfer_encoding;
         UnicodeStringRef header_transfer_length;
         UnicodeStringRef chunked;
