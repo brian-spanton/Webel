@@ -58,7 +58,7 @@ namespace Service
                         Basic::globals->DebugWriter()->WriteLine(" did not return 200");
 
                         switch_to_state(State::done_state);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
 
                     UnicodeStringRef charset;
@@ -68,7 +68,7 @@ namespace Service
 
                     this->client->set_body_stream(this->json_parser);
 
-                    return event_result_yield; // event consumed
+                    return EventResult::event_result_yield; // event consumed
                 }
                 break;
 
@@ -150,6 +150,6 @@ namespace Service
             throw FatalError("Html::Globals::Complete unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

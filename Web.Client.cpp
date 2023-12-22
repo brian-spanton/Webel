@@ -208,7 +208,7 @@ namespace Web
         Hold hold(this->lock);
 
         if (get_state() == State::inactive_state)
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
@@ -218,13 +218,13 @@ namespace Web
             {
             case State::get_pending_state:
             case State::resolve_address_state:
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
 
             case State::connection_pending_state:
             case State::headers_pending_state:
                 Retry(this->planned_request);
                 QueuePlanned();
-                return event_result_yield; // event consumed, new thread
+                return EventResult::event_result_yield; // event consumed, new thread
 
             case State::body_pending_state:
                 delegate_event(this->response_body_frame.get(), event);
@@ -233,15 +233,15 @@ namespace Web
                 {
                     Retry(this->history.back().request);
                     QueuePlanned();
-                    return event_result_yield; // event consumed, new thread
+                    return EventResult::event_result_yield; // event consumed, new thread
                 }
 
                 switch_to_state(State::response_complete_state);
                 QueueJob();
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
 
             case State::response_complete_state:
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
 
             default:
                 throw FatalError("Web::Client::handle_event unexpected state");
@@ -255,14 +255,14 @@ namespace Web
                 if (event->get_type() != Basic::EventType::process_event)
                 {
                     HandleError("unexpected event");
-                    return event_result_yield; // unexpected event
+                    return EventResult::event_result_yield; // unexpected event
                 }
 
                 if (!this->planned_request->resource->is_http_scheme())
                 {
                     handle_error("scheme error");
                     switch_to_state(State::inactive_state);
-                    return event_result_yield; // event consumed
+                    return EventResult::event_result_yield; // event consumed
                 }
 
                 std::shared_ptr<Uri> current_url;
@@ -290,7 +290,7 @@ namespace Web
                     {
                         handle_error("resolve failed");
                         switch_to_state(State::inactive_state);
-                        return event_result_yield; // event consumed
+                        return EventResult::event_result_yield; // event consumed
                     }
 
                     client_socket->StartConnect(addr);
@@ -302,7 +302,7 @@ namespace Web
                     switch_to_state(State::headers_pending_state);
                 }
 
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
             }
             break;
 
@@ -311,11 +311,11 @@ namespace Web
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return event_result_yield; // unexpected event
+                    return EventResult::event_result_yield; // unexpected event
                 }
 
                 switch_to_state(State::headers_pending_state);
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
             }
             break;
 
@@ -324,18 +324,18 @@ namespace Web
                 if (event->get_type() != Basic::EventType::received_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return event_result_yield; // unexpected event
+                    return EventResult::event_result_yield; // unexpected event
                 }
 
                 EventResult result = delegate_event(this->response_headers_frame.get(), event);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->response_headers_frame->failed())
                 {
                     handle_error("response_headers_frame failed");
                     switch_to_state(State::inactive_state);
-                    return event_result_yield; // event consumed
+                    return EventResult::event_result_yield; // event consumed
                 }
 
                 std::shared_ptr<Response> response = this->history.back().response;
@@ -395,7 +395,7 @@ namespace Web
                 {
                     switch_to_state(State::response_complete_state);
                     QueueJob();
-                    return event_result_yield; // event consumed, new thread
+                    return EventResult::event_result_yield; // event consumed, new thread
                 }
 
                 switch_to_state(State::body_pending_state);
@@ -409,7 +409,7 @@ namespace Web
 
                 EventResult result = delegate_event(this->response_body_frame.get(), event);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->response_body_frame->failed())
                 {
@@ -418,12 +418,12 @@ namespace Web
 
                     Retry(this->history.back().request);
                     QueuePlanned();
-                    return event_result_yield; // event consumed, new thread
+                    return EventResult::event_result_yield; // event consumed, new thread
                 }
 
                 switch_to_state(State::response_complete_state);
                 QueueJob();
-                return event_result_yield; // event consumed, new thread
+                return EventResult::event_result_yield; // event consumed, new thread
             }
             break;
 
@@ -432,7 +432,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::process_event)
                 {
                     HandleError("unexpected event");
-                    return event_result_yield; // unexpected event
+                    return EventResult::event_result_yield; // unexpected event
                 }
 
                 std::shared_ptr<Response> response = this->history.back().response;
@@ -472,7 +472,7 @@ namespace Web
                 }
 
                 QueuePlanned();
-                return event_result_yield; // event consumed, new thread
+                return EventResult::event_result_yield; // event consumed, new thread
             }
             break;
 
@@ -480,7 +480,7 @@ namespace Web
             throw FatalError("Web::Client::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     bool Client::get_content_type(std::shared_ptr<MediaType>* media_type)

@@ -22,7 +22,7 @@ namespace Tls
         case State::mode_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->mode_frame, event, State::mode_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::done_state);
             break;
@@ -31,6 +31,6 @@ namespace Tls
             throw FatalError("HeartbeatExtensionFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

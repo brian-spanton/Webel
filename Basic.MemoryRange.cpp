@@ -60,12 +60,12 @@ namespace Basic
 
         EventResult result = Event::Read(event, this->count - this->received, &elements, &useable);
         if (result == event_result_yield)
-            return event_result_yield;
+            return EventResult::event_result_yield;
 
         CopyMemory(this->bytes + this->received, elements, useable);
         this->received += useable;
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     uint32 MemoryRange::Length()

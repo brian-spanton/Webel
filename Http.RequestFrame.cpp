@@ -30,7 +30,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -52,7 +52,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -76,7 +76,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -94,7 +94,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->LF)
                 {
@@ -111,7 +111,7 @@ namespace Http
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
                 this->body_frame.set_body_stream(count_stream);
@@ -124,7 +124,7 @@ namespace Http
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->body_frame, event, State::body_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 switch_to_state(State::done_state);
             }
@@ -134,7 +134,7 @@ namespace Http
             throw FatalError("Http::RequestFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     void render_request_line(const Request* value, IStream<byte>* stream)

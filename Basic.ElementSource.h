@@ -73,7 +73,7 @@ namespace Basic
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw new FatalError("exhausted"); // return event_result_yield; // event consumed
+                throw new FatalError("exhausted"); // return EventResult::event_result_yield; // event consumed
 
             const T* return_address = this->elements + this->elements_read;
             uint32 return_count = (elements_remaining < count) ? elements_remaining : count;
@@ -91,7 +91,7 @@ namespace Basic
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw new FatalError("exhausted"); // return event_result_yield; // event consumed
+                throw new FatalError("exhausted"); // return EventResult::event_result_yield; // event consumed
 
             (*element) = this->elements[this->elements_read];
             this->elements_read++;

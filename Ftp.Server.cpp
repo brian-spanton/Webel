@@ -73,7 +73,7 @@ namespace Ftp
             {
                 EventResult result = delegate_event(&this->command_frame, event);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->command_frame.failed())
                 {
@@ -94,6 +94,6 @@ namespace Ftp
             throw FatalError("Ftp::Server::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

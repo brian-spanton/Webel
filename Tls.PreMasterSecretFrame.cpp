@@ -23,7 +23,7 @@ namespace Tls
         case State::version_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::random_frame_pending_state);
             break;
@@ -31,7 +31,7 @@ namespace Tls
         case State::random_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::done_state);
             break;
@@ -40,6 +40,6 @@ namespace Tls
             throw FatalError("PreMasterSecretFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

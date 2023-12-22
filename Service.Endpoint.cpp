@@ -26,10 +26,10 @@ namespace Service
         if (event->get_type() != Http::EventType::accept_complete_event)
         {
             HandleError("unexpected event");
-            return event_result_yield; // unexpected event
+            return EventResult::event_result_yield; // unexpected event
         }
 
         SpawnListener();
-        return event_result_yield; // event consumed
+        return EventResult::event_result_yield; // event consumed
     }
 }

@@ -26,7 +26,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -38,7 +38,7 @@ namespace Http
                     if (!success)
                     {
                         switch_to_state(State::start_chunk_error);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
                 }
             }
@@ -49,12 +49,12 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b != Http::globals->LF)
                 {
                     switch_to_state(State::expecting_LF_after_size_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 if (this->size == 0)
@@ -73,7 +73,7 @@ namespace Http
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 switch_to_state(State::expecting_CR_after_chunk_state);
             }
@@ -84,12 +84,12 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b != Http::globals->CR)
                 {
                     switch_to_state(State::expecting_CR_after_chunk_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 switch_to_state(State::expecting_LF_after_chunk_state);
@@ -101,12 +101,12 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b != Http::globals->LF)
                 {
                     switch_to_state(State::expecting_LF_after_chunk_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 this->size_stream.reset();
@@ -118,6 +118,6 @@ namespace Http
             throw FatalError("BodyChunksFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

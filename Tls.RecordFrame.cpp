@@ -32,7 +32,7 @@ namespace Tls
         case State::type_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::version_frame_pending_state);
             break;
@@ -40,7 +40,7 @@ namespace Tls
         case State::version_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::length_frame_pending_state);
             break;
@@ -49,7 +49,7 @@ namespace Tls
             {
                 result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 this->record->fragment = std::make_shared<ByteString>();
                 this->record->fragment->resize(this->record->length);
@@ -61,7 +61,7 @@ namespace Tls
         case State::fragment_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->fragment_frame, event, State::fragment_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::done_state);
             break;
@@ -70,6 +70,6 @@ namespace Tls
             throw FatalError("Tls::RecordFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

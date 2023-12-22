@@ -1084,7 +1084,7 @@ namespace Tls
                     byte b;
                     EventResult result = Event::ReadNext(event, &b);
                     if (result == event_result_yield)
-                        return event_result_yield;
+                        return EventResult::event_result_yield;
 
                     byte* value_bytes = reinterpret_cast<byte*>(this->value);
                     int index = encoded_length - this->received - 1;
@@ -1101,7 +1101,7 @@ namespace Tls
                 throw FatalError("Tls::NumberFrame::handle_event unexpected state");
             }
 
-            return event_result_continue;
+            return EventResult::event_result_continue;
         }
     };
 
@@ -1168,7 +1168,7 @@ namespace Tls
                 {
                     EventResult result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
                     if (result == event_result_yield)
-                        return event_result_yield;
+                        return EventResult::event_result_yield;
 
                     switch_to_state(event, State::length_known_state);
                 }
@@ -1178,7 +1178,7 @@ namespace Tls
                 if (!(this->encoded_length >= vector_type::encoded_length_min && this->encoded_length <= vector_type::encoded_length_max))
                 {
                     switch_to_state(event, State::unexpected_length_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 this->counter = std::make_shared<CountStream<byte> >();
@@ -1221,7 +1221,7 @@ namespace Tls
                 {
                     EventResult result = delegate_event_change_state_on_fail(this->item_frame.get(), event, State::item_frame_failed);
                     if (result == event_result_yield)
-                        return event_result_yield;
+                        return EventResult::event_result_yield;
 
                     switch_to_state(event, State::next_item_state);
                 }
@@ -1237,7 +1237,7 @@ namespace Tls
                 throw FatalError("Tls::VectorFrame unexpected state");
             }
 
-            return event_result_continue;
+            return EventResult::event_result_continue;
         }
     };
 

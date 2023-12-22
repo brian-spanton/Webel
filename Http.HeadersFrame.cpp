@@ -24,7 +24,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -48,7 +48,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->colon)
                 {
@@ -81,7 +81,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->colon)
                 {
@@ -102,7 +102,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -124,7 +124,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -142,7 +142,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->LF)
                 {
@@ -160,7 +160,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -200,7 +200,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->LF)
                 {
@@ -217,6 +217,6 @@ namespace Http
             throw FatalError("HeadersFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

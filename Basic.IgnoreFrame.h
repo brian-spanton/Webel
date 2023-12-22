@@ -34,14 +34,14 @@ namespace Basic
 
                     EventResult result = Event::Read(event, count, &elements, &useable);
                     if (result == event_result_yield)
-                        return event_result_yield;
+                        return EventResult::event_result_yield;
 
                     this->received += useable;
 
                     if (this->received == this->expected)
                     {
                         switch_to_state(State::done_state);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
                 }
                 break;
@@ -50,7 +50,7 @@ namespace Basic
                 throw FatalError("Basic::IgnoreFrame::handle_event unexpected state");
             }
 
-            return event_result_continue;
+            return EventResult::event_result_continue;
         }
 
     public:

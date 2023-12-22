@@ -28,7 +28,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -46,7 +46,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -79,7 +79,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -105,7 +105,7 @@ namespace Http
                 byte b;
                 EventResult result = Event::ReadNext(event, &b);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (b == Http::globals->LF)
                 {
@@ -122,7 +122,7 @@ namespace Http
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 switch_to_state(State::done_state);
             }
@@ -132,7 +132,7 @@ namespace Http
             throw FatalError("ResponseHeadersFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     void render_response_line(const Response* value, IStream<byte>* stream)

@@ -75,7 +75,7 @@ namespace Basic
         if (process->failed())
         {
             this->switch_to_state(state);
-            return event_result_yield; // process failed
+            return EventResult::event_result_yield; // process failed
         }
 
         return result;
@@ -90,10 +90,10 @@ namespace Basic
             // handle further events...
             // $$ could this hide some transgressions though?
             if (!process->in_progress())
-                return event_result_continue;
+                return EventResult::event_result_continue;
 
             if (process->consider_event(event) == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
         }
 
         throw FatalError("runaway frame?");

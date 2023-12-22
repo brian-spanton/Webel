@@ -46,7 +46,7 @@ namespace Http
 
                 EventResult result = Event::Read(event, this->bytes_expected - this->bytes_received, &elements, &useable);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 this->body_stream->write_elements(elements, useable);
 
@@ -55,7 +55,7 @@ namespace Http
                 if (this->bytes_received == this->bytes_expected)
                 {
                     switch_to_state(State::done_state);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
             }
             break;
@@ -64,6 +64,6 @@ namespace Http
             throw FatalError("Http::LengthBodyFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

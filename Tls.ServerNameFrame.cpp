@@ -28,7 +28,7 @@ namespace Tls
         case State::type_state:
             result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::name_state);
             break;
@@ -36,7 +36,7 @@ namespace Tls
         case State::name_state:
             result = delegate_event_change_state_on_fail(&this->name_frame, event, State::name_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::done_state);
             break;
@@ -45,6 +45,6 @@ namespace Tls
             throw FatalError("Tls::ServerNameFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

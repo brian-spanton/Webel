@@ -39,12 +39,12 @@ namespace Basic
             case State::word_state:
                 {
                     if (event->get_type() == EventType::can_send_codepoints_event)
-                        return event_result_yield; // event consumed
+                        return EventResult::event_result_yield; // event consumed
 
                     element_type b;
                     EventResult result = Event::ReadNext(event, &b);
                     if (result == event_result_yield)
-                        return event_result_yield;
+                        return EventResult::event_result_yield;
 
                     if (b == ' ')
                     {
@@ -67,7 +67,7 @@ namespace Basic
                 throw FatalError("CommandFrame::handle_event unexpected state");
             }
 
-            return event_result_continue;
+            return EventResult::event_result_continue;
         }
     };
 }

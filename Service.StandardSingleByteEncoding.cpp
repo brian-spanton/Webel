@@ -37,7 +37,7 @@ namespace Service
         if (event->get_type() == Http::EventType::response_complete_event)
         {
             switch_to_state(State::connection_lost_error);
-            return event_result_continue;
+            return EventResult::event_result_continue;
         }
 
         switch (get_state())
@@ -57,13 +57,13 @@ namespace Service
                     Service::globals->DebugWriter()->WriteLine(" did not return 200");
 
                     switch_to_state(State::done_state);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 this->client->set_body_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
             }
             break;
 

@@ -51,7 +51,7 @@ namespace Service
 
             this->client->set_body_stream(this->html_parser);
 
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
@@ -71,7 +71,7 @@ namespace Service
                 writer.WriteLine("Get failed to produce html");
             }
 
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
         }
         else switch (get_state())
         {
@@ -85,7 +85,7 @@ namespace Service
             {
                 EventResult result = delegate_event_throw_error_on_fail(&this->command_frame, event);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 switch_to_state(State::start_state);
 
@@ -303,7 +303,7 @@ namespace Service
             throw Basic::FatalError("AdminProtocol::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
     
     void AdminProtocol::write_to_human_with_context(Html::Node* node, IStream<Codepoint>* stream, bool verbose)

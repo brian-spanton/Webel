@@ -35,18 +35,18 @@ namespace Tls
             if (event->get_type() != Basic::EventType::can_send_bytes_event)
             {
                 HandleError("unexpected event");
-                return event_result_yield; // unexpected event
+                return EventResult::event_result_yield; // unexpected event
             }
 
             Event::AddObserver<byte>(event, this->handshake_messages);
             switch_to_state(State::expecting_client_hello_state);
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
 
         case State::expecting_client_hello_state:
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_1_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->handshake.msg_type != HandshakeType::client_hello)
                 {
@@ -64,12 +64,12 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->client_hello_frame, event, State::hello_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->clientHello.client_version < this->session->version_low)
                 {
                     switch_to_state(State::client_version_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 if (this->clientHello.client_version > this->session->version_high)
@@ -86,14 +86,14 @@ namespace Tls
                 if (!success)
                 {
                     switch_to_state(State::SelectCipherSuite_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 success = this->security_parameters->InitializeCipherSuite(this->session->version, cipher_suite, &this->key_exchange_algorithm);
                 if (!success)
                 {
                     switch_to_state(State::InitializeCipherSuite_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 SignatureAndHashAlgorithms supported_signature_algorithms = this->clientHello.supported_signature_algorithms;
@@ -140,7 +140,7 @@ namespace Tls
                 {
                     Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
                     switch_to_state(State::BCryptGenRandom_1_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 ServerHello serverHello;
@@ -172,7 +172,7 @@ namespace Tls
 
                         this->session->WriteAlert(AlertDescription::illegal_parameter, AlertLevel::fatal);
                         switch_to_state(State::unexpected_heartbeat_mode_error);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
                 }
 
@@ -182,7 +182,7 @@ namespace Tls
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_1_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 //bool send_cert; // $$ NYI
@@ -198,7 +198,7 @@ namespace Tls
                         if (!success)
                         {
                             switch_to_state(State::WriteMessage_4_failed);
-                            return event_result_continue;
+                            return EventResult::event_result_continue;
                         }
                     }
                     break;
@@ -230,14 +230,14 @@ namespace Tls
 
                 default:
                     switch_to_state(State::unexpected_key_exchange_algorithm_2_error);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 success = WriteMessage(HandshakeType::server_hello_done, 0);
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_2_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 this->handshake_frame.reset();
@@ -254,7 +254,7 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_2_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->handshake.msg_type != HandshakeType::client_key_exchange)
                 {
@@ -290,7 +290,7 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->pre_master_secret_frame, event, State::pre_master_secret_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 bool success = ProcessClientKeyExchange(this->key_exchange_algorithm);
                 if (!success)
@@ -317,7 +317,7 @@ namespace Tls
                     {
                         Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
                         switch_to_state(State::BCryptGenRandom_2_failed);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
                 }
 
@@ -330,7 +330,7 @@ namespace Tls
                 CalculateVerifyData(&Tls::globals->client_finished_label, finished_expected.address(), (uint16)finished_expected.size());
 
                 switch_to_state(State::expecting_cipher_change_state);
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
             }
             break;
 
@@ -339,12 +339,12 @@ namespace Tls
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
                     HandleError("unexpected event");
-                    return event_result_yield; // unexpected event
+                    return EventResult::event_result_yield; // unexpected event
                 }
 
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_finished_state);
-                return event_result_yield; // event consumed
+                return EventResult::event_result_yield; // event consumed
             }
             break;
 
@@ -352,7 +352,7 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->handshake_frame, event, State::handshake_frame_3_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 if (this->handshake.msg_type != HandshakeType::finished)
                 {
@@ -375,14 +375,14 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->finished_received_frame, event, State::finished_received_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
                 {
                     if (finished_received[i] != finished_expected[i])
                     {
                         switch_to_state(State::finished_received_error);
-                        return event_result_continue;
+                        return EventResult::event_result_continue;
                     }
                 }
 
@@ -390,7 +390,7 @@ namespace Tls
                 if (!success)
                 {
                     switch_to_state(State::WriteMessage_3_failed);
-                    return event_result_continue;
+                    return EventResult::event_result_continue;
                 }
 
                 Basic::globals->DebugWriter()->WriteFormat<0x100>("TLS server handshake successfully negotiated 0x%04X", this->session->version);
@@ -410,7 +410,7 @@ namespace Tls
             throw FatalError("Tls::ServerHandshake::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     bool ServerHandshake::ProcessClientKeyExchange(KeyExchangeAlgorithm key_exchange_algorithm)

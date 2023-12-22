@@ -23,7 +23,7 @@ namespace Tls
         case State::level_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->level_frame, event, State::level_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::description_frame_pending_state);
             break;
@@ -31,7 +31,7 @@ namespace Tls
         case State::description_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->description_frame, event, State::description_frame_failed);
             if (result == event_result_yield)
-                return event_result_yield;
+                return EventResult::event_result_yield;
 
             switch_to_state(State::done_state);
             break;
@@ -40,6 +40,6 @@ namespace Tls
             throw FatalError("Tls::AlertFrame::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }

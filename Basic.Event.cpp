@@ -13,17 +13,17 @@ namespace Basic
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return event_result_yield; // unexpected event
+            //return EventResult::event_result_yield; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 
         if (read_event->element_source->Exhausted())
-            return event_result_yield;
+            return EventResult::event_result_yield;
 
         read_event->element_source->Read(count, out_address, out_count);
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     template <>
@@ -33,16 +33,16 @@ namespace Basic
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return event_result_yield; // unexpected event
+            //return EventResult::event_result_yield; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
         if (read_event->element_source->Exhausted())
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
 
         read_event->element_source->ReadNext(element);
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     template <>
@@ -86,17 +86,17 @@ namespace Basic
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return event_result_yield; // unexpected event
+            //return EventResult::event_result_yield; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
 
         if (read_event->element_source->Exhausted())
-            return event_result_yield;
+            return EventResult::event_result_yield;
 
         read_event->element_source->Read(count, out_address, out_count);
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     template <>
@@ -106,16 +106,16 @@ namespace Basic
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return event_result_yield; // unexpected event
+            //return EventResult::event_result_yield; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
         if (read_event->element_source->Exhausted())
-            return event_result_yield; // event consumed
+            return EventResult::event_result_yield; // event consumed
 
         read_event->element_source->ReadNext(element);
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 
     template <>

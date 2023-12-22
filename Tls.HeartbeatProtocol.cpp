@@ -38,7 +38,7 @@ namespace Tls
             {
                 EventResult result = delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
                 if (result == event_result_yield)
-                    return event_result_yield;
+                    return EventResult::event_result_yield;
 
                 switch (this->heartbeat_message.type)
                 {
@@ -74,6 +74,6 @@ namespace Tls
             throw FatalError("Tls::HeartbeatProtocol::handle_event unexpected state");
         }
 
-        return event_result_continue;
+        return EventResult::event_result_continue;
     }
 }
