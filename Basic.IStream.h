@@ -4,6 +4,7 @@
 
 namespace Basic
 {
+    // an IStream receives serialized elements of type element_type, plus an abstract eof terminator
     template <typename element_type>
     __interface IStream
     {
@@ -12,6 +13,7 @@ namespace Basic
         void write_eof();
     };
 
+    // a UnitStream only needs to define the write_element override
     template <typename element_type>
     class UnitStream : public IStream<element_type>
     {
@@ -29,6 +31,7 @@ namespace Basic
         }
     };
 
+    // an ArrayStream only needs to define the write_elements override
     template <typename element_type>
     class ArrayStream : public IStream<element_type>
     {

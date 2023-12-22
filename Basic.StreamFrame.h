@@ -7,6 +7,9 @@
 
 namespace Basic
 {
+    // the inverse of a FrameStream, the point of StreamFrame is to present
+    // any IStream as a Frame (and therefore IProcess).
+    // $ it isn't actually used at the moment, should we remove it?
     template <typename element_type>
     class StreamFrame : public Frame
     {

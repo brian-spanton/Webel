@@ -400,7 +400,7 @@ namespace Web
         UnicodeStringRef accept_charset;
         this->form_element->get_attribute(Html::globals->accept_charset_attribute_name, &accept_charset);
 
-        // $$ why is this commented out?  because pick_an_encoding_for_the_form is NYI
+        // $ this is commented out because it is NYI and defaulting to utf-8 is often adequate
 
         ////2. If the form element has an accept-charset attribute, let the selected character encoding be the result
         ////   of picking an encoding for the form.

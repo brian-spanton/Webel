@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Basic.Types.h"
 #include "Basic.Globals.h"
+#include "Basic.IProcess.h"
 
 namespace Basic
 {

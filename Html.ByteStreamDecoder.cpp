@@ -5,7 +5,6 @@
 #include "Html.Globals.h"
 #include "Html.Parser.h"
 #include "Html.Types.h"
-#include "Basic.StreamFrame.h"
 #include "Basic.Globals.h"
 
 namespace Html

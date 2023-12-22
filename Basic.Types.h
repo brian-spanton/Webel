@@ -86,19 +86,6 @@ namespace Basic
     typedef StringMapCaseInsensitive<std::shared_ptr<IEncoderFactory> > EncoderMap;
     typedef StringMapCaseInsensitive<std::shared_ptr<IDecoderFactory> > DecoderMap;
 
-    enum EventType
-    {
-        process_event,
-        received_bytes_event,
-        can_send_bytes_event,
-        received_codepoints_event,
-        can_send_codepoints_event,
-        element_stream_ending_event,
-        request_headers_event,
-        request_complete_event,
-        encodings_complete_event,
-    };
-
     struct ProcessEvent : public IEvent
     {
         virtual uint32 get_type();

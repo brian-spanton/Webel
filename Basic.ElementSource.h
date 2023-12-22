@@ -8,7 +8,9 @@
 
 namespace Basic
 {
-    // $$ get rid of this class?
+    // the point of ElementSource is to take an existing buffer
+    // and present it to an IProcess via a Received_ or CanSend_ IEvent, with an observer capability
+    // to support TLS in particular (which makes calculations over sections of the underlying bytestream).
     template <class T>
     class ElementSource : public IElementSource<T>
     {

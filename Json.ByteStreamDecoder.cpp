@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "Json.ByteStreamDecoder.h"
 #include "Json.Globals.h"
-#include "Basic.StreamFrame.h"
 #include "Basic.Globals.h"
 #include "Basic.Event.h"
 

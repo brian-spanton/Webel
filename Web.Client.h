@@ -62,7 +62,7 @@ namespace Web
 
         bool get_content_type(std::shared_ptr<MediaType>* media_type);
         bool get_content_type_charset(UnicodeStringRef* media_type);
-        void set_body_stream(std::shared_ptr<IStream<byte> > body_stream);
+        void set_decoded_content_stream(std::shared_ptr<IStream<byte> > body_stream);
         void get_url(std::shared_ptr<Uri>* url);
     };
 }

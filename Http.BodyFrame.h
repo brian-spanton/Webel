@@ -33,7 +33,7 @@ namespace Http
         };
 
         std::shared_ptr<NameValueCollection> headers;
-        std::shared_ptr<IStream<byte> > body_stream;
+        std::shared_ptr<IStream<byte> > decoded_content_stream;
         std::shared_ptr<BodyChunksFrame> chunks_frame;
         std::shared_ptr<LengthBodyFrame> chunk_frame;
         std::shared_ptr<DisconnectBodyFrame> disconnect_frame;
@@ -46,6 +46,6 @@ namespace Http
     public:
         BodyFrame(std::shared_ptr<NameValueCollection> headers);
 
-        void set_body_stream(std::shared_ptr<IStream<byte> > body_stream);
+        void set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream);
     };
 }

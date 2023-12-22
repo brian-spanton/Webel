@@ -14,11 +14,12 @@ namespace Html
 {
     using namespace Basic;
 
+    // initialization is in order of declaration in class def
     Parser::Parser(std::shared_ptr<Uri> url, UnicodeStringRef charset) :
         tree(std::make_shared<TreeConstruction>(this, url)),
-        tokenizer(std::make_shared<Tokenizer>(this, this->tree)), // initialization is in order of declaration in class def
-        preprocessor(std::make_shared<InputStreamPreprocessor>(this, this->tokenizer)), // initialization is in order of declaration in class def
-        decoder(std::make_shared<ByteStreamDecoder>(this, charset, this->preprocessor)) // initialization is in order of declaration in class def
+        tokenizer(std::make_shared<Tokenizer>(this, this->tree)),
+        preprocessor(std::make_shared<InputStreamPreprocessor>(this, this->tokenizer)),
+        decoder(std::make_shared<ByteStreamDecoder>(this, charset, this->preprocessor))
     {
     }
 

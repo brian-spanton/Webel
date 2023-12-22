@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "Html.CharacterReferenceFrame.h"
-#include "Basic.StreamFrame.h"
 #include "Html.Globals.h"
 #include "Html.CharacterToken.h"
 #include "Basic.DecNumberStream.h"

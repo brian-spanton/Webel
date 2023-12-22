@@ -114,7 +114,7 @@ namespace Http
                     return EventResult::event_result_yield;
 
                 std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
-                this->body_frame.set_body_stream(count_stream);
+                this->body_frame.set_decoded_content_stream(count_stream);
 
                 switch_to_state(State::body_frame_pending_state);
             }

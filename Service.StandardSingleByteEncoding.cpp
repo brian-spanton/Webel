@@ -60,7 +60,7 @@ namespace Service
                     return EventResult::event_result_continue;
                 }
 
-                this->client->set_body_stream(this->shared_from_this());
+                this->client->set_decoded_content_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
                 return EventResult::event_result_yield; // event consumed

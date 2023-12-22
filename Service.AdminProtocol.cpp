@@ -49,7 +49,7 @@ namespace Service
 
             this->html_parser = std::make_shared<Html::Parser>(url, charset);
 
-            this->client->set_body_stream(this->html_parser);
+            this->client->set_decoded_content_stream(this->html_parser);
 
             return EventResult::event_result_yield; // event consumed
         }

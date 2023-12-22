@@ -21,13 +21,16 @@ namespace Html
         friend class TreeConstruction;
         friend class CharacterReferenceFrame;
 
+        // due to rules about constructor initializors, the order of all member declarations is important for this class.
+        // see definition of Parser(std::shared_ptr<Uri> url, UnicodeStringRef charset)
+
     public:
-        std::shared_ptr<TreeConstruction> tree;
+        std::shared_ptr<TreeConstruction> tree; // init 1st
 
     private:
-        std::shared_ptr<Tokenizer> tokenizer;
-        std::shared_ptr<InputStreamPreprocessor> preprocessor;
-        std::shared_ptr<ByteStreamDecoder> decoder;
+        std::shared_ptr<Tokenizer> tokenizer; // init 2nd
+        std::shared_ptr<InputStreamPreprocessor> preprocessor; // init 3rd
+        std::shared_ptr<ByteStreamDecoder> decoder; // init 4th
 
         bool ParseError(const char* error);
 

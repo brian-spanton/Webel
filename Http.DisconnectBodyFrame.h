@@ -9,6 +9,7 @@ namespace Http
 {
     using namespace Basic;
 
+    // this class handles an http body terminated by transport disconnect
     class DisconnectBodyFrame : public Frame
     {
     private:

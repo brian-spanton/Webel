@@ -5,7 +5,6 @@
 #include "Html.Types.h"
 #include "Html.Node.h"
 #include "Html.Token.h"
-#include "Basic.StreamFrame.h"
 #include "Html.CharacterToken.h"
 #include "Html.StartTagToken.h"
 #include "Html.EndTagToken.h"

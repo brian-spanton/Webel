@@ -74,7 +74,7 @@ namespace Service
 
                     this->json_parser = std::make_shared<Json::Parser>(std::shared_ptr<Html::Node>(), charset);
 
-                    this->client->set_body_stream(this->json_parser);
+                    this->client->set_decoded_content_stream(this->json_parser);
 
                     return EventResult::event_result_yield; // event consumed
                 }

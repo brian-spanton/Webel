@@ -518,11 +518,11 @@ namespace Web
         return true;
     }
 
-    void Client::set_body_stream(std::shared_ptr<IStream<byte> > body_stream)
+    void Client::set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream)
     {
         Hold hold(this->lock);
 
-        this->response_body_frame->set_body_stream(body_stream);
+        this->response_body_frame->set_decoded_content_stream(decoded_content_stream);
     }
 
     void Client::get_url(std::shared_ptr<Uri>* url)
