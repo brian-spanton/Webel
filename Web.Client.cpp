@@ -207,13 +207,15 @@ namespace Web
     {
         Hold hold(this->lock);
 
+        if (get_state() == State::inactive_state)
+            return event_result_yield; // event consumed
+
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             this->transport.reset();
 
             switch (get_state())
             {
-            case State::inactive_state:
             case State::get_pending_state:
             case State::resolve_address_state:
                 return event_result_yield; // event consumed

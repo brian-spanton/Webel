@@ -58,6 +58,13 @@ namespace Http
                     if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
                     {
                         switch_to_state(State::unhandled_content_encoding_error);
+
+                        ByteString error;
+                        error.append((byte*)"unhandled content encoding=");
+                        ascii_encode(contentEncoding.get(), &error);
+
+                        HandleError((char*)error.c_str());
+
                         return event_result_continue;
                     }
                 }
