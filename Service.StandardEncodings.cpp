@@ -45,7 +45,7 @@ namespace Service
         }
     }
 
-    void StandardEncodings::consider_event(IEvent* event)
+    event_result StandardEncodings::consider_event(IEvent* event)
     {
         bool found_ascii = false;
 
@@ -66,7 +66,7 @@ namespace Service
                         Service::globals->DebugWriter()->WriteLine(" did not return 200");
 
                         switch_to_state(State::done_state);
-                        return;
+                        return event_result_continue;
                     }
 
                     UnicodeStringRef charset;
@@ -76,7 +76,7 @@ namespace Service
 
                     this->client->set_body_stream(this->json_parser);
 
-                    throw Yield("event consumed");
+                    return event_result_yield; // event consumed
                 }
                 break;
 
@@ -260,5 +260,7 @@ namespace Service
         default:
             throw FatalError("Globals::Complete unexpected state");
         }
+
+        return event_result_continue;
     }
 }

@@ -26,7 +26,7 @@ namespace Tls
         Alert alert;
         std::shared_ptr<AlertFrame> alert_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         AlertProtocol(RecordLayer* session);

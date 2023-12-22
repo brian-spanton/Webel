@@ -13,17 +13,24 @@ namespace Tls
     {
     }
 
-    void HeartbeatExtensionFrame::consider_event(IEvent* event)
+    event_result HeartbeatExtensionFrame::consider_event(IEvent* event)
     {
+        event_result result;
+
         switch (get_state())
         {
         case State::mode_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->mode_frame, event, State::mode_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->mode_frame, event, State::mode_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
+
             switch_to_state(State::done_state);
             break;
 
         default:
             throw FatalError("HeartbeatExtensionFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

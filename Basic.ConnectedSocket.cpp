@@ -141,7 +141,7 @@ namespace Basic
         write_elements(&element, 1);
     }
 
-    void ConnectedSocket::Send(std::shared_ptr<ByteString> bytes)
+    void ConnectedSocket::Send(ByteStringRef bytes)
     {
         if (bytes->size() == 0)
             throw FatalError("ConnectedSocket::Send 0 bytes");

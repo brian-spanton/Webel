@@ -20,18 +20,25 @@ namespace Tls
         this->plaintext_length = plaintext_length;
     }
 
-    void HeartbeatMessageFrame::consider_event(IEvent* event)
+    event_result HeartbeatMessageFrame::consider_event(IEvent* event)
     {
+        event_result result;
+
         switch (get_state())
         {
         case State::type_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
+
             switch_to_state(State::payload_length_frame_pending_state);
             break;
 
         case State::payload_length_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->payload_length_frame, event, State::payload_length_frame_failed);
+                result = delegate_event_change_state_on_fail(&this->payload_length_frame, event, State::payload_length_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 uint32 non_padding_length = this->heartbeat_message->payload_length + 3;
 
@@ -41,7 +48,7 @@ namespace Tls
                 if (non_padding_length > this->plaintext_length)
                 {
                     switch_to_state(State::payload_length_error);
-                    return;
+                    return event_result_continue;
                 }
 
                 this->padding_length = this->plaintext_length - non_padding_length;
@@ -51,7 +58,7 @@ namespace Tls
                 if (this->padding_length < 16)
                 {
                     switch_to_state(State::payload_length_error);
-                    return;
+                    return event_result_continue;
                 }
 
                 // RFC 6520 section 4
@@ -60,7 +67,7 @@ namespace Tls
                 if (this->plaintext_length > 0x4000)
                 {
                     switch_to_state(State::payload_length_error);
-                    return;
+                    return event_result_continue;
                 }
 
                 this->heartbeat_message->payload.resize(this->heartbeat_message->payload_length);
@@ -71,7 +78,9 @@ namespace Tls
 
         case State::payload_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->payload_frame, event, State::payload_frame_failed);
+                result = delegate_event_change_state_on_fail(&this->payload_frame, event, State::payload_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 this->heartbeat_message->padding.resize(this->padding_length);
                 this->padding_frame.reset(this->heartbeat_message->padding.address(), this->heartbeat_message->padding.size());
@@ -80,12 +89,17 @@ namespace Tls
             break;
 
         case State::padding_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->padding_frame, event, State::padding_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->padding_frame, event, State::padding_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
+
             switch_to_state(State::done_state);
             break;
 
         default:
             throw FatalError("HeartbeatMessageFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

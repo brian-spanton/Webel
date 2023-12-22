@@ -7,8 +7,7 @@
 
 namespace Basic
 {
-    SingleByteEncoder::SingleByteEncoder() :
-        error_replacement_byte(0x7F) // $ is this a good default error_replacement_byte char?
+    SingleByteEncoder::SingleByteEncoder()
     {
     }
 

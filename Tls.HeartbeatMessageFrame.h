@@ -34,7 +34,7 @@ namespace Tls
         MemoryRange payload_frame;
         MemoryRange padding_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         HeartbeatMessageFrame(HeartbeatMessage* heartbeat_message);

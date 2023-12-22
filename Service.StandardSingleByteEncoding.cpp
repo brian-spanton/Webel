@@ -32,12 +32,12 @@ namespace Service
         }
     }
 
-    void StandardSingleByteEncoding::consider_event(IEvent* event)
+    event_result StandardSingleByteEncoding::consider_event(IEvent* event)
     {
         if (event->get_type() == Http::EventType::response_complete_event)
         {
             switch_to_state(State::connection_lost_error);
-            return;
+            return event_result_continue;
         }
 
         switch (get_state())
@@ -57,13 +57,13 @@ namespace Service
                     Service::globals->DebugWriter()->WriteLine(" did not return 200");
 
                     switch_to_state(State::done_state);
-                    return;
+                    return event_result_continue;
                 }
 
                 this->client->set_body_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
-                throw Yield("event consumed");
+                return event_result_yield; // event consumed
             }
             break;
 

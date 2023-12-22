@@ -10,10 +10,10 @@ namespace Basic
     class HashStream : public ArrayStream<byte>
     {
     private:
-        byte hash_object[0x1000];
+        byte hash_object[0x1000] = { 0 };
         BCRYPT_HASH_HANDLE hash;
-        byte* output;
-        uint32 output_length;
+        byte* output = 0;
+        uint32 output_length = 0;
 
     public:
         HashStream();

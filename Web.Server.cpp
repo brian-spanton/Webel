@@ -47,12 +47,12 @@ namespace Web
         }
     }
 
-    void Server::consider_event(IEvent* event)
+    event_result Server::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             switch_to_state(State::done_state);
-            throw Yield("event consumed");
+            return event_result_yield; // event consumed
         }
 
         switch (get_state())
@@ -62,7 +62,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    throw Yield("unexpected event");
+                    return event_result_yield; // unexpected event
                 }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
@@ -76,7 +76,7 @@ namespace Web
                 }
 
                 switch_to_state(State::new_request_state);
-                throw Yield("event consumed");
+                return event_result_yield; // event consumed
             }
             break;
 
@@ -93,7 +93,9 @@ namespace Web
 
         case State::request_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
+                event_result result = delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 Basic::globals->DebugWriter()->write_literal("Request received: ");
                 render_request_line(this->request.get(),  &Basic::globals->DebugWriter()->decoder);
@@ -140,7 +142,7 @@ namespace Web
                     if (equals<UnicodeString, false>(connection.get(), Http::globals->keep_alive.get()))
                     {
                         switch_to_state(State::new_request_state);
-                        return;
+                        return event_result_continue;
                     }
                 }
 
@@ -152,5 +154,7 @@ namespace Web
         default:
             throw FatalError("Web::Server::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

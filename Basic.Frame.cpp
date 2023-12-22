@@ -76,18 +76,20 @@ namespace Basic
         return StateMachine::failed();
     }
 
-    void Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
+    event_result Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
     {
-        delegate_event(process, event);
+        event_result result = delegate_event(process, event);
 
         if (process->failed())
         {
             this->switch_to_state(state);
-            throw Yield("process failed");
+            return event_result_yield; // process failed
         }
+
+        return result;
     }
 
-    void delegate_event(IProcess* process, IEvent* event)
+    event_result delegate_event(IProcess* process, IEvent* event)
     {
         // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
         for (uint64 i = 0; i != 0x100000; i++)
@@ -96,20 +98,23 @@ namespace Basic
             // handle further events...
             // $$ could this hide some transgressions though?
             if (!process->in_progress())
-                return;
+                return event_result_continue;
 
-            process->consider_event(event);
+            if (process->consider_event(event) == event_result_yield)
+                return event_result_yield;
         }
 
         throw FatalError("runaway frame?");
     }
 
-    void delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
+    event_result delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
     {
-        delegate_event(process, event);
+        event_result result = delegate_event(process, event);
 
         if (process->failed())
             throw FatalError("delegate_event_throw_error_on_fail process->failed()");
+
+        return result;
     }
 
     void produce_event(IProcess* process, IEvent* event)

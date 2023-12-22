@@ -41,7 +41,7 @@ namespace Http
 
         void switch_to_state(State state);
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         BodyFrame(std::shared_ptr<NameValueCollection> headers);

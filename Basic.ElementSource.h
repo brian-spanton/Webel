@@ -16,12 +16,12 @@ namespace Basic
         typedef std::shared_ptr<IStream<T> > StreamRef;
         typedef std::map<IStream<T>*, StreamRef> StreamMap; // $$ is a map best with shared_ptr, or can we use some other bag and not need the pointer key?
 
-        const T* elements;
-        uint32 count;
-        uint32 elements_read;
+        const T* elements = 0;
+        uint32 count = 0;
+        uint32 elements_read = 0;
 
         StreamMap observers;
-        uint32 elements_observed;
+        uint32 elements_observed = 0;
 
         void Observe()
         {
@@ -61,13 +61,19 @@ namespace Basic
                 return;
             }
 
+            if (out_address == 0)
+                throw FatalError("Basic::ElementSource::Read out_address == 0");
+
+            if (out_count == 0)
+                throw FatalError("Basic::ElementSource::Read out_count == 0");
+
             if (count == 0)
                 throw FatalError("Basic::ElementSource::Read count == 0");
 
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw Yield("event consumed");
+                throw new FatalError("exhausted"); // return event_result_yield; // event consumed
 
             const T* return_address = this->elements + this->elements_read;
             uint32 return_count = (elements_remaining < count) ? elements_remaining : count;
@@ -85,7 +91,7 @@ namespace Basic
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw Yield("event consumed");
+                throw new FatalError("exhausted"); // return event_result_yield; // event consumed
 
             (*element) = this->elements[this->elements_read];
             this->elements_read++;

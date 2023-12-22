@@ -13,7 +13,7 @@ namespace Http
     {
     }
 
-    void DisconnectBodyFrame::consider_event(IEvent* event)
+    event_result DisconnectBodyFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -22,13 +22,15 @@ namespace Http
                 if (event->get_type() == EventType::element_stream_ending_event)
                 {
                     switch_to_state(State::done_state);
-                    return;
+                    return event_result_continue;
                 }
 
                 const byte* elements;
                 uint32 count;
 
-                Event::Read(event, 0xffffffff, &elements, &count);
+                event_result result = Event::Read(event, 0xffffffff, &elements, &count);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 this->body_stream->write_elements(elements, count);
             }
@@ -37,5 +39,7 @@ namespace Http
         default:
             throw FatalError("Http::DisconnectBodyFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

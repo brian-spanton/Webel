@@ -30,13 +30,15 @@ namespace Tls
         }
     }
 
-    void HeartbeatProtocol::consider_event(IEvent* event)
+    event_result HeartbeatProtocol::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::heartbeat_message_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
+                event_result result = delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 switch (this->heartbeat_message.type)
                 {
@@ -71,5 +73,7 @@ namespace Tls
         default:
             throw FatalError("Tls::HeartbeatProtocol::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

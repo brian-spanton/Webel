@@ -19,14 +19,16 @@ namespace Http
     {
     }
 
-    void ResponseHeadersFrame::consider_event(IEvent* event)
+    event_result ResponseHeadersFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::receiving_protocol_state:
             {
                 byte b;
-                Event::ReadNext(event, &b);
+                event_result result = Event::ReadNext(event, &b);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -42,7 +44,9 @@ namespace Http
         case State::receiving_code_state:
             {
                 byte b;
-                Event::ReadNext(event, &b);
+                event_result result = Event::ReadNext(event, &b);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 if (b == Http::globals->SP)
                 {
@@ -73,7 +77,9 @@ namespace Http
         case State::receiving_reason_state:
             {
                 byte b;
-                Event::ReadNext(event, &b);
+                event_result result = Event::ReadNext(event, &b);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 if (b == Http::globals->CR)
                 {
@@ -97,7 +103,9 @@ namespace Http
         case State::expecting_LF_after_reason_state:
             {
                 byte b;
-                Event::ReadNext(event, &b);
+                event_result result = Event::ReadNext(event, &b);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 if (b == Http::globals->LF)
                 {
@@ -112,7 +120,9 @@ namespace Http
 
         case State::headers_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+                event_result result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 switch_to_state(State::done_state);
             }
@@ -121,6 +131,8 @@ namespace Http
         default:
             throw FatalError("ResponseHeadersFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 
     void render_response_line(const Response* value, IStream<byte>* stream)

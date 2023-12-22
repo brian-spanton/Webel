@@ -9,9 +9,7 @@
 
 namespace Basic
 {
-    Console::Console() :
-        output(INVALID_HANDLE_VALUE),
-        input(INVALID_HANDLE_VALUE)
+    Console::Console()
     {
     }
 
@@ -21,7 +19,7 @@ namespace Basic
             CloseHandle(output);
 
         if (input != INVALID_HANDLE_VALUE)
-            CloseHandle(output);
+            CloseHandle(input);
     }
 
     void Console::Initialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread)

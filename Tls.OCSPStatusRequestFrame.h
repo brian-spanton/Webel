@@ -25,7 +25,7 @@ namespace Tls
         VectorFrame<ResponderIDList> list_frame;
         VectorFrame<Extensions> extensions_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         OCSPStatusRequestFrame(OCSPStatusRequest* ocsp_status_request);

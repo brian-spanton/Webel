@@ -71,16 +71,6 @@ namespace Basic
         this->ascii_index = std::make_shared<SingleByteEncodingIndex>();
         this->ascii_index->Initialize();
 
-        utf_16_big_endian_bom[0] = 0xFE;
-        utf_16_big_endian_bom[1] = 0xFF;
-
-        utf_16_little_endian_bom[0] = 0xFF;
-        utf_16_little_endian_bom[1] = 0xFE;
-
-        utf_8_bom[0] = 0xEF;
-        utf_8_bom[1] = 0xBB;
-        utf_8_bom[2] = 0xBF;
-
         initialize_unicode(&ftp_scheme, "ftp");
         initialize_unicode(&file_scheme, "file");
         initialize_unicode(&gopher_scheme, "gopher");

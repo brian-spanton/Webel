@@ -42,7 +42,7 @@ namespace Http
 
         bool ParseError(byte b);
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         RequestFrame(Request* request);

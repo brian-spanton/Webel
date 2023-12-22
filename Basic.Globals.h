@@ -17,9 +17,9 @@ namespace Basic
         void Initialize(std::shared_ptr<IErrorHandler> error_handler, std::shared_ptr<ICompletionQueue> completion_queue);
         bool InitializeSocketApi();
 
-        byte utf_16_big_endian_bom[2];
-        byte utf_16_little_endian_bom[2];
-        byte utf_8_bom[3];
+        byte utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
+        byte utf_16_little_endian_bom[2] = { 0xFF, 0xFE };
+        byte utf_8_bom[3] = { 0xEF, 0xBB, 0xBF };
 
         UnicodeStringRef ftp_scheme;
         UnicodeStringRef file_scheme;
@@ -54,20 +54,20 @@ namespace Basic
 
         std::shared_ptr<SingleByteEncodingIndex> ascii_index;
 
-        bool simple_encode_anti_set[0x100];
-        bool default_encode_anti_set[0x100];
-        bool password_encode_anti_set[0x100];
-        bool username_encode_anti_set[0x100];
+        bool simple_encode_anti_set[0x100] = { 0 };
+        bool default_encode_anti_set[0x100] = { 0 };
+        bool password_encode_anti_set[0x100] = { 0 };
+        bool username_encode_anti_set[0x100] = { 0 };
 
         typedef StringMapCaseSensitive<UnicodeStringRef> PortMap;
         PortMap scheme_to_port_map;
 
-        bool sanitizer_white_space[0x100];
+        bool sanitizer_white_space[0x100] = { 0 };
 
         std::shared_ptr<IErrorHandler> error_handler;
         std::shared_ptr<ICompletionQueue> completion_queue;
 
-        LPFN_CONNECTEX ConnectEx;
+        LPFN_CONNECTEX ConnectEx = 0;
 
         void GetEncoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IEncoder>* encoder);
         void GetDecoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IDecoder>* decoder);

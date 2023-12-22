@@ -26,7 +26,7 @@ namespace Tls
         NumberFrame<NameType> type_frame;
         VectorFrame<HostName> name_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         ServerNameFrame(ServerName* serverName);

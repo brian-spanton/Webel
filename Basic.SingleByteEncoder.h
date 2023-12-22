@@ -11,9 +11,9 @@ namespace Basic
     class SingleByteEncoder : public IEncoder
     {
     private:
-        IStream<byte>* destination;
+        IStream<byte>* destination = 0;
         std::shared_ptr<ISingleByteEncodingIndex> index;
-        byte error_replacement_byte;
+        byte error_replacement_byte = 0x7F; // $ is this a good default error_replacement_byte char?
 
         void Emit(byte b);
         void EncoderError(Codepoint codepoint);

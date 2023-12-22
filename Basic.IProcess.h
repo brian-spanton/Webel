@@ -6,9 +6,15 @@ namespace Basic
 {
     __interface IEvent;
 
+    enum event_result : bool
+    {
+        event_result_yield = false,
+        event_result_continue = true,
+    };
+
     __interface IProcess
     {
-        void consider_event(IEvent* event);
+        event_result consider_event(IEvent* event);
         bool in_progress();
         bool succeeded();
         bool failed();

@@ -21,22 +21,32 @@ namespace Tls
         length_frame.reset();
     }
 
-    void ExtensionHeaderFrame::consider_event(IEvent* event)
+    event_result ExtensionHeaderFrame::consider_event(IEvent* event)
     {
+        event_result result;
+
         switch (get_state())
         {
         case State::type_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
+
             switch_to_state(State::length_frame_pending_state);
             break;
 
         case State::length_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
+
             switch_to_state(State::done_state);
             break;
 
         default:
             throw FatalError("ExtensionHeaderFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

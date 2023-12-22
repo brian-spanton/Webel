@@ -49,7 +49,7 @@ namespace Web
         void QueuePlanned();
         void QueueJob();
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         TransactionList history;

@@ -14,13 +14,15 @@ namespace Tls
     {
     }
 
-    void CertificateStatusRequestFrame::consider_event(IEvent* event)
+    event_result CertificateStatusRequestFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::type_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+                event_result result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 switch (this->certificate_status_request->status_type)
                 {
@@ -36,12 +38,19 @@ namespace Tls
             break;
 
         case State::request_frame_pending_state:
-            delegate_event_change_state_on_fail(&this->request_frame, event, State::request_frame_failed);
-            switch_to_state(State::done_state);
+            {
+                event_result result = delegate_event_change_state_on_fail(&this->request_frame, event, State::request_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
+
+                switch_to_state(State::done_state);
+            }
             break;
 
         default:
             throw FatalError("CertificateStatusRequestFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

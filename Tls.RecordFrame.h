@@ -32,7 +32,7 @@ namespace Tls
         NumberFrame<uint16> length_frame;
         MemoryRange fragment_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         RecordFrame(Record* record);

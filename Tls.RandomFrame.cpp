@@ -14,28 +14,32 @@ namespace Tls
     {
     }
 
-    void RandomFrame::consider_event(IEvent* event)
+    event_result RandomFrame::consider_event(IEvent* event)
     {
+        event_result result;
+
         switch (get_state())
         {
         case State::time_frame_pending_state:
-            {
-                delegate_event_change_state_on_fail(&this->time_frame, event, State::time_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->time_frame, event, State::time_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
 
-                switch_to_state(State::bytes_frame_pending_state);
-            }
+            switch_to_state(State::bytes_frame_pending_state);
             break;
 
         case State::bytes_frame_pending_state:
-            {
-                delegate_event_change_state_on_fail(&this->bytes_frame, event, State::bytes_frame_failed);
+            result = delegate_event_change_state_on_fail(&this->bytes_frame, event, State::bytes_frame_failed);
+            if (result == event_result_yield)
+                return event_result_yield;
 
-                switch_to_state(State::done_state);
-            }
+            switch_to_state(State::done_state);
             break;
 
         default:
             throw FatalError("Tls::RandomFrame unexpected state");
         }
+
+        return event_result_continue;
     }
 }

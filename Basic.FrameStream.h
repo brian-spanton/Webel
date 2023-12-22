@@ -15,7 +15,7 @@ namespace Basic
     {
     private:
         Basic::ElementSource<element_type> element_source;
-        IProcess* frame;
+        IProcess* frame = 0;
 
     public:
         void Initialize(IProcess* frame)

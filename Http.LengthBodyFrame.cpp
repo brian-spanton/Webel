@@ -35,7 +35,7 @@ namespace Http
             switch_to_state(State::done_state);
     }
 
-    void LengthBodyFrame::consider_event(IEvent* event)
+    event_result LengthBodyFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -44,7 +44,9 @@ namespace Http
                 const byte* elements;
                 uint32 useable;
 
-                Event::Read(event, this->bytes_expected - this->bytes_received, &elements, &useable);
+                event_result result = Event::Read(event, this->bytes_expected - this->bytes_received, &elements, &useable);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 this->body_stream->write_elements(elements, useable);
 
@@ -53,7 +55,7 @@ namespace Http
                 if (this->bytes_received == this->bytes_expected)
                 {
                     switch_to_state(State::done_state);
-                    return;
+                    return event_result_continue;
                 }
             }
             break;
@@ -61,5 +63,7 @@ namespace Http
         default:
             throw FatalError("Http::LengthBodyFrame::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 }

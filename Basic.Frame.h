@@ -37,7 +37,7 @@ namespace Basic
     class Frame : public StateMachine, public IProcess
     {
     protected:
-        void delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state);
+        event_result delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state);
 
     public:
         virtual bool IProcess::in_progress();
@@ -45,7 +45,7 @@ namespace Basic
         virtual bool IProcess::failed();
     };
 
-    void delegate_event(IProcess* process, IEvent* event);
-    void delegate_event_throw_error_on_fail(IProcess* process, IEvent* event);
+    event_result delegate_event(IProcess* process, IEvent* event);
+    event_result delegate_event_throw_error_on_fail(IProcess* process, IEvent* event);
     void produce_event(IProcess* process, IEvent* event);
 }

@@ -13,5 +13,6 @@ namespace Basic
         void ReadNext(T* element);
         void AddObserver(std::shared_ptr<IStream<T> > stream);
         void RemoveObserver(std::shared_ptr<IStream<T> > stream);
+        bool Exhausted();
     };
 }

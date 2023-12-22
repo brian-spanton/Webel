@@ -10,8 +10,8 @@ namespace Basic
     {
     public:
         Basic::BCRYPT_ALG_HANDLE hash_algorithm;
-        DWORD hash_output_length;
-        bool hmac;
+        DWORD hash_output_length = 0;
+        bool hmac = false;
 
         HashAlgorithm();
         virtual ~HashAlgorithm();

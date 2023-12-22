@@ -26,7 +26,7 @@ namespace Tls
         NumberFrame<uint16> version_frame;
         MemoryRange random_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         PreMasterSecretFrame(PreMasterSecret* pre_master_secret);

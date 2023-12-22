@@ -15,7 +15,7 @@ namespace Basic
     protected:
         std::weak_ptr<IProcess> protocol;
         ElementSource<byte> protocol_element_source;
-        sockaddr_in remoteAddress;
+        sockaddr_in remoteAddress = { 0 };
         uint32 receive_buffer_size;
 
         void StartReceive(std::shared_ptr<ByteString> bytes);

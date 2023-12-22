@@ -27,7 +27,7 @@ namespace Tls
         NumberFrame<CertificateStatusType> type_frame;
         OCSPStatusRequestFrame request_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         CertificateStatusRequestFrame(CertificateStatusRequest* certificate_status_request);

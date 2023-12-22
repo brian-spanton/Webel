@@ -69,12 +69,12 @@ namespace Tls
         this->transport = peer;
     }
 
-    void RecordLayer::consider_event(IEvent* event)
+    event_result RecordLayer::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             DisconnectApplication();
-            throw Yield("event consumed");
+            return event_result_yield; // event consumed
         }
 
         switch (get_state())
@@ -84,7 +84,7 @@ namespace Tls
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    throw Yield("unexpected event");
+                    return event_result_yield; // unexpected event
                 }
 
                 // produce same event but with specific element source so that handshake_protocol can AddObserver
@@ -101,7 +101,7 @@ namespace Tls
                     switch_to_state(State::receive_record_state);
                 }
 
-                throw Yield("event consumed");
+                return event_result_yield; // event consumed
             }
             break;
 
@@ -112,7 +112,9 @@ namespace Tls
 
         case State::record_frame_pending_state:
             {
-                delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
+                event_result result = delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
+                if (result == event_result_yield)
+                    return event_result_yield;
 
                 try // $$ remove dependency on exceptions
                 {
@@ -121,7 +123,7 @@ namespace Tls
                 catch (State error_state)
                 {
                     switch_to_state(error_state);
-                    return;
+                    return event_result_continue;
                 }
 
                 switch_to_state(State::receive_record_state);
@@ -131,6 +133,8 @@ namespace Tls
         default:
             throw FatalError("Tls::RecordLayer::handle_event unexpected state");
         }
+
+        return event_result_continue;
     }
 
     void RecordLayer::WriteAlert(AlertDescription description, AlertLevel level)

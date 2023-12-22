@@ -25,7 +25,7 @@ namespace Tls
         NumberFrame<ExtensionType> type_frame;
         NumberFrame<uint16> length_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         ExtensionHeaderFrame(ExtensionHeader* extension);

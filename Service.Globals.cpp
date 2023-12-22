@@ -378,7 +378,7 @@ namespace Service
         return true;
     }
 
-    void Globals::consider_event(IEvent* event)
+    event_result Globals::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -387,7 +387,7 @@ namespace Service
                 if (event->get_type() != Basic::EventType::encodings_complete_event)
                 {
                     Basic::HandleError("unexpected event");
-                    throw Yield("unexpected event");
+                    return event_result_yield; // unexpected event
                 }
 
                 DebugWriter()->WriteLine("initializing html globals");
@@ -401,8 +401,8 @@ namespace Service
 
         case State::named_character_references_pending_state:
             {
-                if (event->get_type() != Service::EventType::characters_complete_event)
-                    throw Yield("unexepected event");
+            if (event->get_type() != Service::EventType::characters_complete_event)
+                return event_result_yield; // unexpected event
 
                 DebugWriter()->WriteLine("initializing endpoints");
 
@@ -416,7 +416,7 @@ namespace Service
                 this->ftp_control_endpoint->SpawnListeners(20);
 
                 switch_to_state(State::accepts_pending_state);
-                throw Yield("event consumed");
+                return event_result_yield; // event consumed
             }
             break;
 
@@ -426,6 +426,8 @@ namespace Service
         default:
             throw FatalError("Html::Globals::Complete unexpected state");
         }
+
+        return event_result_continue;
     }
 
     bool Globals::SetThreadCount(uint32 count)

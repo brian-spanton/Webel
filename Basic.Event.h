@@ -13,10 +13,10 @@ namespace Basic
     {
     public:
         template<typename element_type>
-        static void Read(IEvent* event, uint32 count, const element_type** out_address, uint32* out_count);
+        static event_result Read(IEvent* event, uint32 count, const element_type** out_address, uint32* out_count);
 
         template<typename element_type>
-        static void ReadNext(IEvent* event, element_type* element);
+        static event_result ReadNext(IEvent* event, element_type* element);
 
         template<typename element_type>
         static void AddObserver(IEvent* event, std::shared_ptr<IStream<element_type> > stream);

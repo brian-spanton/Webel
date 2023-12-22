@@ -12,9 +12,9 @@ namespace Basic
     class Console : public ArrayStream<Codepoint>
     {
     private:
-        HANDLE output;
-        HANDLE input;
-        DWORD originalMode;
+        HANDLE output = INVALID_HANDLE_VALUE;
+        HANDLE input = INVALID_HANDLE_VALUE;
+        DWORD originalMode = 0;
         std::shared_ptr<IProcess> protocol;
         ElementSource<Codepoint> protocol_element_source;
 

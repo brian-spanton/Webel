@@ -28,7 +28,7 @@ namespace Tls
         NumberFrame<HandshakeType> type_frame;
         NumberFrame<uint32, 3> length_frame;
 
-        virtual void IProcess::consider_event(IEvent* event);
+        virtual event_result IProcess::consider_event(IEvent* event);
 
     public:
         HandshakeFrame(Handshake* handshake);
