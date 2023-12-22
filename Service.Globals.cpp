@@ -252,13 +252,15 @@ namespace Service
     {
         DebugWriter()->WriteLine("exiting");
 
-        WaitForMultipleObjectsEx(threads.size(), &threads.front(), true, 30000, false);
+        DWORD result = WaitForMultipleObjectsEx(threads.size(), &threads.front(), true, 30000, false);
+        if (result == WAIT_FAILED)
+            throw FatalError("WaitForMultipleObjectsEx", GetLastError());
+
+        if (result == WAIT_TIMEOUT)
+            throw FatalError("Globals::threads timed out");
 
         for (ThreadList::iterator it = threads.begin(); it != threads.end(); it++)
-        {
-            TerminateThread(*it, 0);
             CloseHandle(*it);
-        }
 
         CloseHandle(this->consoleThread);
 

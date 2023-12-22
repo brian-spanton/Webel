@@ -15,6 +15,8 @@
 #include "Html.CommentNode.h"
 #include "Html.FormattingElement.h"
 #include "Basic.Globals.h"
+#include "Basic.SingleByteEncoder.h"
+#include "Basic.SingleByteEncodingIndex.h"
 
 namespace Html
 {
@@ -493,8 +495,11 @@ step_8:
         for (ElementList::const_iterator it = this->open_elements.cbegin(); it != this->open_elements.cend(); it++)
         {
             result.push_back('/');
-            // $$$ bad form convering Unicode chars to ascii chars
-            result.insert(result.end(), (*it)->element_name->name->cbegin(), (*it)->element_name->name->cbegin() + (*it)->element_name->name->size());
+
+            ByteString ascii_name;
+            ascii_encode((*it)->element_name->name.get(), &ascii_name);
+
+            result.append((char*)ascii_name.c_str());
         }
 
         return result;
@@ -1365,7 +1370,7 @@ loop:
         if (log)
         {
             char full_error[0x100];
-            sprintf_s(full_error, "nyi=%s", algorithm);
+            sprintf_s(full_error, "NYI=%s", algorithm);
 
             HandleError(full_error);
         }

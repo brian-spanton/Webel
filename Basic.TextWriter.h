@@ -10,7 +10,7 @@ namespace Basic
     class TextWriter
     {
     private:
-        IStream<Codepoint>* dest;
+        IStream<Codepoint>* dest = 0;
 
     public:
         SingleByteDecoder decoder;

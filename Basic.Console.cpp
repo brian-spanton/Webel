@@ -6,6 +6,9 @@
 #include "Basic.Hold.h"
 #include "Basic.Globals.h"
 #include "Basic.Event.h"
+#include "Basic.String.h"
+#include "Basic.SingleByteEncoder.h"
+#include "Basic.SingleByteEncodingIndex.h"
 
 namespace Basic
 {
@@ -134,16 +137,13 @@ namespace Basic
         if (output == INVALID_HANDLE_VALUE)
             return;
 
-        std::wstring wide_string;
-        wide_string.reserve(count);
+        ByteString ascii_elements;
 
-        // $ flawed conversion from utf-32 to utf-16
-        for (uint32 i = 0; i < count; i++)
-        {
-            wide_string.push_back((wchar_t)elements[i]);
-        }
+        SingleByteEncoder encoder;
+        encoder.Initialize(Basic::globals->ascii_index, &ascii_elements);
+        encoder.write_elements(elements, count);
 
-        BOOL success = WriteConsoleW(output, wide_string.c_str(), wide_string.size(), 0, 0);
+        BOOL success = WriteConsoleA(output, (char*)ascii_elements.c_str(), ascii_elements.size(), 0, 0);
         if (success == FALSE)
             throw FatalError("WriteConsoleW", GetLastError());
     }

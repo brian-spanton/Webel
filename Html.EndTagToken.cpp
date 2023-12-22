@@ -14,8 +14,8 @@ namespace Html
 
     void EndTagToken::GetDebugString(char* debug_string, int count)
     {
-        std::string name;
-        name.insert(name.end(), this->name->begin(), this->name->begin() + this->name->size());
-        sprintf_s(debug_string, count, "</%s>", name.c_str());
+        ByteString ascii_string;
+        ascii_encode(this->name.get(), &ascii_string);
+        sprintf_s(debug_string, count, "</%s>", (char*)ascii_string.c_str());
     }
 }

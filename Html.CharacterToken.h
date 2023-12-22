@@ -11,7 +11,7 @@ namespace Html
     class CharacterToken : public Token
     {
     public:
-        Codepoint data;
+        Codepoint data = 0;
 
         CharacterToken();
     };

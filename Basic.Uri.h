@@ -55,7 +55,7 @@ namespace Basic
         Path path;
         UnicodeStringRef query;
         UnicodeStringRef fragment;
-        bool relative_flag;
+        bool relative_flag = false;
 
         void Initialize();
         void Initialize(UnicodeString* input);

@@ -39,10 +39,10 @@ namespace Http
 
         static StringMap attr_map;
 
-        State state;
-        Cookie* cookie;
+        State state = State::in_name_state;
+        Cookie* cookie = 0;
         StringMap::iterator attr;
-        uint8 matched;
+        uint8 matched = 0;
         UnicodeStringRef node;
 
         void ParseError(Codepoint c);

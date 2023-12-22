@@ -26,13 +26,13 @@ namespace Html
             done_state = Succeeded_State,
         };
 
-        Parser* parser;
-        bool part_of_an_attribute;
-        bool use_additional_allowed_character;
-        Codepoint additional_allowed_character;
-        UnicodeString* value;
+        Parser* parser = 0;
+        bool part_of_an_attribute = false;
+        bool use_additional_allowed_character = false;
+        Codepoint additional_allowed_character = 0;
+        UnicodeString* value = 0;
         UnicodeStringRef leftovers;
-        Codepoint number;
+        Codepoint number = 0;
         std::shared_ptr<INumberStream<Codepoint> > number_stream;
         Html::StringMap::iterator match_value;
         MatchFrame<UnicodeStringRef> match_frame;

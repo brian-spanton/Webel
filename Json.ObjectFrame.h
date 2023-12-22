@@ -41,7 +41,7 @@ namespace Json
         std::shared_ptr<ScriptFrame> script_frame;
         std::shared_ptr<Html::Node> domain;
         std::shared_ptr<Html::Node> element_domain;
-        State return_to;
+        State return_to = State::expecting_first_name_state;
 
     public:
         ObjectFrame(std::shared_ptr<Html::Node> domain, Object* value);

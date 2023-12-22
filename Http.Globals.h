@@ -30,19 +30,19 @@ namespace Http
 
         byte CRLF[2];
 
-        bool CHAR[0x100];
-        bool UPALPHA[0x100]; // upper case letters
-        bool LOALPHA[0x100]; // lower case letters
-        bool ALPHA[0x100]; // letters
-        bool DIGIT[0x100]; // digits
-        bool CTL[0x100]; // control characters
-        bool TEXT[0x100];
-        bool HEX[0x100]; // hexadecimal digits
-        bool TOKEN[0x100];
-        bool SEPARATOR[0x100];
-        bool LWS[0x100]; // linear white space
-        bool WSP[0x100]; // white space
-        bool COOKIE_OCTET[0x100];
+        bool CHAR[0x100] = { 0 };
+        bool UPALPHA[0x100] = { 0 }; // upper case letters
+        bool LOALPHA[0x100] = { 0 }; // lower case letters
+        bool ALPHA[0x100] = { 0 }; // letters
+        bool DIGIT[0x100] = { 0 }; // digits
+        bool CTL[0x100] = { 0 }; // control characters
+        bool TEXT[0x100] = { 0 };
+        bool HEX[0x100] = { 0 }; // hexadecimal digits
+        bool TOKEN[0x100] = { 0 };
+        bool SEPARATOR[0x100] = { 0 };
+        bool LWS[0x100] = { 0 }; // linear white space
+        bool WSP[0x100] = { 0 }; // white space
+        bool COOKIE_OCTET[0x100] = { 0 };
 
         UnicodeStringRef header_content_length;
         UnicodeStringRef header_connection;

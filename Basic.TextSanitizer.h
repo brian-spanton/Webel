@@ -16,8 +16,8 @@ namespace Basic
             before_next_word_state,
         };
 
-        State state;
-        IStream<Codepoint>* destination;
+        State state = State::before_first_word_state;
+        IStream<Codepoint>* destination = 0;
 
         bool white_space(Codepoint c);
 

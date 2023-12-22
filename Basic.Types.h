@@ -107,7 +107,7 @@ namespace Basic
     struct ReceivedBytesEvent : public IEvent
     {
     public:
-        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
+        IElementSource<byte>* element_source = 0; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
@@ -117,7 +117,7 @@ namespace Basic
     struct CanSendBytesEvent : public IEvent
     {
     public:
-        IElementSource<byte>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
+        IElementSource<byte>* element_source = 0; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
@@ -127,7 +127,7 @@ namespace Basic
     struct ReceivedCodepointsEvent : public IEvent
     {
     public:
-        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
+        IElementSource<Codepoint>* element_source = 0; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 
@@ -137,7 +137,7 @@ namespace Basic
     struct CanSendCodepointsEvent : public IEvent
     {
     public:
-        IElementSource<Codepoint>* element_source; // this was holding a ref, but it should be ok because Events only ever live on the stack
+        IElementSource<Codepoint>* element_source = 0; // this was holding a ref, but it should be ok because Events only ever live on the stack
 
         virtual uint32 get_type();
 

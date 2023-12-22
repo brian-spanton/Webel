@@ -5,14 +5,6 @@
 
 namespace Basic
 {
-    Yield::Yield(const char* context)
-    {
-    }
-
-    Yield::Yield(const char* context, uint32 error)
-    {
-    }
-
     void StateMachine::switch_to_state(uint32 state)
     {
         if (this->state == state)
@@ -119,12 +111,6 @@ namespace Basic
 
     void produce_event(IProcess* process, IEvent* event)
     {
-        try
-        {
-            delegate_event(process, event);
-        }
-        catch (const Yield&)
-        {
-        }
+        delegate_event(process, event);
     }
 }

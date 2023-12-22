@@ -14,9 +14,7 @@ namespace Html
     using namespace Basic;
 
     CharacterReferenceFrame::CharacterReferenceFrame(Parser* parser) :
-        number(0),
         match_frame(Html::globals->named_character_references_table, &this->match_value), // initialization is in order of declaration in class def
-        number_stream(0),
         parser(parser)
     {
     }

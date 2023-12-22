@@ -185,8 +185,8 @@ namespace Tls
                     return event_result_continue;
                 }
 
-                //bool send_cert; // $$ nyi
-                //bool send_dh; // $$ nyi
+                //bool send_cert; // $$ NYI
+                //bool send_dh; // $$ NYI
 
                 switch(this->key_exchange_algorithm)
                 {

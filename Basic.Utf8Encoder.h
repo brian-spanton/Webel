@@ -9,8 +9,8 @@ namespace Basic
     class Utf8Encoder : public IEncoder
     {
     private:
-        IStream<byte>* destination;
-        byte error_replacement_byte;
+        IStream<byte>* destination = 0;
+        byte error_replacement_byte = 0;
 
         void Emit(byte b);
         void EncoderError(Codepoint codepoint);

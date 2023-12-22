@@ -36,9 +36,9 @@ namespace Web
         std::shared_ptr<ResponseHeadersFrame> response_headers_frame;
         std::shared_ptr<BodyFrame> response_body_frame;
         std::shared_ptr<MediaType> media_type;
-        uint8 max_retries;
-        uint8 retries;
-        uint8 redirects;
+        uint8 max_retries = 0;
+        uint8 retries = 0;
+        uint8 redirects = 0;
         std::shared_ptr<Request> planned_request;
         Lock lock;
 

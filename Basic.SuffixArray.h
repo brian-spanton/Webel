@@ -17,7 +17,7 @@ namespace Basic
         struct ArrayEntry
         {
             UnicodeStringRef key;
-            uint32 key_index;
+            uint32 key_index = 0;
             value_type value;
 
             ArrayEntry()

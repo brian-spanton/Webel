@@ -27,8 +27,8 @@ namespace Http
             parse_error,
         };
 
-        State state;
-        MediaType* mediaType;
+        State state = State::type_state;
+        MediaType* mediaType = 0;
         UnicodeStringRef name;
         UnicodeStringRef value;
 

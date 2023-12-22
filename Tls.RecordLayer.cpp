@@ -235,6 +235,8 @@ namespace Tls
             case State::decrypt_block_padding_overflow_error:
             case State::decrypt_block_padding_invalid_error:
             case State::decrypt_block_mac_mismatch_error:
+                // $$ is this the right value? why are these the only cases specified, what about the other AlertDescription values?
+                description = AlertDescription::decrypt_error;
                 break;
 
             default:

@@ -23,7 +23,7 @@ namespace Html
 
     public:
         std::shared_ptr<DocumentTypeNode> doctype;
-        Mode mode;
+        Mode mode = Mode::quirks_mode;
         std::shared_ptr<Uri> url;
 
         Document(std::shared_ptr<Uri> url);

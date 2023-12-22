@@ -179,7 +179,7 @@ namespace Basic
                         {
                             parse_error(c);
                         }
-                        else if (!(c == EOF || c == 0x0009 || c == 0x000A || 0x000D))
+                        else if (!(c == EOF || c == 0x0009 || c == 0x000A || c == 0x000D))
                         {
                             utf_8_percent_encode(c, Basic::globals->simple_encode_anti_set, this->scheme_data);
                         }

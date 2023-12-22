@@ -685,21 +685,21 @@ namespace Tls
 
     struct SignatureAndHashAlgorithm
     {
-        HashAlgorithm hash;
-        SignatureAlgorithm signature;
+        HashAlgorithm hash = HashAlgorithm::md5;
+        SignatureAlgorithm signature = SignatureAlgorithm::anonymous;
     };
 
     struct ServerName
     {
-        NameType name_type;
+        NameType name_type = NameType::host_name;
         HostName name;
     };
 
     struct Record
     {
-        ContentType type;
-        ProtocolVersion version;
-        uint16 length;
+        ContentType type = ContentType::alert;
+        ProtocolVersion version = 0;
+        uint16 length = 0;
         std::shared_ptr<ByteString> fragment;
     };
 
@@ -728,7 +728,7 @@ namespace Tls
 
     struct CertificateStatusRequest
     {
-        CertificateStatusType status_type;
+        CertificateStatusType status_type = CertificateStatusType::ocsp;
         OCSPStatusRequest ocsp_status_request;
     };
 
@@ -756,8 +756,8 @@ namespace Tls
 
     struct HeartbeatMessage
     {
-        HeartbeatMessageType type;
-        uint16 payload_length;
+        HeartbeatMessageType type = HeartbeatMessageType::heartbeat_request;
+        uint16 payload_length = 0;
         ByteString payload;
         ByteString padding;
     };
@@ -783,7 +783,7 @@ namespace Tls
     struct ClientHello
     {
         ProtocolVersion client_version;
-        Random random;
+        Random random = { 0 };
         SessionId session_id;
         CipherSuites cipher_suites;
         CompressionMethods compression_methods;
@@ -800,10 +800,10 @@ namespace Tls
     struct ServerHello
     {
         ProtocolVersion server_version;
-        Random random;
+        Random random = { 0 };
         SessionId session_id;
-        CipherSuite cipher_suite;
-        CompressionMethod compression_method;
+        CipherSuite cipher_suite = CipherSuite::cs_TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA;
+        CompressionMethod compression_method = CompressionMethod::cm_null;
         HeartbeatExtension heartbeat_extension;
         bool heartbeat_extension_initialized;
     };

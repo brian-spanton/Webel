@@ -17,13 +17,13 @@ namespace Tls
     class HandshakeProtocol : public Frame
     {
     protected:
-        RecordLayer* session;
+        RecordLayer* session = 0;
         ByteStringRef send_buffer;
         std::shared_ptr<ByteString> handshake_messages;
         Handshake handshake;
         std::shared_ptr<SecurityParameters> security_parameters;
         HandshakeFrame handshake_frame;
-        KeyExchangeAlgorithm key_exchange_algorithm;
+        KeyExchangeAlgorithm key_exchange_algorithm = DHE_DSS;
         EncryptedPreMasterSecret pre_master_secret_bytes;
         ByteString finished_expected;
         ByteString finished_received;

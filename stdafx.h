@@ -75,7 +75,6 @@
 #undef SendMessage
 #undef CHAR
 #undef EOF
-#undef Yield
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;

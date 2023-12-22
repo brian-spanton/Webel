@@ -9,12 +9,12 @@ namespace Basic
     class Utf8Decoder : public IDecoder
     {
     private:
-        IStream<Codepoint>* destination;
-        int needed;
-        int seen;
-        Codepoint codepoint;
-        Codepoint lower_bound;
-        Codepoint upper_bound;
+        IStream<Codepoint>* destination = 0;
+        int needed = 0;
+        int seen = 0;
+        Codepoint codepoint = 0;
+        Codepoint lower_bound = 0;
+        Codepoint upper_bound = 0;
 
         void Emit(Codepoint codepoint);
         void EmitDecoderError(byte b);

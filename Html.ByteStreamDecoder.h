@@ -42,7 +42,7 @@ namespace Html
         byte bom[3];
         std::shared_ptr<IDecoder> decoder;
         MemoryRange bom_frame;
-        Confidence confidence;
+        Confidence confidence = Confidence_Tentative;
 
     public:
         ByteStreamDecoder(Parser* parser, UnicodeStringRef transport_charset, std::shared_ptr<IStream<Codepoint> > output);

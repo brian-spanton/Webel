@@ -77,7 +77,7 @@ namespace Ftp
 
                 if (this->command_frame.failed())
                 {
-                    // $$ nyi
+                    // $$ NYI
                 }
 
                 switch_to_state(State::command_frame_start_state);

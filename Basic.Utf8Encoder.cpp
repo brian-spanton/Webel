@@ -72,8 +72,8 @@ namespace Basic
             return;
         }
 
-        byte count;
-        byte offset;
+        byte count = 0;
+        byte offset = 0;
 
         if (codepoint >= 0x0080 && codepoint <= 0x07FF)
         {

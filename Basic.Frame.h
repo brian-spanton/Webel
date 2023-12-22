@@ -6,12 +6,6 @@
 
 namespace Basic
 {
-    struct Yield
-    {
-        Yield(const char* context);
-        Yield(const char* context, uint32 error);
-    };
-
     class StateMachine
     {
     private:

@@ -9,9 +9,9 @@ namespace Basic
     class Utf32LittleEndianDecoder : public IDecoder
     {
     private:
-        IStream<Codepoint>* destination;
-        uint8 received;
-        Codepoint codepoint;
+        IStream<Codepoint>* destination = 0;
+        uint8 received = 0;
+        Codepoint codepoint = 0;
 
         void Emit(Codepoint codepoint);
 

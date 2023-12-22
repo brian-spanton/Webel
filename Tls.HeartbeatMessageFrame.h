@@ -26,9 +26,9 @@ namespace Tls
             padding_frame_failed,
         };
 
-        HeartbeatMessage* heartbeat_message;
-        uint32 plaintext_length;
-        uint32 padding_length;
+        HeartbeatMessage* heartbeat_message = 0;
+        uint32 plaintext_length = 0;
+        uint32 padding_length = 0;
         NumberFrame<HeartbeatMessageType> type_frame;
         NumberFrame<uint16> payload_length_frame;
         MemoryRange payload_frame;

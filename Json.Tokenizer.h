@@ -36,16 +36,16 @@ namespace Json
         static LiteralMap literal_map; // $ why is this static instead of on globals
 
         std::shared_ptr<IStream<std::shared_ptr<Token> > > output;
-        uint8 matched;
+        uint8 matched = 0;
         LiteralMap::iterator literal_it;
         UnicodeStringRef string;
-        int64 sign;
+        int64 sign = 0;
         DecNumberStream<Codepoint, uint64> dec_number_stream;
         HexNumberStream<Codepoint, uint64> hex_number_stream;
-        long double number;
-        uint64 whole;
-        uint64 fraction;
-        uint64 exponent;
+        long double number = 0;
+        uint64 whole = 0;
+        uint64 fraction = 0;
+        uint64 exponent = 0;
 
         void Emit(std::shared_ptr<Token> token);
         void handle_error(const char* error);

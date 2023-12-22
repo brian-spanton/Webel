@@ -159,7 +159,7 @@ namespace Json
     class NumberToken : public Token
     {
     public:
-        long double value;
+        long double value = 0;
 
         NumberToken() : Token(number_token)
         {
@@ -169,7 +169,7 @@ namespace Json
     class BoolToken : public Token
     {
     public:
-        bool value;
+        bool value = false;
 
         BoolToken() : Token(bool_token)
         {
@@ -196,7 +196,7 @@ namespace Json
             string_value,
         };
 
-        Type type;
+        Type type = Type::null_value;
 
         virtual void IStreamWriter<Codepoint>::write_to_stream(Basic::IStream<Codepoint>* stream) const = 0;
 
@@ -234,7 +234,7 @@ namespace Json
 
     struct Number : public Value
     {
-        long double value;
+        long double value = 0;
 
         Number() : Value(Type::number_value)
         {
@@ -257,7 +257,7 @@ namespace Json
 
     struct Bool : public Value
     {
-        bool value;
+        bool value = false;
 
         Bool() : Value(Type::bool_value)
         {

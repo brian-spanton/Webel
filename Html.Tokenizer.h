@@ -24,7 +24,7 @@ namespace Html
     {
     private:
         std::shared_ptr<IStream<TokenRef> > output;
-        Parser* parser;
+        Parser* parser = 0;
         UnicodeStringRef character_reference;
         UnicodeStringRef character_reference_leftovers;
         std::shared_ptr<TagToken> current_tag_token;
@@ -32,9 +32,9 @@ namespace Html
         UnicodeStringRef last_start_tag_name;
         UnicodeStringRef current_attribute_name;
         StringMap::iterator current_attribute;
-        bool use_additional_allowed_character;
-        Codepoint additional_allowed_character;
-        TokenizerState attribute_value_state;
+        bool use_additional_allowed_character = false;
+        Codepoint additional_allowed_character = 0;
+        TokenizerState attribute_value_state = TokenizerState::data_state;
         std::shared_ptr<CommentToken> comment_token;
         UnicodeStringRef markup_declaration_open;
         std::shared_ptr<DocTypeToken> doctype_token;

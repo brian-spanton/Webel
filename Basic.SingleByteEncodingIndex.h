@@ -14,7 +14,7 @@ namespace Basic
         virtual Codepoint ISingleByteEncodingIndex::pointer_to_codepoint(byte pointer);
         virtual byte ISingleByteEncodingIndex::codepoint_to_pointer(Codepoint codepoint);
 
-        Codepoint pointer_map[0x80];
+        Codepoint pointer_map[0x80] = { 0 };
         CodepointMap codepoint_map;
     };
 }

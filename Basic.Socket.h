@@ -21,7 +21,7 @@ namespace Basic
 
         Type type;
         std::shared_ptr<ByteString> bytes;
-        WSABUF wsabuf;
+        WSABUF wsabuf = { 0 };
         std::shared_ptr<ServerSocket> server_socket;
 
         SocketJobContext(Type type);
