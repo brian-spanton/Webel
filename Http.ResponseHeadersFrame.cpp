@@ -129,27 +129,27 @@ namespace Http
             break;
 
         default:
-            throw FatalError("ResponseHeadersFrame::handle_event unexpected state");
+            throw FatalError("ResponseFrame::handle_event unexpected state");
         }
 
         return EventResult::event_result_continue;
     }
 
-    void render_response_line(const Response* value, IStream<byte>* stream)
+    void Response::render_response_line(IStream<byte>* stream)
     {
         SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        value->protocol->write_to_stream(&encoder);
+        this->protocol->write_to_stream(&encoder);
 
         UnicodeString code;
         TextWriter writer(&code);
-        writer.WriteFormat<0x10>("%d", value->code);
+        writer.WriteFormat<0x10>("%d", this->code);
 
         stream->write_element(Http::globals->SP);
         code.write_to_stream(&encoder);
 
         stream->write_element(Http::globals->SP);
-        value->reason->write_to_stream(&encoder);
+        this->reason->write_to_stream(&encoder);
     }
 }

@@ -8,7 +8,6 @@
 #include "Http.Globals.h"
 #include "Http.ResponseHeadersFrame.h"
 #include "Http.HeadersFrame.h"
-#include "Http.ResponseHeadersFrame.h"
 
 namespace Web
 {
@@ -128,7 +127,7 @@ namespace Web
                 switch_to_state(State::response_done_state);
 
                 Basic::globals->DebugWriter()->write_literal("Response sent: ");
-                render_response_line(this->response.get(), &Basic::globals->DebugWriter()->decoder);
+                this->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
                 Basic::globals->DebugWriter()->WriteLine();
             }
             break;

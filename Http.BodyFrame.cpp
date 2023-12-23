@@ -64,7 +64,7 @@ namespace Http
                         
                         HandleError("content encoding gzip NYI");
 
-                        //this->body_stream = std::make_shared<Gzip<byte> >();
+                        //this->decoded_content_stream = std::make_shared<Gzip<byte> >();
 
                         return EventResult::event_result_continue;
                     }

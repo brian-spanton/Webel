@@ -11,7 +11,6 @@
 #include "Basic.SingleByteDecoder.h"
 #include "Basic.SingleByteEncodingIndex.h"
 #include "Web.Globals.h"
-#include "Http.ResponseHeadersFrame.h"
 
 namespace Web
 {
@@ -346,7 +345,7 @@ namespace Web
                 std::shared_ptr<Response> response = this->history.back().response;
 
                 Basic::globals->DebugWriter()->write_literal("Response received: ");
-                render_response_line(response.get(), &Basic::globals->DebugWriter()->decoder);
+                response->render_response_line(&Basic::globals->DebugWriter()->decoder);
                 Basic::globals->DebugWriter()->WriteLine();
 
                 uint16 code = response->code;

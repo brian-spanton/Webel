@@ -7,7 +7,6 @@
 #include "Basic.LogStream.h"
 #include "Basic.CountStream.h"
 #include "Http.Globals.h"
-#include "Http.ResponseHeadersFrame.h"
 #include "Http.HeadersFrame.h"
 #include "Html.ElementNode.h"
 #include "Service.Globals.h"

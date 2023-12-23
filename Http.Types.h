@@ -31,6 +31,8 @@ namespace Http
         std::shared_ptr<IStreamWriter<byte> > response_body;
 
         void Initialize();
+
+        void render_response_line(IStream<byte>* stream);
     };
 
     struct Transaction

@@ -5,7 +5,6 @@
 #include "Basic.ServerSocket.h"
 #include "Web.Globals.h"
 #include "Http.Globals.h"
-#include "Http.ResponseHeadersFrame.h"
 #include "Http.HeadersFrame.h"
 #include "Basic.ClientSocket.h"
 
