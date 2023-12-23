@@ -216,6 +216,9 @@ namespace Basic
         {
             return std::basic_string<element_type>::size();
         }
+
+        // for use in debugging only
+        std::string as_std_string();
     };
 
     typedef String<byte> ByteString;

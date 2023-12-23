@@ -65,6 +65,20 @@ namespace Basic
         decoder.set_destination(value);
         decoder.write_elements(bytes->address(), bytes->size());
     }
+
+    std::string String<byte>::as_std_string()
+    {
+        std::string result;
+        result.insert(result.end(), address(), address() + size());
+        return result;
+    }
+
+    std::string String<Codepoint>::as_std_string()
+    {
+        std::string result;
+        result.insert(result.end(), address(), address() + size());
+        return result;
+    }
 }
 
 bool operator == (const Basic::UnicodeStringRef& left_value, const Basic::UnicodeStringRef& right_value)

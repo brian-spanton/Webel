@@ -1,0 +1,908 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Http.BodyChunksFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.BodyFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.Client.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.HeadersFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.RequestFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.Server.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.UrlDecoder.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.ByteStreamDecoder.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.CharacterReferenceFrame.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.CharacterToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.CommentToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.DocTypeToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.EndOfFileToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.EndTagToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.InputStreamPreprocessor.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Node.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Parser.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.StartTagToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Token.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Tokenizer.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.TreeConstruction.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.AlertFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.AlertProtocol.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.CertificatesFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.CertificateStatusRequestFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.CipherSuitesFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ClientHelloFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ConnectionState.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ECPointFormatListFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.EllipticCurveListFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.HandshakeFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.HandshakeProtocol.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.NumberFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.OCSPStatusRequestFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.PreMasterSecretFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.RandomFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.RecordFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.RecordLayer.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ResponderIDListFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.SecurityParameters.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ServerHelloFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ServerNameFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ServerNameListFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.VectorFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.VectorFrames.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.TextNode.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.ElementNode.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.TagToken.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Document.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.CommentNode.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.DocumentTypeNode.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.ElementName.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.FormattingElement.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.ByteStreamDecoder.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Parser.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Tokenizer.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.HashAlgorithm.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.HashStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.HexNumberStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Hold.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IBufferedStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ICompletion.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IProtocolFactory.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IRefCounted.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ISerializable.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ListenSocket.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Lock.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.LogFile.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.MemoryRange.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.NameValueCollection.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Ref.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.RefCounted.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Socket.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.StreamFrame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.String.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.TextWriter.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.AsyncBytes.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ClientSocket.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Cng.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.CommandFrame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ConnectedSocket.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Console.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.CountStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.DebugLog.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.DecNumberStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.AdminProtocol.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.Globals.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Globals.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Types.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.Globals.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.Types.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Globals.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Types.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.Globals.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.Types.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Globals.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Html.Types.h">
+      <Filter>Html</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Utf8Decoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Text.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.ObjectFrame.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.ValueFrame.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.ArrayFrame.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IDecoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IgnoreFrame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.LengthBodyFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.DisconnectBodyFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ExtensionHeaderFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ServerSocket.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.ResponseHeadersFrame.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Event.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Frame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.FrameStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IElementSource.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ElementSource.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.SingleByteDecoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.MediaTypeStream.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.DebugStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.MatchFrame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.SingleByteEncoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Web.Form.h">
+      <Filter>Web</Filter>
+    </ClInclude>
+    <ClInclude Include="Web.Page.h">
+      <Filter>Web</Filter>
+    </ClInclude>
+    <ClInclude Include="Web.Link.h">
+      <Filter>Web</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.AmazonScrape.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Web.TextSanitizer.h">
+      <Filter>Web</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Uri.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.CookieParser.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IDecoderFactory.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IEncoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IEncoderFactory.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ISingleByteEncodingIndex.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Utf8Encoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.SingleByteEncodingIndex.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.IStorage.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.HeapStorage.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IProcess.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.ByteVector.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.Types.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.IEvent.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Dynamo.NetflixSearchScrape.h">
+      <Filter>Dynamo</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.Script.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Json.ScriptFrame.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Utf32LittleEndianDecoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.INumberStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.SuffixArray.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Http.Proxy.h">
+      <Filter>Http</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ClientHandshake.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+    <ClInclude Include="Tls.ServerHandshake.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Http.BodyChunksFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.BodyFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.Client.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.HeadersFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.RequestFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.Server.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.UrlDecoder.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.ByteStreamDecoder.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.CharacterReferenceFrame.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.CharacterToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.CommentToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.DocTypeToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.EndOfFileToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.EndTagToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.InputStreamPreprocessor.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Node.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Parser.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.StartTagToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Token.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Tokenizer.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.TreeConstruction.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.AlertFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.AlertProtocol.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.CertificateStatusRequestFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ClientHelloFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ConnectionState.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.HandshakeFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.HandshakeProtocol.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.OCSPStatusRequestFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.PreMasterSecretFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.RandomFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.RecordFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.RecordLayer.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.SecurityParameters.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ServerHelloFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ServerNameFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.TextNode.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.ElementNode.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.TagToken.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Document.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.CommentNode.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.DocumentTypeNode.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.ElementName.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.FormattingElement.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.ByteStreamDecoder.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Parser.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Tokenizer.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.HashAlgorithm.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.HashStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ListenSocket.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.LogFile.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.MemoryRange.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Socket.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.TextWriter.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.AsyncBytes.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ClientSocket.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Cng.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.CommandFrame.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ConnectedSocket.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Console.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.CountStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.DebugLog.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.AdminProtocol.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.Globals.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Globals.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.Globals.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Globals.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.Globals.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.Types.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Globals.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Html.Types.cpp">
+      <Filter>Html</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Utf8Decoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Types.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Text.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.ObjectFrame.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.ValueFrame.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.ArrayFrame.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Types.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.IgnoreFrame.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.LengthBodyFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.DisconnectBodyFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ExtensionHeaderFrame.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ServerSocket.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.ResponseHeadersFrame.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.SingleByteDecoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.MediaTypeStream.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.DebugStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.String.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.SingleByteEncoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Web.Link.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="Web.Form.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="Web.Page.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.AmazonScrape.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Web.TextSanitizer.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Event.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.FrameStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Uri.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.CookieParser.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Utf8Encoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.SingleByteEncodingIndex.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Frame.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.HeapStorage.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.ByteVector.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.Types.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.Types.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Dynamo.NetflixSearchScrape.cpp">
+      <Filter>Dynamo</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.Script.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Json.ScriptFrame.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Utf32LittleEndianDecoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.Proxy.cpp">
+      <Filter>Http</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ClientHandshake.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.ServerHandshake.cpp">
+      <Filter>Tls</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.RefCounted.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Http">
+      <UniqueIdentifier>{d10d5628-3edd-4c93-ae40-75e3784562d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Html">
+      <UniqueIdentifier>{53c08548-4202-47d2-b688-8741ba0f4b74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tls">
+      <UniqueIdentifier>{033a611b-ef8c-4118-ad1f-ce9232469137}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dynamo">
+      <UniqueIdentifier>{e7ae404a-c6ee-4fba-ba6b-c933bffa4746}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json">
+      <UniqueIdentifier>{cec5af57-2ccf-40c0-b0f5-1f1d98606e6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Basic">
+      <UniqueIdentifier>{4d0a37da-a37d-44fc-b2f8-74027fe13299}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Web">
+      <UniqueIdentifier>{90e1b1f7-0996-4d2a-9e57-ba15f3acbfd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reference">
+      <UniqueIdentifier>{951dc740-f773-42db-b1c9-c7c629247349}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="rfc1867.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2109.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2246.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2388.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2396.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2616.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc2818.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc4346.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc4492.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc4627.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc5246.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc5746.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc6066.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="rfc6265.txt">
+      <Filter>Reference</Filter>
+    </Text>
+    <Text Include="Todo.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Ideas.docx">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="encodings.json">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="Amazon Instant Video.html">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="movies.netflix.com.html">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="movies.netflix.com.js">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="movies.netflix.com.json">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="movies.netflix.com.url">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="signup.netflix.com.html">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="www.amazon.com.html">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="www.bing.com.html">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="www.amazon.com.nodes">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="dvd.netflix.com.nodes">
+      <Filter>Reference</Filter>
+    </None>
+    <None Include="dynamo.pfx">
+      <Filter>Reference</Filter>
+    </None>
+  </ItemGroup>
+</Project>

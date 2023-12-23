@@ -1,0 +1,399 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B8130999-244D-47B0-966B-8649520242DE}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Dynamo</RootNamespace>
+    <SccProjectName>SAK</SccProjectName>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProvider>SAK</SccProvider>
+    <ProjectName>Webel</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProgramFiles)\Microsoft CNG Development Kit\Include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProgramFiles)\Microsoft CNG Development Kit\Include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ncrypt.lib;bcrypt.lib;crypt32.lib;ws2_32.lib;mswsock.lib;kernel32.lib;advapi32.lib;libcmtd.lib;ole32.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>ncrypt.lib;bcrypt.lib;crypt32.lib;ws2_32.lib;mswsock.lib;kernel32.lib;advapi32.lib;libcmt.lib;libcpmt.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Basic.ConsoleLog.h" />
+    <ClInclude Include="Basic.DebugLog.h" />
+    <ClInclude Include="Basic.Functions.h" />
+    <ClInclude Include="Basic.IElementConsumer.h" />
+    <ClInclude Include="Basic.IElementSource.h" />
+    <ClInclude Include="Basic.ITransportEventHandler.h" />
+    <ClInclude Include="Basic.ILog.h" />
+    <ClInclude Include="Basic.IThread.h" />
+    <ClInclude Include="Basic.LogFrame.h" />
+    <ClInclude Include="Basic.LogStream.h" />
+    <ClInclude Include="Basic.ElementSource.h" />
+    <ClInclude Include="Basic.IStreamWriter.h" />
+    <ClInclude Include="Basic.MemoryLog.h" />
+    <ClInclude Include="Basic.ObservableElementSource.h" />
+    <ClInclude Include="Basic.Path.h" />
+    <ClInclude Include="Basic.StateMachine.h" />
+    <ClInclude Include="Basic.TailLog.h" />
+    <ClInclude Include="Ftp.Globals.h" />
+    <ClInclude Include="Ftp.Server.h" />
+    <ClInclude Include="Service.User.h" />
+    <ClInclude Include="Scrape.Amazon.h" />
+    <ClInclude Include="Scrape.Globals.h" />
+    <ClInclude Include="Scrape.Netflix.h" />
+    <ClInclude Include="Scrape.Types.h" />
+    <ClInclude Include="Service.Endpoint.h" />
+    <ClInclude Include="Service.FtpServerEndpoint.h" />
+    <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
+    <ClInclude Include="Service.WebProxyEndpoint.h" />
+    <ClInclude Include="Service.WebServer.h" />
+    <ClInclude Include="Service.WebServerEndpoint.h" />
+    <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
+    <ClInclude Include="Tls.HeartbeatMessageFrame.h" />
+    <ClInclude Include="Tls.HeartbeatProtocol.h" />
+    <ClInclude Include="Tls.ICertificate.h" />
+    <ClInclude Include="Basic.ICompletionQueue.h" />
+    <ClInclude Include="Basic.IDecoderFactory.h" />
+    <ClInclude Include="Basic.Globals.h" />
+    <ClInclude Include="Basic.IDecoder.h" />
+    <ClInclude Include="Basic.IEncoder.h" />
+    <ClInclude Include="Basic.IEncoderFactory.h" />
+    <ClInclude Include="Basic.INumberStream.h" />
+    <ClInclude Include="Basic.ISingleByteEncodingIndex.h" />
+    <ClInclude Include="Basic.MatchFrame.h" />
+    <ClInclude Include="Basic.SingleByteDecoder.h" />
+    <ClInclude Include="Basic.SingleByteEncoder.h" />
+    <ClInclude Include="Basic.SingleByteEncodingIndex.h" />
+    <ClInclude Include="Basic.SuffixArray.h" />
+    <ClInclude Include="Basic.Types.h" />
+    <ClInclude Include="Basic.Utf32LittleEndianDecoder.h" />
+    <ClInclude Include="Basic.Utf8Encoder.h" />
+    <ClInclude Include="Service.AdminProtocol.h" />
+    <ClInclude Include="Basic.Cng.h" />
+    <ClInclude Include="Basic.HashAlgorithm.h" />
+    <ClInclude Include="Basic.HashStream.h" />
+    <ClInclude Include="Basic.HexNumberStream.h" />
+    <ClInclude Include="Basic.Hold.h" />
+    <ClInclude Include="Basic.IJobEventHandler.h" />
+    <ClInclude Include="Basic.IStream.h" />
+    <ClInclude Include="Basic.ListenSocket.h" />
+    <ClInclude Include="Basic.Lock.h" />
+    <ClInclude Include="Basic.FileLog.h" />
+    <ClInclude Include="Basic.MemoryRange.h" />
+    <ClInclude Include="Basic.NameValueCollection.h" />
+    <ClInclude Include="Basic.IgnoreFrame.h" />
+    <ClInclude Include="Basic.CommandBuilder.h" />
+    <ClInclude Include="Service.StandardEncodings.h" />
+    <ClInclude Include="Service.StandardSingleByteEncoding.h" />
+    <ClInclude Include="Service.Types.h" />
+    <ClInclude Include="Html.FormattingElement.h" />
+    <ClInclude Include="Html.ByteStreamDecoder.h" />
+    <ClInclude Include="Html.CharacterReferenceFrame.h" />
+    <ClInclude Include="Html.CharacterToken.h" />
+    <ClInclude Include="Html.CommentNode.h" />
+    <ClInclude Include="Html.CommentToken.h" />
+    <ClInclude Include="Basic.DecNumberStream.h" />
+    <ClInclude Include="Html.DocTypeToken.h" />
+    <ClInclude Include="Html.Document.h" />
+    <ClInclude Include="Html.DocumentTypeNode.h" />
+    <ClInclude Include="Html.ElementName.h" />
+    <ClInclude Include="Html.ElementNode.h" />
+    <ClInclude Include="Html.EndOfFileToken.h" />
+    <ClInclude Include="Html.EndTagToken.h" />
+    <ClInclude Include="Html.Globals.h" />
+    <ClInclude Include="Html.InputStreamPreprocessor.h" />
+    <ClInclude Include="Html.Node.h" />
+    <ClInclude Include="Html.Parser.h" />
+    <ClInclude Include="Html.Types.h" />
+    <ClInclude Include="Html.StartTagToken.h" />
+    <ClInclude Include="Html.TagToken.h" />
+    <ClInclude Include="Html.TextNode.h" />
+    <ClInclude Include="Html.Token.h" />
+    <ClInclude Include="Html.Tokenizer.h" />
+    <ClInclude Include="Html.TreeConstruction.h" />
+    <ClInclude Include="Basic.Utf8Decoder.h" />
+    <ClInclude Include="Http.BodyChunksFrame.h" />
+    <ClInclude Include="Basic.ClientSocket.h" />
+    <ClInclude Include="Basic.ConnectedSocket.h" />
+    <ClInclude Include="Tls.SignatureAndHashAlgorithmFrame.h" />
+    <ClInclude Include="Web.Client.h" />
+    <ClInclude Include="Http.CookieParser.h" />
+    <ClInclude Include="Http.Globals.h" />
+    <ClInclude Include="Http.MediaType.h" />
+    <ClInclude Include="Http.MediaTypeStream.h" />
+    <ClInclude Include="Basic.Uri.h" />
+    <ClInclude Include="Service.Globals.h" />
+    <ClInclude Include="Web.Globals.h" />
+    <ClInclude Include="Web.IClientEventHandler.h" />
+    <ClInclude Include="Web.Proxy.h" />
+    <ClInclude Include="Json.ArrayFrame.h" />
+    <ClInclude Include="Json.ByteStreamDecoder.h" />
+    <ClInclude Include="Json.Globals.h" />
+    <ClInclude Include="Json.ObjectFrame.h" />
+    <ClInclude Include="Json.Parser.h" />
+    <ClInclude Include="Json.ScriptFrame.h" />
+    <ClInclude Include="Json.Script.h" />
+    <ClInclude Include="Json.Types.h" />
+    <ClInclude Include="Json.Tokenizer.h" />
+    <ClInclude Include="Json.Text.h" />
+    <ClInclude Include="Http.BodyFrame.h" />
+    <ClInclude Include="Http.LengthBodyFrame.h" />
+    <ClInclude Include="Http.Types.h" />
+    <ClInclude Include="Http.HeadersFrame.h" />
+    <ClInclude Include="Web.Server.h" />
+    <ClInclude Include="Json.ValueFrame.h" />
+    <ClInclude Include="Tls.AlertFrame.h" />
+    <ClInclude Include="Tls.AlertProtocol.h" />
+    <ClInclude Include="Tls.CertificateStatusRequestFrame.h" />
+    <ClInclude Include="Tls.ClientHelloFrame.h" />
+    <ClInclude Include="Tls.ConnectionState.h" />
+    <ClInclude Include="Tls.ExtensionHeaderFrame.h" />
+    <ClInclude Include="Tls.Globals.h" />
+    <ClInclude Include="Tls.ClientHandshake.h" />
+    <ClInclude Include="Tls.HandshakeFrame.h" />
+    <ClInclude Include="Tls.HandshakeProtocol.h" />
+    <ClInclude Include="Tls.ServerHandshake.h" />
+    <ClInclude Include="Tls.OCSPStatusRequestFrame.h" />
+    <ClInclude Include="Tls.PreMasterSecretFrame.h" />
+    <ClInclude Include="Tls.Types.h" />
+    <ClInclude Include="Tls.RandomFrame.h" />
+    <ClInclude Include="Tls.RecordFrame.h" />
+    <ClInclude Include="Tls.SecurityParameters.h" />
+    <ClInclude Include="Tls.ServerHelloFrame.h" />
+    <ClInclude Include="Tls.ServerNameFrame.h" />
+    <ClInclude Include="Basic.ServerSocket.h" />
+    <ClInclude Include="Basic.Console.h" />
+    <ClInclude Include="Basic.CountStream.h" />
+    <ClInclude Include="Http.ResponseHeadersFrame.h" />
+    <ClInclude Include="Http.RequestFrame.h" />
+    <ClInclude Include="Basic.Job.h" />
+    <ClInclude Include="Basic.Socket.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Basic.String.h" />
+    <ClInclude Include="Basic.TextWriter.h" />
+    <ClInclude Include="Tls.RecordLayer.h" />
+    <ClInclude Include="Http.UrlDecoder.h" />
+    <ClInclude Include="Web.Form.h" />
+    <ClInclude Include="Web.Link.h" />
+    <ClInclude Include="Web.Page.h" />
+    <ClInclude Include="Basic.TextSanitizer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Basic.ConsoleLog.cpp" />
+    <ClCompile Include="Basic.DebugLog.cpp" />
+    <ClCompile Include="Basic.Functions.cpp" />
+    <ClCompile Include="Basic.LogFrame.cpp" />
+    <ClCompile Include="Basic.LogStream.cpp" />
+    <ClCompile Include="Basic.Globals.cpp" />
+    <ClCompile Include="Basic.MemoryLog.cpp" />
+    <ClCompile Include="Basic.Path.cpp" />
+    <ClCompile Include="Basic.SingleByteDecoder.cpp" />
+    <ClCompile Include="Basic.SingleByteEncoder.cpp" />
+    <ClCompile Include="Basic.SingleByteEncodingIndex.cpp" />
+    <ClCompile Include="Basic.StateMachine.cpp" />
+    <ClCompile Include="Basic.String.cpp" />
+    <ClCompile Include="Basic.TailLog.cpp" />
+    <ClCompile Include="Basic.Types.cpp" />
+    <ClCompile Include="Basic.Utf32LittleEndianDecoder.cpp" />
+    <ClCompile Include="Basic.Utf8Encoder.cpp" />
+    <ClCompile Include="Ftp.Globals.cpp" />
+    <ClCompile Include="Ftp.Server.cpp" />
+    <ClCompile Include="Scrape.Amazon.cpp" />
+    <ClCompile Include="Scrape.Globals.cpp" />
+    <ClCompile Include="Scrape.Netflix.cpp" />
+    <ClCompile Include="Scrape.Types.cpp" />
+    <ClCompile Include="Service.AdminProtocol.cpp" />
+    <ClCompile Include="Basic.Cng.cpp" />
+    <ClCompile Include="Basic.Job.cpp" />
+    <ClCompile Include="Basic.HashAlgorithm.cpp" />
+    <ClCompile Include="Basic.HashStream.cpp" />
+    <ClCompile Include="Basic.ListenSocket.cpp" />
+    <ClCompile Include="Basic.FileLog.cpp" />
+    <ClCompile Include="Basic.MemoryRange.cpp" />
+    <ClCompile Include="Basic.Socket.cpp" />
+    <ClCompile Include="Service.Endpoint.cpp" />
+    <ClCompile Include="Service.FtpServerEndpoint.cpp" />
+    <ClCompile Include="Service.HtmlNamedCharacterReferences.cpp" />
+    <ClCompile Include="Service.WebProxyEndpoint.cpp" />
+    <ClCompile Include="Service.WebServer.cpp" />
+    <ClCompile Include="Service.StandardEncodings.cpp" />
+    <ClCompile Include="Service.StandardSingleByteEncoding.cpp" />
+    <ClCompile Include="Service.Types.cpp" />
+    <ClCompile Include="Html.FormattingElement.cpp" />
+    <ClCompile Include="Html.ByteStreamDecoder.cpp" />
+    <ClCompile Include="Html.CharacterReferenceFrame.cpp" />
+    <ClCompile Include="Html.CharacterToken.cpp" />
+    <ClCompile Include="Html.CommentNode.cpp" />
+    <ClCompile Include="Html.CommentToken.cpp" />
+    <ClCompile Include="Html.Globals.cpp" />
+    <ClCompile Include="Html.DocTypeToken.cpp" />
+    <ClCompile Include="Html.Document.cpp" />
+    <ClCompile Include="Html.DocumentTypeNode.cpp" />
+    <ClCompile Include="Html.ElementName.cpp" />
+    <ClCompile Include="Html.ElementNode.cpp" />
+    <ClCompile Include="Html.EndOfFileToken.cpp" />
+    <ClCompile Include="Html.EndTagToken.cpp" />
+    <ClCompile Include="Html.InputStreamPreprocessor.cpp" />
+    <ClCompile Include="Html.Node.cpp" />
+    <ClCompile Include="Html.Parser.cpp" />
+    <ClCompile Include="Html.Types.cpp" />
+    <ClCompile Include="Html.StartTagToken.cpp" />
+    <ClCompile Include="Html.TagToken.cpp" />
+    <ClCompile Include="Html.TextNode.cpp" />
+    <ClCompile Include="Html.Token.cpp" />
+    <ClCompile Include="Html.Tokenizer.cpp" />
+    <ClCompile Include="Html.TreeConstruction.cpp" />
+    <ClCompile Include="Basic.Utf8Decoder.cpp" />
+    <ClCompile Include="Http.BodyChunksFrame.cpp" />
+    <ClCompile Include="Basic.ClientSocket.cpp" />
+    <ClCompile Include="Basic.ConnectedSocket.cpp" />
+    <ClCompile Include="Basic.CountStream.cpp" />
+    <ClCompile Include="Http.BodyFrame.cpp" />
+    <ClCompile Include="Service.WebServerEndpoint.cpp" />
+    <ClCompile Include="Service.User.cpp" />
+    <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp" />
+    <ClCompile Include="Tls.HeartbeatMessageFrame.cpp" />
+    <ClCompile Include="Tls.HeartbeatProtocol.cpp" />
+    <ClCompile Include="Tls.SignatureAndHashAlgorithmFrame.cpp" />
+    <ClCompile Include="Web.Client.cpp" />
+    <ClCompile Include="Http.CookieParser.cpp" />
+    <ClCompile Include="Http.Globals.cpp" />
+    <ClCompile Include="Http.MediaType.cpp" />
+    <ClCompile Include="Http.MediaTypeStream.cpp" />
+    <ClCompile Include="Web.Globals.cpp" />
+    <ClCompile Include="Web.Proxy.cpp" />
+    <ClCompile Include="Http.Types.cpp" />
+    <ClCompile Include="Http.HeadersFrame.cpp" />
+    <ClCompile Include="Web.Server.cpp" />
+    <ClCompile Include="Http.LengthBodyFrame.cpp" />
+    <ClCompile Include="Basic.Uri.cpp" />
+    <ClCompile Include="Json.ArrayFrame.cpp" />
+    <ClCompile Include="Json.ByteStreamDecoder.cpp" />
+    <ClCompile Include="Json.Globals.cpp" />
+    <ClCompile Include="Json.ObjectFrame.cpp" />
+    <ClCompile Include="Json.Parser.cpp" />
+    <ClCompile Include="Json.ScriptFrame.cpp" />
+    <ClCompile Include="Json.Script.cpp" />
+    <ClCompile Include="Json.Tokenizer.cpp" />
+    <ClCompile Include="Json.Text.cpp" />
+    <ClCompile Include="Json.Types.cpp" />
+    <ClCompile Include="Json.ValueFrame.cpp" />
+    <ClCompile Include="Tls.AlertFrame.cpp" />
+    <ClCompile Include="Tls.AlertProtocol.cpp" />
+    <ClCompile Include="Tls.CertificateStatusRequestFrame.cpp" />
+    <ClCompile Include="Tls.ClientHelloFrame.cpp" />
+    <ClCompile Include="Tls.ConnectionState.cpp" />
+    <ClCompile Include="Tls.Globals.cpp" />
+    <ClCompile Include="Tls.ExtensionHeaderFrame.cpp" />
+    <ClCompile Include="Tls.ClientHandshake.cpp" />
+    <ClCompile Include="Tls.HandshakeFrame.cpp" />
+    <ClCompile Include="Tls.HandshakeProtocol.cpp" />
+    <ClCompile Include="Tls.ServerHandshake.cpp" />
+    <ClCompile Include="Tls.OCSPStatusRequestFrame.cpp" />
+    <ClCompile Include="Tls.PreMasterSecretFrame.cpp" />
+    <ClCompile Include="Tls.RandomFrame.cpp" />
+    <ClCompile Include="Tls.RecordFrame.cpp" />
+    <ClCompile Include="Tls.SecurityParameters.cpp" />
+    <ClCompile Include="Tls.ServerHelloFrame.cpp" />
+    <ClCompile Include="Tls.ServerNameFrame.cpp" />
+    <ClCompile Include="Basic.ServerSocket.cpp" />
+    <ClCompile Include="Basic.Console.cpp" />
+    <ClCompile Include="Http.ResponseHeadersFrame.cpp" />
+    <ClCompile Include="Http.RequestFrame.cpp" />
+    <ClCompile Include="Service.Globals.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Basic.TextWriter.cpp" />
+    <ClCompile Include="Tls.RecordLayer.cpp" />
+    <ClCompile Include="Http.UrlDecoder.cpp" />
+    <ClCompile Include="Web.Form.cpp" />
+    <ClCompile Include="Web.Link.cpp" />
+    <ClCompile Include="Web.Page.cpp" />
+    <ClCompile Include="Basic.TextSanitizer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
+    <Text Include="README.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
