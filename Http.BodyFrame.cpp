@@ -168,6 +168,7 @@ namespace Http
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
+            // $ I don't remember why this is getting headers at the end after a chunked body, check the RFC
             switch_to_state(State::done_state);
             break;
 
