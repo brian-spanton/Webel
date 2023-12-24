@@ -56,8 +56,7 @@ namespace Service
             {
             case Http::EventType::response_headers_event:
                 {
-                    std::shared_ptr<Http::Response> response = this->client->history.back().response;
-                    if (response->code != 200)
+                    if (this->client->transaction->response->code != 200)
                     {
                         std::shared_ptr<Uri> url;
                         this->client->get_url(&url);
@@ -82,11 +81,6 @@ namespace Service
 
             case Http::EventType::response_complete_event:
                 {
-                    if (this->client->history.size() == 0)
-                        throw FatalError("was Yield... expecting to have this completed request in our history...");
-
-                    std::shared_ptr<Http::Response> response = this->client->history.back().response;
-
                     if (this->json_parser->text->value->type != Json::Value::Type::array_value)
                         throw FatalError("was Yield... expecting the json body to be an array type");
 

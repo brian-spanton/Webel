@@ -41,7 +41,7 @@ namespace Http
         std::shared_ptr<Response> response;
     };
 
-    typedef std::vector<Transaction> TransactionList;
+    typedef std::vector<std::shared_ptr<Transaction> > TransactionList;
 
     struct Cookie
     {

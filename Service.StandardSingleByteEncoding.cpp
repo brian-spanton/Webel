@@ -47,8 +47,7 @@ namespace Service
                 if (event->get_type() != Http::EventType::response_headers_event)
                     throw new FatalError("unexpected event");
 
-                std::shared_ptr<Http::Response> response = this->client->history.back().response;
-                if (response->code != 200)
+                if (this->client->transaction->response->code != 200)
                 {
                     std::shared_ptr<Uri> url;
                     this->client->get_url(&url);

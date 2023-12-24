@@ -11,15 +11,16 @@ namespace Http
 {
     using namespace Basic;
 
-    ResponseHeadersFrame::ResponseHeadersFrame(UnicodeStringRef method, Response* response) :
-        method(method),
-        response(response),
-        number_stream(&this->response->code), // initialization is in order of declaration in class def
-        headers_frame(this->response->headers.get()) // initialization is in order of declaration in class def
+    ResponseFrame::ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+        transaction(transaction),
+        completion(completion),
+        completion_cookie(cookie),
+        number_stream(&transaction->response->code), // initialization is in order of declaration in class def
+        headers_frame(transaction->response->headers.get()) // initialization is in order of declaration in class def
     {
     }
 
-    EventResult ResponseHeadersFrame::consider_event(IEvent* event)
+    EventResult ResponseFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -36,7 +37,7 @@ namespace Http
                 }
                 else
                 {
-                    this->response->protocol->push_back(b);
+                    this->transaction->response->protocol->push_back(b);
                 }
             }
             break;
@@ -50,7 +51,7 @@ namespace Http
 
                 if (b == Http::globals->SP)
                 {
-                    if (this->number_stream.get_digit_count() == 0 || this->response->code < 100 || this->response->code > 599)
+                    if (this->number_stream.get_digit_count() == 0 || this->transaction->response->code < 100 || this->transaction->response->code > 599)
                     {
                         switch_to_state(State::receiving_code_error);
                     }
@@ -87,7 +88,7 @@ namespace Http
                 }
                 else if (b == Http::globals->SP || b == Http::globals->HT)
                 {
-                    this->response->reason->push_back(b);
+                    this->transaction->response->reason->push_back(b);
                 }
                 else if (Http::globals->CTL[b])
                 {
@@ -95,7 +96,7 @@ namespace Http
                 }
                 else
                 {
-                    this->response->reason->push_back(b);
+                    this->transaction->response->reason->push_back(b);
                 }
             }
             break;
@@ -124,6 +125,42 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
+                Basic::globals->DebugWriter()->write_literal("Response received: ");
+                this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
+                Basic::globals->DebugWriter()->WriteLine();
+
+                uint16 code = this->transaction->response->code;
+
+                bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(this->transaction->request->method.get(), Http::globals->head_method.get()));
+
+                if (body_expected)
+                {
+                    // get the body frame set up first, because the ResponseHeadersEvent completion can recurse into
+                    // this class to set the decoded content stream on the body frame
+                    this->response_body_frame = std::make_shared<BodyFrame>(this->transaction->response->headers);
+                }
+
+                std::shared_ptr<IProcess> completion = this->completion.lock();
+                if (completion.get() != 0)
+                {
+                    Http::ResponseHeadersEvent event;
+                    event.cookie = this->completion_cookie;
+                    produce_event(completion.get(), &event);
+                }
+
+                if (body_expected)
+                    switch_to_state(State::body_pending_state);
+                else
+                    switch_to_state(State::done_state);
+            }
+            break;
+
+        case State::body_pending_state:
+            {
+                EventResult result = delegate_event_change_state_on_fail(this->response_body_frame.get(), event, State::body_failed);
+                if (result == event_result_yield)
+                    return EventResult::event_result_yield;
+
                 switch_to_state(State::done_state);
             }
             break;
@@ -133,6 +170,11 @@ namespace Http
         }
 
         return EventResult::event_result_continue;
+    }
+
+    void ResponseFrame::set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream)
+    {
+        this->response_body_frame->set_decoded_content_stream(decoded_content_stream);
     }
 
     void Response::render_response_line(IStream<byte>* stream)

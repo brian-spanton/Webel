@@ -6,6 +6,7 @@
 #include "Basic.DecNumberStream.h"
 #include "Http.Types.h"
 #include "Http.HeadersFrame.h"
+#include "Http.BodyFrame.h"
 #include "Basic.SingleByteEncoder.h"
 #include "Basic.SingleByteEncodingIndex.h"
 
@@ -17,7 +18,7 @@ namespace Http
     // of "resetting" for a new get request from the same client.
     // It is not combined with ResponseBodyFrSame so the expense of that set of state
     // is not incurred when processing responses with no body.
-    class ResponseHeadersFrame : public Frame
+    class ResponseFrame : public Frame
     {
     private:
         enum State
@@ -27,23 +28,29 @@ namespace Http
             receiving_reason_state,
             expecting_LF_after_reason_state,
             headers_frame_pending_state,
+            body_pending_state,
             done_state = Succeeded_State,
             receiving_code_error,
             write_to_number_stream_failed,
             receiving_reason_error,
             expecting_LF_after_reason_error,
             headers_frame_failed,
+            body_failed,
         };
 
-        Response* response;
-        UnicodeStringRef method;
+        std::shared_ptr<Transaction> transaction;
         DecNumberStream<byte, uint16> number_stream;
         HeadersFrame headers_frame;
+        std::shared_ptr<BodyFrame> response_body_frame;
+        std::weak_ptr<IProcess> completion;
+        ByteStringRef completion_cookie;
 
         virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
-        ResponseHeadersFrame(UnicodeStringRef method, Response* response);
+        ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+
+        void set_decoded_content_stream(std::shared_ptr<IStream<byte> > body_stream);
     };
 
     template <>

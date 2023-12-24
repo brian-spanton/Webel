@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Http.ResponseHeadersFrame.h"
-#include "Http.BodyFrame.h"
 #include "Http.MediaType.h"
 #include "Basic.Frame.h"
 #include "Basic.Lock.h"
@@ -24,18 +23,17 @@ namespace Web
             get_pending_state,
             resolve_address_state,
             connection_pending_state,
-            headers_pending_state,
+            response_pending_state,
             body_pending_state,
             response_complete_state,
         };
 
     private:
+        TransactionList history;
         std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
-        std::shared_ptr<ResponseHeadersFrame> response_headers_frame;
-        std::shared_ptr<BodyFrame> response_body_frame;
-        std::shared_ptr<MediaType> media_type;
+        std::shared_ptr<ResponseFrame> response_frame;
         uint8 max_retries = 0;
         uint8 retries = 0;
         uint8 redirects = 0;
@@ -52,7 +50,8 @@ namespace Web
         virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
-        TransactionList history;
+        // $$$ these members being public makes them accessible without taking the lock... sketchy
+        std::shared_ptr<Transaction> transaction;
         CookieList http_cookies;
 
         void Get(std::shared_ptr<Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);

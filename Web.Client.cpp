@@ -66,7 +66,7 @@ namespace Web
             this->retries = 0;
 
             std::shared_ptr<Request> request = std::make_shared<Request>();
-            request->Initialize(this->history.back().request.get());
+            request->Initialize(this->transaction->request.get());
             request->resource = url;
 
             //Note: RFC1945 and RFC2068 specify that the client is not allowed
@@ -111,15 +111,15 @@ namespace Web
                 produce_event(completion.get(), &event);
             }
         }
-        else if (state == State::headers_pending_state)
+        else if (state == State::response_pending_state)
         {
-            Transaction transaction;
-            transaction.request = this->planned_request;
-            transaction.response = std::make_shared<Response>();
-            transaction.response->Initialize();
+            this->transaction = std::make_shared<Transaction>();
+            this->transaction->request = this->planned_request;
+            this->transaction->response = std::make_shared<Response>();
+            this->transaction->response->Initialize();
 
             this->history.push_back(transaction);
-            this->response_headers_frame = std::make_shared<ResponseHeadersFrame>(transaction.request->method, transaction.response.get());
+            this->response_frame = std::make_shared<ResponseFrame>(this->transaction, this->shared_from_this(), ByteStringRef());
 
             this->planned_request->protocol = Http::globals->HTTP_1_1;
 
@@ -206,50 +206,97 @@ namespace Web
     {
         Hold hold(this->lock);
 
-        if (get_state() == State::inactive_state)
+        if (event->get_type() == Basic::EventType::element_stream_ending_event)
+            this->transport.reset();
+
+        if (this->get_state() == State::inactive_state)
             return EventResult::event_result_yield; // event consumed
+
+        if (this->get_state() == State::response_pending_state)
+        {
+            if (event->get_type() == response_headers_event)
+            {
+                uint16 code = this->transaction->response->code;
+
+                if (code / 100 == 3)
+                {
+                    UnicodeStringRef location_string;
+
+                    bool success = this->transaction->response->headers->get_string(Http::globals->header_location, &location_string);
+                    if (success)
+                    {
+                        std::shared_ptr<Uri> location_url = std::make_shared<Uri>();
+                        location_url->Initialize();
+
+                        bool success = location_url->Parse(location_string.get(), this->transaction->request->resource.get());
+                        if (success)
+                        {
+                            this->transaction->request->resource->write_to_stream(Basic::globals->LogStream(), 0, 0);
+                            Basic::globals->DebugWriter()->WriteFormat<24>(" redirected with %d to ", code);
+                            location_url->write_to_stream(Basic::globals->LogStream(), 0, 0);
+                            Basic::globals->DebugWriter()->WriteLine();
+
+                            Redirect(location_url);
+                        }
+                    }
+                }
+                else if (code == 503)
+                {
+                    Retry(this->transaction->request);
+                }
+
+                // if we are not planning a retry or redirect, let the caller know headers are back, so it
+                // can choose and set a body stream
+                if (this->planned_request.get() == 0)
+                {
+                    std::shared_ptr<IProcess> completion = this->completion.lock();
+                    if (completion.get() != 0)
+                    {
+                        Http::ResponseHeadersEvent event;
+                        event.cookie = this->completion_cookie;
+                        produce_event(completion.get(), &event);
+                    }
+                }
+            }
+            else if (event->get_type() < response_headers_event)
+            {
+                EventResult result = delegate_event(this->response_frame.get(), event);
+                if (result == event_result_yield)
+                    return EventResult::event_result_yield;
+
+                if (this->response_frame->failed())
+                {
+                    Retry(this->transaction->request);
+                    QueuePlanned();
+                    return EventResult::event_result_yield; // event consumed, new thread
+                }
+
+                switch_to_state(State::response_complete_state);
+                QueueJob();
+            }
+
+            return EventResult::event_result_yield; // event consumed, new thread
+        }
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
-            this->transport.reset();
-
             switch (get_state())
             {
             case State::get_pending_state:
             case State::resolve_address_state:
-                return EventResult::event_result_yield; // event consumed
-
-            case State::connection_pending_state:
-            case State::headers_pending_state:
-                Retry(this->planned_request);
-                QueuePlanned();
-                return EventResult::event_result_yield; // event consumed, new thread
-
-            case State::body_pending_state:
-                {
-                    EventResult result = delegate_event(this->response_body_frame.get(), event);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
-
-                    if (this->response_body_frame->failed())
-                    {
-                        Retry(this->history.back().request);
-                        QueuePlanned();
-                        return EventResult::event_result_yield; // event consumed, new thread
-                    }
-
-                    switch_to_state(State::response_complete_state);
-                    QueueJob();
-                    return EventResult::event_result_yield; // event consumed
-                }
+            case State::response_complete_state:
                 break;
 
-            case State::response_complete_state:
-                return EventResult::event_result_yield; // event consumed
+            case State::connection_pending_state:
+                Retry(this->planned_request);
+                QueuePlanned();
+                break;
 
             default:
                 throw FatalError("Web::Client::handle_event unexpected state");
             }
+
+            return EventResult::event_result_yield; // event consumed
         }
 
         switch (get_state())
@@ -270,14 +317,20 @@ namespace Web
                 }
 
                 std::shared_ptr<Uri> current_url;
-                if (this->history.size() > 0)
-                    current_url = this->history.back().request->resource;
+                if (this->transaction)
+                    current_url = this->transaction->request->resource;
 
-                if (!(this->transport.get() != 0 &&
-                    current_url.get() != 0 &&
-                    equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()) && 
-                    equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()) && 
-                    equals<UnicodeString, true>(this->planned_request->resource->port.get(), current_url->port.get())))
+                if (this->transport &&
+                    current_url &&
+                    equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()) &&
+                    equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()) &&
+                    equals<UnicodeString, true>(this->planned_request->resource->port.get(), current_url->port.get()))
+                {
+                    // we already have a compatible transport, just go for it
+
+                    switch_to_state(State::response_pending_state);
+                }
+                else
                 {
                     if (this->transport.get() != 0)
                     {
@@ -301,10 +354,6 @@ namespace Web
 
                     switch_to_state(State::connection_pending_state);
                 }
-                else
-                {
-                    switch_to_state(State::headers_pending_state);
-                }
 
                 return EventResult::event_result_yield; // event consumed
             }
@@ -318,116 +367,8 @@ namespace Web
                     return EventResult::event_result_yield; // unexpected event
                 }
 
-                switch_to_state(State::headers_pending_state);
+                switch_to_state(State::response_pending_state);
                 return EventResult::event_result_yield; // event consumed
-            }
-            break;
-
-        case State::headers_pending_state:
-            {
-                if (event->get_type() != Basic::EventType::received_bytes_event)
-                {
-                    HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
-                }
-
-                EventResult result = delegate_event(this->response_headers_frame.get(), event);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
-
-                if (this->response_headers_frame->failed())
-                {
-                    handle_error("response_headers_frame failed");
-                    switch_to_state(State::inactive_state);
-                    return EventResult::event_result_yield; // event consumed
-                }
-
-                std::shared_ptr<Response> response = this->history.back().response;
-
-                Basic::globals->DebugWriter()->write_literal("Response received: ");
-                response->render_response_line(&Basic::globals->DebugWriter()->decoder);
-                Basic::globals->DebugWriter()->WriteLine();
-
-                uint16 code = response->code;
-
-                if (code / 100 == 3)
-                {
-                    UnicodeStringRef location_string;
-
-                    bool success = response->headers->get_string(Http::globals->header_location, &location_string);
-                    if (success)
-                    {
-                        std::shared_ptr<Uri> location_url = std::make_shared<Uri>();
-                        location_url->Initialize();
-
-                        bool success = location_url->Parse(location_string.get(), this->history.back().request->resource.get());
-                        if (success)
-                        {
-                            this->history.back().request->resource->write_to_stream(Basic::globals->LogStream(), 0, 0);
-                            Basic::globals->DebugWriter()->WriteFormat<24>(" redirected with %d to ", code);
-                            location_url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-                            Basic::globals->DebugWriter()->WriteLine();
-
-                            Redirect(location_url);
-                        }
-                    }
-                }
-                else if (code == 503)
-                {
-                    Retry(this->history.back().request);
-                }
-
-                bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(this->history.back().request->method.get(), Http::globals->head_method.get()));
-
-                if (body_expected)
-                {
-                    this->response_body_frame = std::make_shared<BodyFrame>(this->history.back().response->headers);
-                }
-
-                if (this->planned_request.get() == 0)
-                {
-                    std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion.get() != 0)
-                    {
-                        Http::ResponseHeadersEvent event;
-                        event.cookie = this->completion_cookie;
-                        produce_event(completion.get(), &event);
-                    }
-                }
-
-                if (!body_expected)
-                {
-                    switch_to_state(State::response_complete_state);
-                    QueueJob();
-                    return EventResult::event_result_yield; // event consumed, new thread
-                }
-
-                switch_to_state(State::body_pending_state);
-            }
-            break;
-
-        case State::body_pending_state:
-            {
-                if (event->get_type() != Basic::EventType::received_bytes_event)
-                    throw FatalError("unexpected event");
-
-                EventResult result = delegate_event(this->response_body_frame.get(), event);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
-
-                if (this->response_body_frame->failed())
-                {
-                    // consume all remaining bytes (if any)
-                    Event::Read<byte>(event, 0xffffffff, 0, 0);
-
-                    Retry(this->history.back().request);
-                    QueuePlanned();
-                    return EventResult::event_result_yield; // event consumed, new thread
-                }
-
-                switch_to_state(State::response_complete_state);
-                QueueJob();
-                return EventResult::event_result_yield; // event consumed, new thread
             }
             break;
 
@@ -439,7 +380,7 @@ namespace Web
                     return EventResult::event_result_yield; // unexpected event
                 }
 
-                std::shared_ptr<Response> response = this->history.back().response;
+                std::shared_ptr<Response> response = this->transaction->response;
 
                 auto range = response->headers->equal_range(Http::globals->header_set_cookie);
 
@@ -493,7 +434,7 @@ namespace Web
 
         UnicodeStringRef content_type;
 
-        bool success = this->history.back().response->headers->get_string(Http::globals->header_content_type, &content_type);
+        bool success = this->transaction->response->headers->get_string(Http::globals->header_content_type, &content_type);
         if (!success)
             return false;
 
@@ -521,13 +462,13 @@ namespace Web
     {
         Hold hold(this->lock);
 
-        this->response_body_frame->set_decoded_content_stream(decoded_content_stream);
+        this->response_frame->set_decoded_content_stream(decoded_content_stream);
     }
 
     void Client::get_url(std::shared_ptr<Uri>* url)
     {
         Hold hold(this->lock);
 
-        (*url) = this->history.back().request->resource;
+        (*url) = this->transaction->request->resource;
     }
 }
