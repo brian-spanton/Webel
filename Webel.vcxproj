@@ -120,7 +120,7 @@
     <ClInclude Include="Basic.IElementSource.h" />
     <ClInclude Include="Basic.Event.h" />
     <ClInclude Include="Basic.Frame.h" />
-    <ClInclude Include="Basic.FrameStream.h" />
+    <ClInclude Include="Basic.ProcessStream.h" />
     <ClInclude Include="Basic.Globals.h" />
     <ClInclude Include="Basic.IDecoder.h" />
     <ClInclude Include="Basic.IEncoder.h" />
@@ -256,7 +256,7 @@
     <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />
     <ClCompile Include="Basic.Frame.cpp" />
-    <ClCompile Include="Basic.FrameStream.cpp" />
+    <ClCompile Include="Basic.ProcessStream.cpp" />
     <ClCompile Include="Basic.Globals.cpp" />
     <ClCompile Include="Basic.MemoryLog.cpp" />
     <ClCompile Include="Basic.SingleByteDecoder.cpp" />

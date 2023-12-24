@@ -1,7 +1,7 @@
 // Copyright © 2013 Brian Spanton
 
 #include "stdafx.h"
-#include "Basic.FrameStream.h"
+#include "Basic.ProcessStream.h"
 
 namespace Basic
 {

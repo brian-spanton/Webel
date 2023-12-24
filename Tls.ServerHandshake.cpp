@@ -6,7 +6,7 @@
 #include "Basic.HashAlgorithm.h"
 #include "Basic.HashStream.h"
 #include "Basic.Cng.h"
-#include "Basic.FrameStream.h"
+#include "Basic.ProcessStream.h"
 #include "Tls.RecordLayer.h"
 #include "Tls.HandshakeFrame.h"
 #include "Tls.PreMasterSecretFrame.h"

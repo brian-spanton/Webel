@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "Basic.IgnoreFrame.h"
-#include "Basic.FrameStream.h"
+#include "Basic.ProcessStream.h"
 #include "Basic.GzipFrame.h"
 #include "Http.BodyFrame.h"
 #include "Http.Globals.h"

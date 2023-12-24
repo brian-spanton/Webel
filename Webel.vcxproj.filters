@@ -268,7 +268,7 @@
     <ClInclude Include="Basic.Frame.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.FrameStream.h">
+    <ClInclude Include="Basic.ProcessStream.h">
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.IElementSource.h">
@@ -711,7 +711,7 @@
     <ClCompile Include="Basic.Event.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.FrameStream.cpp">
+    <ClCompile Include="Basic.ProcessStream.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
     <ClCompile Include="Basic.Uri.cpp">
