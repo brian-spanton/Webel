@@ -21,8 +21,6 @@ namespace Basic
         received_codepoints_event,
         can_send_codepoints_event,
         element_stream_ending_event,
-        request_headers_event,
-        request_complete_event,
         encodings_complete_event,
     };
 
