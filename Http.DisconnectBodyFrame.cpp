@@ -9,7 +9,7 @@ namespace Http
     using namespace Basic;
 
     DisconnectBodyFrame::DisconnectBodyFrame(std::shared_ptr<IStream<byte> > body_stream) :
-        body_stream(body_stream)
+        BodyFrame(body_stream)
     {
     }
 
@@ -19,7 +19,7 @@ namespace Http
         {
         case State::receiving_body_state:
             {
-                if (event->get_type() == EventType::element_stream_ending_event)
+                if (event->get_type() == Basic::EventType::element_stream_ending_event)
                 {
                     switch_to_state(State::done_state);
                     return EventResult::event_result_continue;
@@ -32,7 +32,7 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
-                this->body_stream->write_elements(elements, count);
+                this->decoded_content_stream->write_elements(elements, count);
             }
             break;
 

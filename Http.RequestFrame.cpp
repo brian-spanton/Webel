@@ -15,8 +15,7 @@ namespace Http
         request(request),
         resource_string(std::make_shared<UnicodeString>()),
         resource_decoder(Basic::globals->ascii_index, this->resource_string.get()),
-        headers_frame(this->request->headers.get()),
-        body_frame(this->request->headers)
+        headers_frame(this->request->headers.get())
     {
         this->resource_string->reserve(0x100);
     }
@@ -114,7 +113,16 @@ namespace Http
                     return EventResult::event_result_yield;
 
                 std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
-                this->body_frame.set_decoded_content_stream(count_stream);
+                std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>();
+
+                transaction->request = this->request;
+
+                auto body_frame = BodyFrame::make_body_frame(count_stream, transaction.get());
+                if (!body_frame)
+                {
+                    switch_to_state(State::done_state);
+                    return EventResult::event_result_continue;
+                }
 
                 switch_to_state(State::body_frame_pending_state);
             }
@@ -122,7 +130,7 @@ namespace Http
 
         case State::body_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(&this->body_frame, event, State::body_frame_failed);
+                EventResult result = delegate_event_change_state_on_fail(this->body_frame.get(), event, State::body_frame_failed);
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 

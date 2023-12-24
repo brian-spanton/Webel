@@ -3,10 +3,11 @@
 #pragma once
 
 #include "Basic.Frame.h"
-#include "Web.Client.h"
 #include "Basic.SingleByteEncodingIndex.h"
-#include "Json.Types.h"
 #include "Basic.IStream.h"
+#include "Basic.HexNumberStream.h"
+#include "Web.Client.h"
+#include "Json.Types.h"
 
 namespace Service
 {

@@ -10,10 +10,12 @@ namespace Http
 {
     using namespace Basic;
 
-    BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream) :
+    BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, std::shared_ptr<NameValueCollection> headers) :
+        BodyFrame(body_stream),
         size(0),
         size_stream(&this->size), // initialization is in order of declaration in class def
-        chunk_frame(body_stream)
+        chunk_frame(body_stream),
+        headers_frame(headers.get())
     {
     }
 
@@ -59,7 +61,11 @@ namespace Http
 
                 if (this->size == 0)
                 {
-                    switch_to_state(State::done_state);
+                    // $ I don't remember why this is getting headers at the end after a chunked body, check the RFC.
+                    // however, not doing this definitely causes problems due to the check in ConnectedSocket::Receive:
+                    // "if (!this->protocol_element_source.Exhausted() && !protocol->failed())"
+
+                    switch_to_state(State::headers_frame_pending);
                 }
                 else
                 {
@@ -111,6 +117,16 @@ namespace Http
 
                 this->size_stream.reset();
                 switch_to_state(State::start_chunk_state);
+            }
+            break;
+
+        case State::headers_frame_pending:
+            {
+                EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::header_frame_failed);
+                if (result == event_result_yield)
+                    return EventResult::event_result_yield;
+
+                switch_to_state(State::done_state);
             }
             break;
 

@@ -41,7 +41,8 @@ namespace Http
         std::shared_ptr<Transaction> transaction;
         DecNumberStream<byte, uint16> number_stream;
         HeadersFrame headers_frame;
-        std::shared_ptr<BodyFrame> response_body_frame;
+        std::shared_ptr<IStream<byte> > decoded_content_stream;
+        std::shared_ptr<BodyFrame> body_frame;
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
 
@@ -50,7 +51,7 @@ namespace Http
     public:
         ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
-        void set_decoded_content_stream(std::shared_ptr<IStream<byte> > body_stream);
+        void set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream);
     };
 
     template <>

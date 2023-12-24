@@ -2,10 +2,14 @@
 
 #include "stdafx.h"
 #include "Basic.Event.h"
-#include "Http.ResponseHeadersFrame.h"
 #include "Basic.Globals.h"
-#include "Http.Globals.h"
 #include "Basic.TextWriter.h"
+#include "Basic.IgnoreFrame.h"
+#include "Http.ResponseHeadersFrame.h"
+#include "Http.Globals.h"
+#include "Http.LengthBodyFrame.h"
+#include "Http.BodyChunksFrame.h"
+#include "Http.DisconnectBodyFrame.h"
 
 namespace Http
 {
@@ -125,20 +129,9 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
-                Basic::globals->DebugWriter()->write_literal("Response received: ");
+                Basic::globals->DebugWriter()->write_literal("Response headers received: ");
                 this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
                 Basic::globals->DebugWriter()->WriteLine();
-
-                uint16 code = this->transaction->response->code;
-
-                bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(this->transaction->request->method.get(), Http::globals->head_method.get()));
-
-                if (body_expected)
-                {
-                    // get the body frame set up first, because the ResponseHeadersEvent completion can recurse into
-                    // this class to set the decoded content stream on the body frame
-                    this->response_body_frame = std::make_shared<BodyFrame>(this->transaction->response->headers);
-                }
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)
@@ -148,18 +141,28 @@ namespace Http
                     produce_event(completion.get(), &event);
                 }
 
-                if (body_expected)
-                    switch_to_state(State::body_pending_state);
-                else
+                if (!this->decoded_content_stream)
+                    this->decoded_content_stream = std::make_shared<IgnoreFrame<byte> >();
+
+                this->body_frame = BodyFrame::make_body_frame(this->decoded_content_stream, this->transaction.get());
+                if (!this->body_frame)
+                {
                     switch_to_state(State::done_state);
+                    return EventResult::event_result_continue;
+                }
+
+                switch_to_state(State::body_pending_state);
+                return EventResult::event_result_continue;
             }
             break;
 
         case State::body_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(this->response_body_frame.get(), event, State::body_failed);
+                EventResult result = delegate_event_change_state_on_fail(this->body_frame.get(), event, State::body_failed);
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
+
+                this->decoded_content_stream->write_eof();
 
                 switch_to_state(State::done_state);
             }
@@ -174,7 +177,7 @@ namespace Http
 
     void ResponseFrame::set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream)
     {
-        this->response_body_frame->set_decoded_content_stream(decoded_content_stream);
+        this->decoded_content_stream = decoded_content_stream;
     }
 
     void Response::render_response_line(IStream<byte>* stream)

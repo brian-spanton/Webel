@@ -4,12 +4,13 @@
 
 #include "Basic.Frame.h"
 #include "Basic.IStream.h"
+#include "Http.BodyFrame.h"
 
 namespace Http
 {
     using namespace Basic;
 
-    class LengthBodyFrame : public Frame
+    class LengthBodyFrame : public BodyFrame
     {
     private:
         enum State
@@ -18,7 +19,6 @@ namespace Http
             done_state = Succeeded_State,
         };
 
-        std::shared_ptr<IStream<byte> > body_stream;
         uint32 bytes_expected;
         uint32 bytes_received;
 

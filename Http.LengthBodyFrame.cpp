@@ -9,14 +9,14 @@ namespace Http
     using namespace Basic;
 
     LengthBodyFrame::LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream) :
-        body_stream(body_stream),
+        BodyFrame(body_stream),
         bytes_expected(0),
         bytes_received(0)
     {
     }
 
     LengthBodyFrame::LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream, uint32 bytes_expected) :
-        body_stream(body_stream),
+        BodyFrame(body_stream),
         bytes_expected(bytes_expected),
         bytes_received(0)
     {
@@ -48,7 +48,7 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
-                this->body_stream->write_elements(elements, useable);
+                this->decoded_content_stream->write_elements(elements, useable);
 
                 this->bytes_received += useable;
 

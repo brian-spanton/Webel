@@ -34,11 +34,11 @@ namespace Http
         // and this class depends upon that order in it's constructor, in particular resource_string
         // must come before resource_decoder, and request must come before headers_frame and body_frame.
 
-        Request* request;
+        std::shared_ptr<Request> request;
         UnicodeStringRef resource_string;
         SingleByteDecoder resource_decoder;
         HeadersFrame headers_frame;
-        BodyFrame body_frame;
+        std::shared_ptr<BodyFrame> body_frame;
 
         bool ParseError(byte b);
 
