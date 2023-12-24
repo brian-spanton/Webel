@@ -2,6 +2,8 @@
 
 #include "stdafx.h"
 #include "Basic.IgnoreFrame.h"
+#include "Basic.FrameStream.h"
+#include "Basic.GzipFrame.h"
 #include "Http.BodyFrame.h"
 #include "Http.Globals.h"
 #include "Http.LengthBodyFrame.h"
@@ -41,16 +43,12 @@ namespace Http
         {
             if (equals<UnicodeString, false>(contentEncoding.get(), Http::globals->gzip.get()))
             {
-                HandleError("content encoding gzip NYI");
-
-                // RFC1952 https://www.rfc-editor.org/rfc/rfc1952
-
-                //this->decoded_content_stream = std::make_shared<Gzip<byte> >();
+                auto content_encoder_frame = std::make_shared<GzipFrame>(decoded_content_stream);
+                decoded_content_stream = std::make_shared<ProcessStream<byte> >(content_encoder_frame);
 
                 return std::shared_ptr<BodyFrame>();
             }
-
-            if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
+            else if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
             {
                 ByteString error;
                 error.append((byte*)"unhandled content encoding=");

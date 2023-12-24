@@ -15,16 +15,16 @@ namespace Basic
     // $ should this class just be merge with Frame?
     // $ and if so, should IProcess be merged with IStream?
     template <class element_type>
-    class FrameStream : public ArrayStream<element_type>
+    class ProcessStream : public ArrayStream<element_type>
     {
     private:
         Basic::ElementSource<element_type> element_source;
-        IProcess* frame = 0;
+        std::shared_ptr<IProcess> process;
 
     public:
-        void Initialize(IProcess* frame)
+        ProcessStream(std::shared_ptr<IProcess> process)
         {
-            this->frame = frame;
+            this->process = process;
         }
 
         virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 count);
@@ -32,18 +32,17 @@ namespace Basic
         virtual void IStream<element_type>::write_eof()
         {
             ElementStreamEndingEvent event;
-            produce_event(this->frame, &event);
+            produce_event(this->process.get(), &event);
         }
 
-        static bool handle_event(IProcess* frame, const element_type* bytes, uint32 count)
+        static bool write_elements_to_process(std::shared_ptr<IProcess> process, const element_type* bytes, uint32 count)
         {
-            FrameStream<element_type> protocol;
-            protocol.Initialize(frame);
+            ProcessStream<element_type> stream(process);
 
-            protocol.write_elements(bytes, count);
-            protocol.write_eof();
+            stream.write_elements(bytes, count);
+            stream.write_eof();
 
-            return frame->succeeded();
+            return process->succeeded();
         }
     };
 }

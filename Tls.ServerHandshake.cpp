@@ -436,7 +436,7 @@ namespace Tls
 
                 std::shared_ptr<PreMasterSecretFrame> frame = std::make_shared<PreMasterSecretFrame>(&pre_master_secret);
 
-                success = FrameStream<byte>::handle_event(frame.get(), this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size());
+                success = ProcessStream<byte>::write_elements_to_process(frame, this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size());
                 if (!success)
                     return false;
 

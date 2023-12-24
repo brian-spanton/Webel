@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClInclude Include="Basic.ConsoleLog.h" />
     <ClInclude Include="Basic.DebugLog.h" />
+    <ClInclude Include="Basic.GzipFrame.h" />
     <ClInclude Include="Basic.ILog.h" />
     <ClInclude Include="Basic.LogStream.h" />
     <ClInclude Include="Basic.ElementSource.h" />
@@ -251,6 +252,7 @@
   <ItemGroup>
     <ClCompile Include="Basic.ConsoleLog.cpp" />
     <ClCompile Include="Basic.DebugLog.cpp" />
+    <ClCompile Include="Basic.GzipFrame.cpp" />
     <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />
     <ClCompile Include="Basic.Frame.cpp" />
