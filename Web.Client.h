@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Http.ResponseHeadersFrame.h"
+#include "Http.ResponseFrame.h"
 #include "Http.MediaType.h"
 #include "Basic.Frame.h"
 #include "Basic.Lock.h"

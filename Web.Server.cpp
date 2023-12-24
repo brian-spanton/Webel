@@ -6,7 +6,7 @@
 #include "Basic.CountStream.h"
 #include "Web.Globals.h"
 #include "Http.Globals.h"
-#include "Http.ResponseHeadersFrame.h"
+#include "Http.ResponseFrame.h"
 #include "Http.HeadersFrame.h"
 
 namespace Web

@@ -14,7 +14,7 @@ namespace Http
 {
     using namespace Basic;
 
-    // ResponseHeadersFrame is factored out of Web.Client for readability and ease
+    // ResponseFrame is factored out of Web.Client for readability and ease
     // of "resetting" for a new get request from the same client.
     // It is not combined with ResponseBodyFrSame so the expense of that set of state
     // is not incurred when processing responses with no body.

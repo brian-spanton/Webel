@@ -5,7 +5,7 @@
 #include "Basic.Globals.h"
 #include "Basic.TextWriter.h"
 #include "Basic.IgnoreFrame.h"
-#include "Http.ResponseHeadersFrame.h"
+#include "Http.ResponseFrame.h"
 #include "Http.Globals.h"
 #include "Http.LengthBodyFrame.h"
 #include "Http.BodyChunksFrame.h"

@@ -259,7 +259,7 @@
     <ClInclude Include="Basic.ServerSocket.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Http.ResponseHeadersFrame.h">
+    <ClInclude Include="Http.ResponseFrame.h">
       <Filter>Http</Filter>
     </ClInclude>
     <ClInclude Include="Basic.Event.h">
@@ -687,7 +687,7 @@
     <ClCompile Include="Basic.ServerSocket.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Http.ResponseHeadersFrame.cpp">
+    <ClCompile Include="Http.ResponseFrame.cpp">
       <Filter>Http</Filter>
     </ClCompile>
     <ClCompile Include="Basic.SingleByteDecoder.cpp">

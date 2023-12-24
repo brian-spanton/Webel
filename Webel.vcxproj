@@ -235,7 +235,7 @@
     <ClInclude Include="Basic.ServerSocket.h" />
     <ClInclude Include="Basic.Console.h" />
     <ClInclude Include="Basic.CountStream.h" />
-    <ClInclude Include="Http.ResponseHeadersFrame.h" />
+    <ClInclude Include="Http.ResponseFrame.h" />
     <ClInclude Include="Http.RequestFrame.h" />
     <ClInclude Include="Basic.Job.h" />
     <ClInclude Include="Basic.Socket.h" />
@@ -365,7 +365,7 @@
     <ClCompile Include="Tls.ServerNameFrame.cpp" />
     <ClCompile Include="Basic.ServerSocket.cpp" />
     <ClCompile Include="Basic.Console.cpp" />
-    <ClCompile Include="Http.ResponseHeadersFrame.cpp" />
+    <ClCompile Include="Http.ResponseFrame.cpp" />
     <ClCompile Include="Http.RequestFrame.cpp" />
     <ClCompile Include="Service.Globals.cpp" />
     <ClCompile Include="stdafx.cpp">
