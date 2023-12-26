@@ -3,8 +3,6 @@
 #pragma once
 
 #pragma warning (disable: 4005)
-#pragma warning (disable: 4800)
-#pragma warning (disable: 4065)
 
 #define WIN32_LEAN_AND_MEAN
 #define NOGDICAPMASKS     // CC_*, LC_*, PC_*, CP_*, TC_*, RC_

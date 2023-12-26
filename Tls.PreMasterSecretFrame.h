@@ -31,11 +31,14 @@ namespace Tls
     public:
         PreMasterSecretFrame(PreMasterSecret* pre_master_secret);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<PreMasterSecret>
+    struct __declspec(novtable) serialize<Tls::PreMasterSecret>
     {
-        void operator()(const PreMasterSecret* value, IStream<byte>* stream) const
+        void operator()(const Tls::PreMasterSecret* value, IStream<byte>* stream) const
         {
             serialize<uint16>()(&value->client_version, stream);
             serialize<const byte[46]>()(&value->random, stream);

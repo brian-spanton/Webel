@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Basic.IProcess.h"
+#include "Basic.NumberFrame.h"
 #include "Tls.Types.h"
 
 namespace Tls
@@ -31,17 +32,20 @@ namespace Tls
     public:
         ServerNameFrame(ServerName* serverName);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<ServerName>
+    struct __declspec(novtable) serialize<Tls::ServerName>
     {
-        void operator()(const ServerName* value, IStream<byte>* stream) const
+        void operator()(const Tls::ServerName* value, IStream<byte>* stream) const
         {
-            serialize<NameType>()(&value->name_type, stream);
-            serialize<HostName>()(&value->name, stream);
+            serialize<Tls::NameType>()(&value->name_type, stream);
+            serialize<Tls::HostName>()(&value->name, stream);
         }
     };
 
     template <>
-    struct __declspec(novtable) make_deserializer<ServerName> : public make_frame_deserializer<ServerName, ServerNameFrame> {};
+    struct __declspec(novtable) make_deserializer<Tls::ServerName> : public make_frame_deserializer<Tls::ServerName, Tls::ServerNameFrame> {};
 }

@@ -22,6 +22,9 @@ namespace Tls
     class ClientHandshake;
     class RecordStream;
 
+    // this is the top level protocol frame for TLS.
+    // $ consider renaming to make that more obvious/discoverable
+
     class RecordLayer : public Frame, public ArrayStream<byte>
     {
     private:

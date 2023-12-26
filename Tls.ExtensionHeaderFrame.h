@@ -32,13 +32,16 @@ namespace Tls
 
         void reset();
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<ExtensionHeader>
+    struct __declspec(novtable) serialize<Tls::ExtensionHeader>
     {
-        void operator()(const ExtensionHeader* value, IStream<byte>* stream) const
+        void operator()(const Tls::ExtensionHeader* value, IStream<byte>* stream) const
         {
-            serialize<ExtensionType>()(&value->type, stream);
+            serialize<Tls::ExtensionType>()(&value->type, stream);
             serialize<uint16>()(&value->length, stream);
         }
     };

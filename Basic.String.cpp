@@ -76,6 +76,7 @@ namespace Basic
     std::string String<Codepoint>::as_std_string()
     {
         std::string result;
+#pragma warning (suppress: 4244)
         result.insert(result.end(), address(), address() + size());
         return result;
     }

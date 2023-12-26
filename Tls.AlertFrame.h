@@ -30,14 +30,17 @@ namespace Tls
     public:
         AlertFrame(Alert* alert);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<Alert>
+    struct __declspec(novtable) serialize<Tls::Alert>
     {
-        void operator()(const Alert* value, IStream<byte>* stream) const
+        void operator()(const Tls::Alert* value, IStream<byte>* stream) const
         {
-            serialize<AlertLevel>()(&value->level, stream);
-            serialize<AlertDescription>()(&value->description, stream);
+            serialize<Tls::AlertLevel>()(&value->level, stream);
+            serialize<Tls::AlertDescription>()(&value->description, stream);
         }
     };
 }

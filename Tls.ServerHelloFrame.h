@@ -68,17 +68,20 @@ namespace Tls
 
         void set_record_frame_length(uint32 record_frame_length);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<ServerHello>
+    struct __declspec(novtable) serialize<Tls::ServerHello>
     {
-        void operator()(const ServerHello* value, IStream<byte>* stream) const
+        void operator()(const Tls::ServerHello* value, IStream<byte>* stream) const
         {
             serialize<uint16>()(&value->server_version, stream);
-            serialize<Random>()(&value->random, stream);
-            serialize<SessionId>()(&value->session_id, stream);
-            serialize<CipherSuite>()(&value->cipher_suite, stream);
-            serialize<CompressionMethod>()(&value->compression_method, stream);
+            serialize<Tls::Random>()(&value->random, stream);
+            serialize<Tls::SessionId>()(&value->session_id, stream);
+            serialize<Tls::CipherSuite>()(&value->cipher_suite, stream);
+            serialize<Tls::CompressionMethod>()(&value->compression_method, stream);
         }
     };
 }

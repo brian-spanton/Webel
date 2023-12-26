@@ -86,20 +86,23 @@ namespace Tls
 
         void set_record_frame_length(uint32 record_frame_length);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<ClientHello>
+    struct __declspec(novtable) serialize<Tls::ClientHello>
     {
-        void operator()(const ClientHello* value, IStream<byte>* stream) const
+        void operator()(const Tls::ClientHello* value, IStream<byte>* stream) const
         {
             CountStream<byte> count_stream;
             SerializeExtensionsTo(value, &count_stream);
 
-            serialize<ProtocolVersion>()(&value->client_version, stream);
-            serialize<Random>()(&value->random, stream);
-            serialize<SessionId>()(&value->session_id, stream);
-            serialize<CipherSuites>()(&value->cipher_suites, stream);
-            serialize<CompressionMethods>()(&value->compression_methods, stream);
+            serialize<Tls::ProtocolVersion>()(&value->client_version, stream);
+            serialize<Tls::Random>()(&value->random, stream);
+            serialize<Tls::SessionId>()(&value->session_id, stream);
+            serialize<Tls::CipherSuites>()(&value->cipher_suites, stream);
+            serialize<Tls::CompressionMethods>()(&value->compression_methods, stream);
 
             if (count_stream.count > 0xffff)
             {
@@ -115,19 +118,19 @@ namespace Tls
             }
         }
 
-        void SerializeExtensionsTo(const ClientHello* value, IStream<byte>* stream) const
+        void SerializeExtensionsTo(const Tls::ClientHello* value, IStream<byte>* stream) const
         {
             if (value->heartbeat_extension_initialized)
             {
                 CountStream<byte> count_stream;
-                serialize<HeartbeatExtension>()(&value->heartbeat_extension, &count_stream);
+                serialize<Tls::HeartbeatExtension>()(&value->heartbeat_extension, &count_stream);
 
-                ExtensionHeader extension_header;
+                Tls::ExtensionHeader extension_header;
                 extension_header.length = (uint16)count_stream.count;
-                extension_header.type = ExtensionType::heartbeat_extension_type;
-                serialize<ExtensionHeader>()(&extension_header, stream);
+                extension_header.type = Tls::ExtensionType::heartbeat_extension_type;
+                serialize<Tls::ExtensionHeader>()(&extension_header, stream);
 
-                serialize<HeartbeatExtension>()(&value->heartbeat_extension, stream);
+                serialize<Tls::HeartbeatExtension>()(&value->heartbeat_extension, stream);
             }
         }
     };

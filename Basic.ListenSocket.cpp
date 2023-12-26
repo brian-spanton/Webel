@@ -3,8 +3,6 @@
 #include "stdafx.h"
 #include "Basic.ListenSocket.h"
 
-#pragma warning (disable: 6387)
-
 namespace Basic
 {
     ListenSocket::ListenSocket(Face face, short port)

@@ -27,13 +27,16 @@ namespace Tls
     public:
         HeartbeatExtensionFrame(HeartbeatExtension* heartbeat_extension);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<HeartbeatExtension>
+    struct __declspec(novtable) serialize<Tls::HeartbeatExtension>
     {
-        void operator()(const HeartbeatExtension* value, IStream<byte>* stream) const
+        void operator()(const Tls::HeartbeatExtension* value, IStream<byte>* stream) const
         {
-            serialize<HeartbeatMode>()(&value->mode, stream);
+            serialize<Tls::HeartbeatMode>()(&value->mode, stream);
         }
     };
 }

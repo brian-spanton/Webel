@@ -4,6 +4,7 @@
 
 namespace Basic
 {
+    // $$ split into a purely rendered representation and a stream based [de]serializer?
     class Uri
     {
     private:

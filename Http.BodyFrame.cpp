@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "Basic.IgnoreFrame.h"
 #include "Basic.ProcessStream.h"
-#include "Basic.GzipFrame.h"
+#include "Gzip.FileFormat.h"
 #include "Http.BodyFrame.h"
 #include "Http.Globals.h"
 #include "Http.LengthBodyFrame.h"
@@ -43,10 +43,8 @@ namespace Http
         {
             if (equals<UnicodeString, false>(contentEncoding.get(), Http::globals->gzip.get()))
             {
-                auto content_encoder_frame = std::make_shared<GzipFrame>(decoded_content_stream);
+                auto content_encoder_frame = std::make_shared<Gzip::FileFormat>(decoded_content_stream);
                 decoded_content_stream = std::make_shared<ProcessStream<byte> >(content_encoder_frame);
-
-                return std::shared_ptr<BodyFrame>();
             }
             else if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
             {

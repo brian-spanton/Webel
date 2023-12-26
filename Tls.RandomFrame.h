@@ -31,11 +31,14 @@ namespace Tls
     public:
         RandomFrame(Random* random);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<Random>
+    struct __declspec(novtable) serialize<Tls::Random>
     {
-        void operator()(const Random* value, IStream<byte>* stream) const
+        void operator()(const Tls::Random* value, IStream<byte>* stream) const
         {
             serialize<uint32>()(&value->gmt_unix_time, stream);
             serialize<const byte[28]>()(&value->random_bytes, stream);

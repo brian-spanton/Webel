@@ -35,13 +35,16 @@ namespace Tls
 
         void reset();
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<Handshake>
+    struct __declspec(novtable) serialize<Tls::Handshake>
     {
-        void operator()(const Handshake* value, IStream<byte>* stream) const
+        void operator()(const Tls::Handshake* value, IStream<byte>* stream) const
         {
-            serialize<HandshakeType>()(&value->msg_type, stream);
+            serialize<Tls::HandshakeType>()(&value->msg_type, stream);
             serialize_number<uint32, 3>()(&value->length, stream);
         }
     };

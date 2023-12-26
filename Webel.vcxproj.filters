@@ -460,8 +460,20 @@
     <ClInclude Include="Basic.TailLog.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.GzipFrame.h">
+    <ClInclude Include="Gzip.MemberFrame.h">
+      <Filter>Gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="Gzip.Types.h">
+      <Filter>Gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.NumberFrame.h">
       <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Gzip.FileFormat.h">
+      <Filter>Gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="Gzip.Deflate.h">
+      <Filter>Gzip</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -843,8 +855,14 @@
     <ClCompile Include="Basic.TailLog.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.GzipFrame.cpp">
-      <Filter>Basic</Filter>
+    <ClCompile Include="Gzip.MemberFrame.cpp">
+      <Filter>Gzip</Filter>
+    </ClCompile>
+    <ClCompile Include="Gzip.FileFormat.cpp">
+      <Filter>Gzip</Filter>
+    </ClCompile>
+    <ClCompile Include="Gzip.Deflate.cpp">
+      <Filter>Gzip</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -874,6 +892,9 @@
     </Filter>
     <Filter Include="Project">
       <UniqueIdentifier>{3cc562fd-369c-4160-a320-5e75a28611dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gzip">
+      <UniqueIdentifier>{5470dac1-f8ed-469d-9a3a-1d5d700a10a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

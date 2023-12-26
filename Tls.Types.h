@@ -6,7 +6,7 @@
 #include "Basic.IProcess.h"
 #include "Basic.MemoryRange.h"
 #include "Basic.CountStream.h"
-#include "Basic.Frame.h"
+#include "Basic.NumberFrame.h"
 
 namespace Tls
 {
@@ -617,7 +617,19 @@ namespace Tls
         arbitrary_explicit_prime_curves = 0xFF01,
         arbitrary_explicit_char2_curves = 0xFF02,
     };
+}
 
+namespace Basic
+{
+    template <> struct __declspec(novtable) serialize<Tls::ExtensionType> : public serialize_number<Tls::ExtensionType> {};
+    template <> struct __declspec(novtable) serialize<Tls::CipherSuite> : public serialize_number<Tls::CipherSuite> {};
+
+    template <> struct __declspec(novtable) make_deserializer<Tls::CipherSuite> : public make_number_deserializer<Tls::CipherSuite> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::NamedCurve> : public make_number_deserializer<Tls::NamedCurve> {};
+}
+
+namespace Tls
+{
     enum ECPointFormat : uint8
     {
         uncompressed = 0,
@@ -660,7 +672,7 @@ namespace Tls
     typedef Vector<byte, 0, 0x20, 1> SessionId;
     typedef Vector<byte, 1, 0xffff, 2> HostName;
     typedef Vector<byte, 0, 0xff, 1> RenegotiationInfo;
-    typedef Vector<byte, 0, 0xffffff, 2> Extensions;
+    typedef Vector<byte, 0, 0xffff, 2> Extensions;
     typedef Vector<byte, 0, 0xffff, 2> EncryptedPreMasterSecret;
     typedef Vector<byte, 1, 0xffff, 2> DhP;
     typedef Vector<byte, 1, 0xffff, 2> DhG;
@@ -807,20 +819,10 @@ namespace Tls
         HeartbeatExtension heartbeat_extension;
         bool heartbeat_extension_initialized;
     };
+}
 
-    ///////////////////////////////////////////////////////////////////////////
-    // serialization meta template
-    ///////////////////////////////////////////////////////////////////////////
-
-    template <typename value_type>
-    struct __declspec(novtable) serialize
-    {
-        void operator()(const value_type* value, IStream<byte>* stream) const
-        {
-        	static_assert(false, "No Tls::serialize defined for this type");
-        }
-    };
-
+namespace Basic
+{
     ///////////////////////////////////////////////////////////////////////////
     // memory range serialization
     ///////////////////////////////////////////////////////////////////////////
@@ -835,16 +837,16 @@ namespace Tls
     };
 
     template <> struct __declspec(novtable) serialize<byte> : public serialize_memory<byte> {};
-    template <> struct __declspec(novtable) serialize<CompressionMethod> : public serialize_memory<CompressionMethod> {};
-    template <> struct __declspec(novtable) serialize<ContentType> : public serialize_memory<ContentType> {};
-    template <> struct __declspec(novtable) serialize<AlertLevel> : public serialize_memory<AlertLevel> {};
-    template <> struct __declspec(novtable) serialize<AlertDescription> : public serialize_memory<AlertDescription> {};
-    template <> struct __declspec(novtable) serialize<HeartbeatMode> : public serialize_memory<HeartbeatMode> {};
-    template <> struct __declspec(novtable) serialize<HandshakeType> : public serialize_memory<HandshakeType> {};
-    template <> struct __declspec(novtable) serialize<HeartbeatMessageType> : public serialize_memory<HeartbeatMessageType> {};
-    template <> struct __declspec(novtable) serialize<NameType> : public serialize_memory<NameType> {};
-    template <> struct __declspec(novtable) serialize<SignatureAlgorithm> : public serialize_memory<SignatureAlgorithm> {};
-    template <> struct __declspec(novtable) serialize<HashAlgorithm> : public serialize_memory<HashAlgorithm> {};
+    template <> struct __declspec(novtable) serialize<Tls::CompressionMethod> : public serialize_memory<Tls::CompressionMethod> {};
+    template <> struct __declspec(novtable) serialize<Tls::ContentType> : public serialize_memory<Tls::ContentType> {};
+    template <> struct __declspec(novtable) serialize<Tls::AlertLevel> : public serialize_memory<Tls::AlertLevel> {};
+    template <> struct __declspec(novtable) serialize<Tls::AlertDescription> : public serialize_memory<Tls::AlertDescription> {};
+    template <> struct __declspec(novtable) serialize<Tls::HeartbeatMode> : public serialize_memory<Tls::HeartbeatMode> {};
+    template <> struct __declspec(novtable) serialize<Tls::HandshakeType> : public serialize_memory<Tls::HandshakeType> {};
+    template <> struct __declspec(novtable) serialize<Tls::HeartbeatMessageType> : public serialize_memory<Tls::HeartbeatMessageType> {};
+    template <> struct __declspec(novtable) serialize<Tls::NameType> : public serialize_memory<Tls::NameType> {};
+    template <> struct __declspec(novtable) serialize<Tls::SignatureAlgorithm> : public serialize_memory<Tls::SignatureAlgorithm> {};
+    template <> struct __declspec(novtable) serialize<Tls::HashAlgorithm> : public serialize_memory<Tls::HashAlgorithm> {};
 
     ///////////////////////////////////////////////////////////////////////////
     // array serialization
@@ -885,52 +887,6 @@ namespace Tls
     };
 
     ///////////////////////////////////////////////////////////////////////////
-    // number serialization
-    ///////////////////////////////////////////////////////////////////////////
-
-    template <typename value_type, int encoded_length = sizeof(value_type)>
-    struct __declspec(novtable) serialize_number
-    {
-        void operator()(const value_type* value, IStream<byte>* stream) const
-        {
-            byte* value_bytes = (byte*)value;
-            int most_significant = sizeof(value_type) - 1;
-            int overflow = 0;
-
-            if (encoded_length < sizeof(value_type))
-            {
-                overflow = sizeof(value_type) - encoded_length;
-
-                for (int i = 0; i < overflow; i++)
-                {
-                    if (value_bytes[most_significant - i] != 0)
-                        throw FatalError("Tls::NumberFrame::write_to_stream overflow");
-                }
-            }
-            else
-            {
-                int padding = encoded_length - sizeof(value_type);
-
-                for (int i = 0; i < padding; i++)
-                {
-                    stream->write_element(0);
-                }
-            }
-
-            for (int i = overflow; i < sizeof(value_type); i++)
-            {
-                stream->write_element(value_bytes[most_significant - i]);
-            }
-        }
-    };
-
-    template <> struct __declspec(novtable) serialize<uint16> : public serialize_number<uint16> {};
-    template <> struct __declspec(novtable) serialize<uint32> : public serialize_number<uint32> {};
-    template <> struct __declspec(novtable) serialize<uint64> : public serialize_number<uint64> {};
-    template <> struct __declspec(novtable) serialize<ExtensionType> : public serialize_number<ExtensionType> {};
-    template <> struct __declspec(novtable) serialize<CipherSuite> : public serialize_number<CipherSuite> {};
-
-    ///////////////////////////////////////////////////////////////////////////
     // tls vector serialization
     ///////////////////////////////////////////////////////////////////////////
 
@@ -961,65 +917,19 @@ namespace Tls
         }
     };
 
-    template <> struct __declspec(novtable) serialize<CompressionMethods> : public serialize_vector<CompressionMethods> {};
-    template <> struct __declspec(novtable) serialize<CipherSuites> : public serialize_vector<CipherSuites> {};
-    template <> struct __declspec(novtable) serialize<ResponderID> : public serialize_vector<ResponderID> {};
-    template <> struct __declspec(novtable) serialize<ResponderIDList> : public serialize_vector<ResponderIDList> {};
-    template <> struct __declspec(novtable) serialize<Certificate> : public serialize_vector<Certificate> {};
-    template <> struct __declspec(novtable) serialize<Certificates> : public serialize_vector<Certificates> {};
-    template <> struct __declspec(novtable) serialize<SessionId> : public serialize_vector<SessionId> {};
-    template <> struct __declspec(novtable) serialize<RenegotiationInfo> : public serialize_vector<RenegotiationInfo> {};
-    template <> struct __declspec(novtable) serialize<Extensions> : public serialize_vector<Extensions> {};
-    template <> struct __declspec(novtable) serialize<EncryptedPreMasterSecret> : public serialize_vector<EncryptedPreMasterSecret> {};
-    template <> struct __declspec(novtable) serialize<SignatureAndHashAlgorithms> : public serialize_vector<SignatureAndHashAlgorithms> {};
-    template <> struct __declspec(novtable) serialize<ServerNameList> : public serialize_vector<ServerNameList> {};
-    template <> struct __declspec(novtable) serialize<EllipticCurveList> : public serialize_vector<EllipticCurveList> {};
-    template <> struct __declspec(novtable) serialize<ECPointFormatList> : public serialize_vector<ECPointFormatList> {};
-
-    ///////////////////////////////////////////////////////////////////////////
-    // serializer object
-    ///////////////////////////////////////////////////////////////////////////
-
-    template <typename value_type>
-    class Serializer : public IStreamWriter<byte>
-    {
-    private:
-        value_type* value;
-
-    public:
-        Serializer(value_type* value)
-        {
-            this->value = value;
-        }
-
-        virtual void IStreamWriter<byte>::write_to_stream(IStream<byte>* stream) const
-        {
-            serialize<value_type>()(value, stream);
-        }
-    };
-
-    ///////////////////////////////////////////////////////////////////////////
-    // deserialization meta template
-    ///////////////////////////////////////////////////////////////////////////
-
-    template <typename value_type>
-    struct __declspec(novtable) make_deserializer
-    {
-        void operator()(value_type* value, std::shared_ptr<IProcess>* deserializer) const
-        {
-        	static_assert(false, "No Tls::make_deserializer defined for this type");
-        }
-    };
-
-    template <typename value_type, typename frame_type>
-    struct __declspec(novtable) make_frame_deserializer
-    {
-        void operator()(value_type* value, std::shared_ptr<IProcess>* deserializer) const
-        {
-            std::shared_ptr<frame_type> frame = std::make_shared<frame_type>(value);
-            (*deserializer) = frame;
-        }
-    };
+    template <> struct __declspec(novtable) serialize<Tls::CompressionMethods> : public serialize_vector<Tls::CompressionMethods> {};
+    template <> struct __declspec(novtable) serialize<Tls::CipherSuites> : public serialize_vector<Tls::CipherSuites> {};
+    template <> struct __declspec(novtable) serialize<Tls::ResponderID> : public serialize_vector<Tls::ResponderID> {};
+    template <> struct __declspec(novtable) serialize<Tls::ResponderIDList> : public serialize_vector<Tls::ResponderIDList> {};
+    template <> struct __declspec(novtable) serialize<Tls::Certificate> : public serialize_vector<Tls::Certificate> {};
+    template <> struct __declspec(novtable) serialize<Tls::Certificates> : public serialize_vector<Tls::Certificates> {};
+    template <> struct __declspec(novtable) serialize<Tls::SessionId> : public serialize_vector<Tls::SessionId> {};
+    template <> struct __declspec(novtable) serialize<Tls::RenegotiationInfo> : public serialize_vector<Tls::RenegotiationInfo> {};
+    template <> struct __declspec(novtable) serialize<Tls::Extensions> : public serialize_vector<Tls::Extensions> {}; // also covers the synonym EncryptedPreMasterSecret
+    template <> struct __declspec(novtable) serialize<Tls::SignatureAndHashAlgorithms> : public serialize_vector<Tls::SignatureAndHashAlgorithms> {};
+    template <> struct __declspec(novtable) serialize<Tls::ServerNameList> : public serialize_vector<Tls::ServerNameList> {};
+    template <> struct __declspec(novtable) serialize<Tls::EllipticCurveList> : public serialize_vector<Tls::EllipticCurveList> {};
+    template <> struct __declspec(novtable) serialize<Tls::ECPointFormatList> : public serialize_vector<Tls::ECPointFormatList> {};
 
     ///////////////////////////////////////////////////////////////////////////
     // memory range deserialization
@@ -1036,84 +946,12 @@ namespace Tls
     };
 
     template <> struct __declspec(novtable) make_deserializer<byte> : public make_memory_deserializer<byte> {};
-    template <> struct __declspec(novtable) make_deserializer<CompressionMethod> : public make_memory_deserializer<CompressionMethod> {};
-    template <> struct __declspec(novtable) make_deserializer<ECPointFormat> : public make_memory_deserializer<ECPointFormat> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::CompressionMethod> : public make_memory_deserializer<Tls::CompressionMethod> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::ECPointFormat> : public make_memory_deserializer<Tls::ECPointFormat> {};
+}
 
-    ///////////////////////////////////////////////////////////////////////////
-    // number deserialization
-    ///////////////////////////////////////////////////////////////////////////
-
-    template <typename value_type, int encoded_length = sizeof(value_type)>
-    class NumberFrame : public Frame
-    {
-    private:
-        enum State
-        {
-            start_state = Start_State,
-            receiving_state,
-            done_state = Succeeded_State,
-        };
-
-        uint32 received;
-        value_type* value;
-
-    public:
-        NumberFrame(value_type* value)
-        {
-            this->received = 0;
-            this->value = value;
-        }
-
-        void reset()
-        {
-            __super::reset();
-            this->received = 0;
-        }
-
-        virtual EventResult IProcess::consider_event(IEvent* event)
-        {
-            switch (get_state())
-            {
-            case State::start_state:
-                ZeroMemory(this->value, sizeof(value_type));
-                switch_to_state(State::receiving_state);
-                break;
-
-            case State::receiving_state:
-                {
-                    byte b;
-                    EventResult result = Event::ReadNext(event, &b);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
-
-                    byte* value_bytes = reinterpret_cast<byte*>(this->value);
-                    int index = encoded_length - this->received - 1;
-                    value_bytes[index] = b;
-
-                    this->received++;
-
-                    if (this->received == encoded_length)
-                        switch_to_state(State::done_state);
-                }
-                break;
-
-            default:
-                throw FatalError("Tls::NumberFrame::handle_event unexpected state");
-            }
-
-            return EventResult::event_result_continue;
-        }
-    };
-
-    template <typename value_type, int encoded_length = sizeof(value_type)>
-    struct __declspec(novtable) make_number_deserializer : public make_frame_deserializer<value_type, NumberFrame<value_type, encoded_length> > {};
-
-    template <> struct __declspec(novtable) make_deserializer<uint16> : public make_number_deserializer<uint16> {};
-    template <> struct __declspec(novtable) make_deserializer<uint32> : public make_number_deserializer<uint32> {};
-    template <> struct __declspec(novtable) make_deserializer<uint64> : public make_number_deserializer<uint64> {};
-    template <> struct __declspec(novtable) make_deserializer<CipherSuite> : public make_number_deserializer<CipherSuite> {};
-    template <> struct __declspec(novtable) make_deserializer<NamedCurve> : public make_number_deserializer<NamedCurve> {};
-
+namespace Tls
+{
     ///////////////////////////////////////////////////////////////////////////
     // tls vector deserialization
     ///////////////////////////////////////////////////////////////////////////
@@ -1240,22 +1078,24 @@ namespace Tls
             return EventResult::event_result_continue;
         }
     };
+}
 
+namespace Basic
+{
     template <typename vector_type>
-    struct __declspec(novtable) make_vector_deserializer : public make_frame_deserializer<vector_type, VectorFrame<vector_type> > {};
+    struct __declspec(novtable) make_vector_deserializer : public make_frame_deserializer<vector_type, Tls::VectorFrame<vector_type> > {};
 
-    template <> struct __declspec(novtable) make_deserializer<CompressionMethods> : public make_vector_deserializer<CompressionMethods> {};
-    template <> struct __declspec(novtable) make_deserializer<CipherSuites> : public make_vector_deserializer<CipherSuites> {};
-    template <> struct __declspec(novtable) make_deserializer<ResponderID> : public make_vector_deserializer<ResponderID> {};
-    template <> struct __declspec(novtable) make_deserializer<ResponderIDList> : public make_vector_deserializer<ResponderIDList> {};
-    template <> struct __declspec(novtable) make_deserializer<Certificate> : public make_vector_deserializer<Certificate> {};
-    template <> struct __declspec(novtable) make_deserializer<Certificates> : public make_vector_deserializer<Certificates> {};
-    template <> struct __declspec(novtable) make_deserializer<SessionId> : public make_vector_deserializer<SessionId> {};
-    template <> struct __declspec(novtable) make_deserializer<RenegotiationInfo> : public make_vector_deserializer<RenegotiationInfo> {};
-    template <> struct __declspec(novtable) make_deserializer<Extensions> : public make_vector_deserializer<Extensions> {};
-    template <> struct __declspec(novtable) make_deserializer<EncryptedPreMasterSecret> : public make_vector_deserializer<EncryptedPreMasterSecret> {};
-    template <> struct __declspec(novtable) make_deserializer<SignatureAndHashAlgorithms> : public make_vector_deserializer<SignatureAndHashAlgorithms> {};
-    template <> struct __declspec(novtable) make_deserializer<ServerNameList> : public make_vector_deserializer<ServerNameList> {};
-    template <> struct __declspec(novtable) make_deserializer<EllipticCurveList> : public make_vector_deserializer<EllipticCurveList> {};
-    template <> struct __declspec(novtable) make_deserializer<ECPointFormatList> : public make_vector_deserializer<ECPointFormatList> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::CompressionMethods> : public make_vector_deserializer<Tls::CompressionMethods> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::CipherSuites> : public make_vector_deserializer<Tls::CipherSuites> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::ResponderID> : public make_vector_deserializer<Tls::ResponderID> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::ResponderIDList> : public make_vector_deserializer<Tls::ResponderIDList> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::Certificate> : public make_vector_deserializer<Tls::Certificate> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::Certificates> : public make_vector_deserializer<Tls::Certificates> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::SessionId> : public make_vector_deserializer<Tls::SessionId> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::RenegotiationInfo> : public make_vector_deserializer<Tls::RenegotiationInfo> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::Extensions> : public make_vector_deserializer<Tls::Extensions> {}; // also covers the synonym EncryptedPreMasterSecret
+    template <> struct __declspec(novtable) make_deserializer<Tls::SignatureAndHashAlgorithms> : public make_vector_deserializer<Tls::SignatureAndHashAlgorithms> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::ServerNameList> : public make_vector_deserializer<Tls::ServerNameList> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::EllipticCurveList> : public make_vector_deserializer<Tls::EllipticCurveList> {};
+    template <> struct __declspec(novtable) make_deserializer<Tls::ECPointFormatList> : public make_vector_deserializer<Tls::ECPointFormatList> {};
 }

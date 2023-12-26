@@ -38,16 +38,19 @@ namespace Tls
 
     public:
         HeartbeatMessageFrame(HeartbeatMessage* heartbeat_message);
-        
+
         void set_plaintext_length(uint32 plaintext_length);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<HeartbeatMessage>
+    struct __declspec(novtable) serialize<Tls::HeartbeatMessage>
     {
-        void operator()(const HeartbeatMessage* value, IStream<byte>* stream) const
+        void operator()(const Tls::HeartbeatMessage* value, IStream<byte>* stream) const
         {
-            serialize<HeartbeatMessageType>()(&value->type, stream);
+            serialize<Tls::HeartbeatMessageType>()(&value->type, stream);
             serialize<uint16>()(&value->payload_length, stream);
             value->payload.write_to_stream(stream);
             value->padding.write_to_stream(stream);

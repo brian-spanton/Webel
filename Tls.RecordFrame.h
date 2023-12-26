@@ -39,14 +39,17 @@ namespace Tls
 
         void reset();
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<Record>
+    struct __declspec(novtable) serialize<Tls::Record>
     {
-        void operator()(const Record* value, IStream<byte>* stream) const
+        void operator()(const Tls::Record* value, IStream<byte>* stream) const
         {
-            serialize<ContentType>()(&value->type, stream);
-            serialize<ProtocolVersion>()(&value->version, stream);
+            serialize<Tls::ContentType>()(&value->type, stream);
+            serialize<Tls::ProtocolVersion>()(&value->version, stream);
             serialize<uint16>()(&value->length, stream);
             value->fragment->write_to_stream(stream);
         }

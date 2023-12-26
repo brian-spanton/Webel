@@ -31,17 +31,20 @@ namespace Tls
     public:
         SignatureAndHashAlgorithmFrame(SignatureAndHashAlgorithm* signature_and_hash_algorithm);
     };
+}
 
+namespace Basic
+{
     template <>
-    struct __declspec(novtable) serialize<SignatureAndHashAlgorithm>
+    struct __declspec(novtable) serialize<Tls::SignatureAndHashAlgorithm>
     {
-        void operator()(const SignatureAndHashAlgorithm* value, IStream<byte>* stream) const
+        void operator()(const Tls::SignatureAndHashAlgorithm* value, IStream<byte>* stream) const
         {
-            serialize<SignatureAlgorithm>()(&value->signature, stream);
-            serialize<HashAlgorithm>()(&value->hash, stream);
+            serialize<Tls::SignatureAlgorithm>()(&value->signature, stream);
+            serialize<Tls::HashAlgorithm>()(&value->hash, stream);
         }
     };
 
     template <>
-    struct __declspec(novtable) make_deserializer<SignatureAndHashAlgorithm> : public make_frame_deserializer<SignatureAndHashAlgorithm, SignatureAndHashAlgorithmFrame> {};
+    struct __declspec(novtable) make_deserializer<Tls::SignatureAndHashAlgorithm> : public make_frame_deserializer<Tls::SignatureAndHashAlgorithm, Tls::SignatureAndHashAlgorithmFrame> {};
 }
