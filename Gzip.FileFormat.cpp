@@ -18,13 +18,7 @@ namespace Gzip
 
         switch (get_state())
         {
-        case new_member_state:
-            if (event->get_type() == EventType::element_stream_ending_event)
-            {
-                switch_to_state(done_state);
-                return event_result_yield;
-            }
-
+        case State::new_member_state:
             this->member = std::make_shared<MemberHeader>();
             this->member->uncompressed = this->uncompressed;
             this->members.push_back(this->member);
@@ -34,12 +28,25 @@ namespace Gzip
             switch_to_state(member_frame_state);
             break;
 
-        case member_frame_state:
+        case State::member_frame_state:
             result = delegate_event_change_state_on_fail(this->member_frame.get(), event, State::member_frame_failed);
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            switch_to_state(new_member_state);
+            switch_to_state(State::next_member_state);
+            break;
+
+        case State::next_member_state:
+            if (event->get_type() == EventType::element_stream_ending_event)
+            {
+                switch_to_state(done_state);
+                return event_result_yield;
+            }
+            else
+            {
+                // $$ NYI multi-member gzip files
+                switch_to_state(State::next_member_failed);
+            }
             break;
 
         default:

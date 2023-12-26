@@ -17,9 +17,11 @@ namespace Gzip
         {
             new_member_state = Start_State,
             member_frame_state,
+            next_member_state,
 
             done_state = Succeeded_State,
             member_frame_failed,
+            next_member_failed,
         };
 
         std::vector<std::shared_ptr<MemberHeader> > members;

@@ -25,9 +25,9 @@ namespace Basic
         std::shared_ptr<IStream<element_type> > destination;
 
     public:
-        void Initialize(std::shared_ptr<IStream<element_type> > destination, int expected)
+        void reset(std::shared_ptr<IStream<element_type> > destination, int expected)
         {
-            __super::Initialize();
+            __super::reset();
             this->destination = destination;
             this->expected = expected;
             this->received = 0;
