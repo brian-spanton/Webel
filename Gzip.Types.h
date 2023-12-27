@@ -74,4 +74,74 @@ namespace Gzip
         String<Codepoint> original_file_name;
         String<Codepoint> file_comment;
     };
+
+    struct ExtraBits
+    {
+        byte length;
+        uint16 base;
+    };
+
+    template <typename value_type>
+    struct HuffmanAlphabet
+    {
+        std::shared_ptr<HuffmanAlphabet<value_type> > children[2];
+
+        value_type value;
+
+        template <typename length_type>
+        static std::shared_ptr<HuffmanAlphabet<value_type> > make_alphabet(byte max_length, uint16 count, std::vector<length_type>& lengths)
+        {
+            std::vector<byte> length_count;
+            length_count.insert(length_count.begin(), max_length + 1, 0);
+
+            for (uint16 i = 0; i < count; i++)
+            {
+                auto length = lengths[i];
+                if (length == 0)
+                    continue;
+
+                length_count[length]++;
+            }
+
+            std::vector<byte> next_code;
+            next_code.push_back(0);
+
+            byte code = 0;
+
+            for (byte length = 0; length < max_length; length++)
+            {
+                code = (code + length_count[length]) << 1;
+                next_code.push_back(code);
+            }
+
+            auto root = std::make_shared<HuffmanAlphabet<value_type> >();
+
+            for (value_type i = 0; i < count; i++)
+            {
+                byte length = lengths[i];
+                if (length == 0)
+                    continue;
+
+                byte code = next_code[length];
+                next_code[length]++;
+
+                auto current = root;
+
+                for (byte bit = 0; bit < length; bit++)
+                {
+                    auto next = current->children[code & 1];
+
+                    if (!current->children[code & 1])
+                        current->children[code & 1] = std::make_shared<HuffmanAlphabet<value_type> >();
+
+                    current = current->children[code & 1];
+                    code = (code >> 1);
+                }
+
+                current->value = i;
+            }
+
+            return root;
+        }
+    };
 }

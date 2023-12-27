@@ -19,34 +19,29 @@ namespace Gzip
             start_state = Start_State,
             BFINAL_state,
             BTYPE_state,
-            block_state,
             LEN_state,
             NLEN_state,
             uncompressed_data_state,
             fixed_block_state,
-            dynamic_block_state,
             HLIT_state,
             HDIST_state,
             HCLEN_state,
             HCLEN_lengths_state,
-            HLIT_lengths_state,
-            HDIST_lengths_state,
-            compressed_data_state,
+            lengths_state,
+            lengths_extra_bits_state,
+            lengths_after_extra_bits_state,
+            length_code_state,
+            extra_bits_state,
+            after_extra_length_bits_state,
+            distance_code_state,
+            after_extra_distance_bits_state,
             done_state = Succeeded_State,
             BTYPE_failed,
             uncompressed_failed,
             LEN_failed,
             NLEN_failed,
             uncompressed_data_failed,
-            fixed_block_failed,
-            dynamic_block_failed,
-            HLIT_failed,
-            HDIST_failed,
-            HCLEN_failed,
-            HCLEN_lengths_failed,
-            HLIT_lengths_failed,
-            HDIST_lengths_failed,
-            compressed_data_failed,
+            lengths_failed,
         };
 
         enum BlockType : byte
@@ -57,10 +52,10 @@ namespace Gzip
             reserved = 3,
         };
 
-        std::shared_ptr<IStream<byte> > uncompressed;
+        std::shared_ptr<IStream<byte> > output_stream;
 
-        uint16 bits = 0;
-        byte count = 0;
+        uint32 buffered_bits = 0;
+        byte buffered_bits_length = 0;
 
         bool BFINAL = false;
         uint16 LEN;
@@ -69,19 +64,36 @@ namespace Gzip
         byte HDIST;
         byte HCLEN;
 
-        StreamFrame<byte> uncompressed_frame;
+        StreamFrame<byte> uncompressed_data_frame;
         NumberFrame<decltype(LEN)> LEN_frame;
         NumberFrame<decltype(NLEN)> NLEN_frame;
-        byte HCLEN_lengths[19];
         byte HCLEN_count;
+        ExtraBits* extra_bits_parameters;
+        State state_after_extra_bits;
 
-        static uint16 masks[8];
+        std::shared_ptr<HuffmanAlphabet<byte> > HCLEN_root;
+        std::shared_ptr<HuffmanAlphabet<byte> > HCLEN_current;
+        std::shared_ptr<HuffmanAlphabet<uint16> > HLIT_root;
+        std::shared_ptr<HuffmanAlphabet<uint16> > HLIT_current;
+        std::shared_ptr<HuffmanAlphabet<byte> > HDIST_root;
+        std::shared_ptr<HuffmanAlphabet<byte> > HDIST_current;
+        std::vector<byte> dynamic_code_lengths;
+        uint16 extra_bits;
+        uint16 value_with_extra_bits;
+        uint16 length;
+        uint16 distance;
+
+        static uint32 masks[16];
         static byte HCLEN_index[19];
+        static ExtraBits clen_extra_bits_parameters[18 - 16 + 1];
+        static ExtraBits lit_extra_bits_parameters[285 - 257 + 1];
+        static ExtraBits dist_extra_bits_parameters[30];
 
+        EventResult read_next(IEvent* event, uint16* output, byte count);
         EventResult read_next(IEvent* event, byte* output, byte count);
 
     public:
-        Deflate(std::shared_ptr<IStream<byte> > uncompressed);
+        Deflate(std::shared_ptr<IStream<byte> > output_stream);
 
         virtual EventResult IProcess::consider_event(IEvent* event);
     };

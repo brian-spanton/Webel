@@ -99,7 +99,6 @@
     <ClInclude Include="Basic.NumberFrame.h" />
     <ClInclude Include="Gzip.Deflate.h" />
     <ClInclude Include="Gzip.FileFormat.h" />
-    <ClInclude Include="Gzip.HuffmanAlphabet.h" />
     <ClInclude Include="Gzip.MemberFrame.h" />
     <ClInclude Include="Basic.ILog.h" />
     <ClInclude Include="Basic.LogStream.h" />
@@ -259,7 +258,6 @@
     <ClCompile Include="Basic.DebugLog.cpp" />
     <ClCompile Include="Gzip.Deflate.cpp" />
     <ClCompile Include="Gzip.FileFormat.cpp" />
-    <ClCompile Include="Gzip.HuffmanAlphabet.cpp" />
     <ClCompile Include="Gzip.MemberFrame.cpp" />
     <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />

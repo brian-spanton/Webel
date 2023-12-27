@@ -475,9 +475,6 @@
     <ClInclude Include="Gzip.Deflate.h">
       <Filter>Gzip</Filter>
     </ClInclude>
-    <ClInclude Include="Gzip.HuffmanAlphabet.h">
-      <Filter>Gzip</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -865,9 +862,6 @@
       <Filter>Gzip</Filter>
     </ClCompile>
     <ClCompile Include="Gzip.Deflate.cpp">
-      <Filter>Gzip</Filter>
-    </ClCompile>
-    <ClCompile Include="Gzip.HuffmanAlphabet.cpp">
       <Filter>Gzip</Filter>
     </ClCompile>
   </ItemGroup>

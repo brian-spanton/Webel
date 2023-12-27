@@ -7,11 +7,4 @@
 namespace Gzip
 {
     using namespace Basic;
-
-    class HuffmanAlphabet
-    {
-    private:
-
-    public:
-    };
 }
