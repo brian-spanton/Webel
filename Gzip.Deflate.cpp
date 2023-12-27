@@ -184,6 +184,36 @@ namespace Gzip
                 {
                     // $$$ construct HCLEN alphabet
 
+                    const byte max_bits = 7;
+
+                    byte length_count[max_bits + 1] = { 0 };
+
+                    for (byte i = 0; i < _countof(this->HCLEN_lengths); i++)
+                        length_count[this->HCLEN_lengths[i]]++;
+
+                    length_count[0] = 0;
+
+                    byte next_code[max_bits + 1] = { 0 };
+                    byte code = 0;
+
+                    for (byte bits = 1; bits <= max_bits; bits++)
+                    {
+                        code = (code + length_count[bits - 1]) << 1;
+                        next_code[bits] = code;
+                    }
+
+                    byte codes[_countof(this->HCLEN_lengths)] = { 0 };
+
+                    for (byte i = 0; i < _countof(this->HCLEN_lengths); i++)
+                    {
+                        byte length = this->HCLEN_lengths[i];
+                        if (length == 0)
+                            continue;
+
+                        codes[i] = next_code[length];
+                        next_code[length]++;
+                    }
+
                     switch_to_state(HLIT_lengths_state);
                     break;
                 }
