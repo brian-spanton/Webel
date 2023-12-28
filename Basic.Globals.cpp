@@ -201,19 +201,11 @@ namespace Basic
         return this->completion_queue->QueueJob(job);
     }
 
-    void Globals::BindToCompletionQueue(FileLog* log_file)
+    void Globals::BindToCompletionQueue(HANDLE handle)
     {
         if (this->completion_queue.get() == 0)
             throw FatalError("no error handler set");
 
-        return this->completion_queue->BindToCompletionQueue(log_file);
-    }
-
-    void Globals::BindToCompletionQueue(Socket* socket)
-    {
-        if (this->completion_queue.get() == 0)
-            throw FatalError("no error handler set");
-
-        return this->completion_queue->BindToCompletionQueue(socket);
+        return this->completion_queue->BindToCompletionQueue(handle);
     }
 }

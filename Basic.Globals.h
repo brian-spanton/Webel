@@ -76,8 +76,7 @@ namespace Basic
         virtual Basic::IStream<Codepoint>* LogStream();
         virtual Basic::TextWriter* DebugWriter();
 
-        virtual void ICompletionQueue::BindToCompletionQueue(Socket* socket);
-        virtual void ICompletionQueue::BindToCompletionQueue(FileLog* log_file);
+        virtual void ICompletionQueue::BindToCompletionQueue(HANDLE handle);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);
     };
 

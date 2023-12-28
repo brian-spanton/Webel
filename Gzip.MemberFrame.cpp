@@ -59,7 +59,7 @@ namespace Gzip
 
             if (this->member->CM == CompressionMethod::cm_deflate)
             {
-                this->compressed_blocks_frame = std::make_shared<Deflate>(this->member->uncompressed);
+                this->compressed_blocks_frame = std::make_shared<Deflate>(this->member->output);
                 switch_to_state(State::FLG_state);
             }
             else

@@ -31,7 +31,7 @@ namespace Basic
         if (this->file == INVALID_HANDLE_VALUE)
             throw FatalError("CreateFileA", GetLastError());
 
-        Basic::globals->BindToCompletionQueue(this);
+        Basic::globals->BindToCompletionQueue(this->file);
 
         LARGE_INTEGER size;
         BOOL success = GetFileSizeEx(this->file, &size);

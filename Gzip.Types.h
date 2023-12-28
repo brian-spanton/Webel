@@ -67,7 +67,7 @@ namespace Gzip
         OperatingSystems OS;
         byte XLEN;
         uint16 CRC16;
-        std::shared_ptr<IStream<byte> > uncompressed;
+        std::shared_ptr<IStream<byte> > output;
         uint32 CRC32;
         uint32 ISIZE;
         std::vector<Subfield> extra_field;
@@ -86,11 +86,22 @@ namespace Gzip
     {
         std::shared_ptr<HuffmanAlphabet<value_type> > children[2];
 
-        value_type value;
+        value_type symbol;
+
+        bool is_leaf()
+        {
+            if (!children[0] != !children[1])
+                throw FatalError("bad huffman tree with non-leaf unbalanced node");
+
+            return !children[0] && !children[1];
+        }
 
         template <typename length_type>
         static void make_alphabet(byte max_length, uint16 count, std::vector<length_type>& lengths, std::shared_ptr<HuffmanAlphabet<value_type> >* alphabet)
         {
+            if (max_length > 15)
+                throw FatalError("Gzip::HuffmanAlphabet::make_alphabet max_length > 15");
+
             std::vector<byte> length_count;
             length_count.insert(length_count.end(), max_length + 1, 0);
 
@@ -103,10 +114,10 @@ namespace Gzip
                 length_count[length]++;
             }
 
-            std::vector<byte> next_code;
+            std::vector<uint16> next_code;
             next_code.insert(next_code.end(), max_length + 1, 0);
 
-            byte code = 0;
+            uint16 code = 0;
             for (byte length = 1; length <= max_length; length++)
             {
                 code = (code + length_count[length - 1]) << 1;
@@ -115,27 +126,29 @@ namespace Gzip
 
             auto root = std::make_shared<HuffmanAlphabet<value_type> >();
 
-            for (uint16 i = 0; i < count; i++)
+            for (uint16 symbol = 0; symbol < count; symbol++)
             {
-                auto length = lengths[i];
+                auto length = lengths[symbol];
                 if (length == 0)
                     continue;
 
-                byte code = next_code[length];
+                auto code = next_code[length];
                 next_code[length]++;
 
                 auto current = root;
 
-                for (byte bit = 0; bit < length; bit++)
+                for (byte bit_index = 0; bit_index < length; bit_index++)
                 {
-                    if (!current->children[code & 1])
-                        current->children[code & 1] = std::make_shared<HuffmanAlphabet<value_type> >();
+                    byte shift = length - bit_index - 1;
+                    byte bit = (code >> shift) & 1;
 
-                    current = current->children[code & 1];
-                    code = (code >> 1);
+                    if (!current->children[bit])
+                        current->children[bit] = std::make_shared<HuffmanAlphabet<value_type> >();
+
+                    current = current->children[bit];
                 }
 
-                current->value = (value_type)i;
+                current->symbol = (value_type)symbol;
             }
 
             (*alphabet) = root;

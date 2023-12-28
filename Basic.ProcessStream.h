@@ -11,9 +11,7 @@ namespace Basic
 {
     // the inverse of a StreamFrame, the point of ProcessStream is to present any IProcess as an IStream.
     // the only IProcess types are Frame and MemoryRange, and Memory range natively implements IStream.
-    // this it really only serves to make a Frame compatible with IStream inputs.
-    // $ should this class just be merge with Frame?
-    // $ and if so, should IProcess be merged with IStream?
+    // thus it serves to make a Frame compatible with IStream inputs.
     template <class element_type>
     class ProcessStream : public ArrayStream<element_type>
     {

@@ -56,6 +56,9 @@ namespace Service
         bool CreateSelfSignCert();
         bool ExtractPrivateKey();
 
+        bool TestHuffman();
+        bool TestGzip();
+
         virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:
@@ -141,8 +144,7 @@ namespace Service
         virtual Basic::IStream<Codepoint>* IErrorHandler::LogStream();
         virtual Basic::TextWriter* IErrorHandler::DebugWriter();
 
-        virtual void ICompletionQueue::BindToCompletionQueue(Socket* socket);
-        virtual void ICompletionQueue::BindToCompletionQueue(FileLog* log_file);
+        virtual void ICompletionQueue::BindToCompletionQueue(HANDLE handle);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);
 
         virtual bool ICertificate::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);

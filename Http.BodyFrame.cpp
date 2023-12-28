@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Basic.IgnoreFrame.h"
 #include "Basic.ProcessStream.h"
+#include "Basic.FileStream.h"
 #include "Gzip.FileFormat.h"
 #include "Http.BodyFrame.h"
 #include "Http.Globals.h"
@@ -46,8 +47,12 @@ namespace Http
         {
             if (equals<UnicodeString, false>(contentEncoding.get(), Http::globals->gzip.get()))
             {
-                auto content_encoder_frame = std::make_shared<Gzip::FileFormat>(decoded_content_stream);
-                decoded_content_stream = std::make_shared<ProcessStream<byte> >(content_encoder_frame);
+                auto file_stream = std::make_shared<FileStream>();
+                file_stream->Initialize("c:\\users\\brian\\amazon.zip");
+                decoded_content_stream = file_stream;
+
+                //auto content_encoder_frame = std::make_shared<Gzip::FileFormat>(decoded_content_stream);
+                //decoded_content_stream = std::make_shared<ProcessStream<byte> >(content_encoder_frame);
             }
             else if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
             {

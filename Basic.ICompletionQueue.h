@@ -10,8 +10,7 @@ namespace Basic
 {
     __interface ICompletionQueue
     {
-        void BindToCompletionQueue(Socket* socket);
-        void BindToCompletionQueue(FileLog* log_file);
+        void BindToCompletionQueue(HANDLE handle);
         void QueueJob(std::shared_ptr<Job> job);
     };
 }

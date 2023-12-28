@@ -5,8 +5,8 @@
 
 namespace Gzip
 {
-    FileFormat::FileFormat(std::shared_ptr<IStream<byte> > uncompressed) :
-        uncompressed(uncompressed)
+    FileFormat::FileFormat(std::shared_ptr<IStream<byte> > first_output) :
+        first_output(first_output)
     {
     }
 
@@ -20,7 +20,7 @@ namespace Gzip
         {
         case State::new_member_state:
             this->member = std::make_shared<MemberHeader>();
-            this->member->uncompressed = this->uncompressed;
+            this->member->output = this->first_output;
             this->members.push_back(this->member);
 
             this->member_frame = std::make_shared<MemberFrame>(this->member.get());

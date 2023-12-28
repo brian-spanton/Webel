@@ -92,12 +92,28 @@ namespace Gzip
         LEN_frame(&this->LEN),
         NLEN_frame(&this->NLEN)
     {
+        if (!Deflate::HLIT_fixed)
+        {
+            std::vector<byte> lit_code_lengths;
+            lit_code_lengths.insert(lit_code_lengths.end(), 143 - 000 + 1, 8);
+            lit_code_lengths.insert(lit_code_lengths.end(), 255 - 144 + 1, 9);
+            lit_code_lengths.insert(lit_code_lengths.end(), 279 - 256 + 1, 7);
+            lit_code_lengths.insert(lit_code_lengths.end(), 287 - 280 + 1, 8);
+            HuffmanAlphabet<uint16>::make_alphabet(9, (uint16)lit_code_lengths.size(), lit_code_lengths, &Deflate::HLIT_fixed);
+
+            std::vector<byte> dist_code_lengths;
+            dist_code_lengths.insert(dist_code_lengths.end(), 32, 5);
+            HuffmanAlphabet<byte>::make_alphabet(5, (uint16)dist_code_lengths.size(), dist_code_lengths, &Deflate::HDIST_fixed);
+        }
+
         this->look_back = std::make_shared<String<byte> >();
+
         auto splitter = std::make_shared<SplitStream<byte> >();
-        splitter->outputs.push_back(output_stream);
         splitter->outputs.push_back(this->look_back);
-        auto decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
-        splitter->outputs.push_back(decoder);
+
+        if (output_stream)
+            splitter->outputs.push_back(output_stream);
+
         this->output_stream = splitter;
     }
 
@@ -186,20 +202,6 @@ namespace Gzip
 
                 case BlockType::fixed:
                     {
-                        if (!Deflate::HLIT_fixed)
-                        {
-                            std::vector<byte> lit_code_lengths;
-                            lit_code_lengths.insert(lit_code_lengths.end(), 32, 5);
-                            HuffmanAlphabet<uint16>::make_alphabet(5, (uint16)lit_code_lengths.size(), lit_code_lengths, &Deflate::HLIT_fixed);
-
-                            std::vector<byte> dist_code_lengths;
-                            dist_code_lengths.insert(dist_code_lengths.end(), 143 - 000 + 1, 8);
-                            dist_code_lengths.insert(dist_code_lengths.end(), 255 - 144 + 1, 9);
-                            dist_code_lengths.insert(dist_code_lengths.end(), 279 - 256 + 1, 7);
-                            dist_code_lengths.insert(dist_code_lengths.end(), 287 - 280 + 1, 8);
-                            HuffmanAlphabet<byte>::make_alphabet(9, (uint16)dist_code_lengths.size(), dist_code_lengths, &Deflate::HDIST_fixed);
-                        }
-
                         this->HLIT_root = Deflate::HLIT_fixed;
                         this->HLIT_current = this->HLIT_root;
 
@@ -282,7 +284,7 @@ namespace Gzip
 
             this->HCLEN = (byte)b + 4;
             this->HCLEN_count = 0;
-            this->dynamic_code_lengths.insert(this->dynamic_code_lengths.end(), 19, 0);
+            this->dynamic_code_lengths.insert(this->dynamic_code_lengths.end(), _countof(Deflate::HCLEN_index), 0);
 
             switch_to_state(HCLEN_lengths_state);
             break;
@@ -291,7 +293,7 @@ namespace Gzip
             {
                 if (this->HCLEN == this->HCLEN_count)
                 {
-                    HuffmanAlphabet<byte>::make_alphabet(7, 19, this->dynamic_code_lengths, &this->HCLEN_root);
+                    HuffmanAlphabet<byte>::make_alphabet(7, (uint16)this->dynamic_code_lengths.size(), this->dynamic_code_lengths, &this->HCLEN_root);
                     this->HCLEN_current = this->HCLEN_root;
                     this->dynamic_code_lengths.clear();
 
@@ -315,6 +317,7 @@ namespace Gzip
 
                 if (this->dynamic_code_lengths.size() > expected)
                 {
+                    HandleError("bad dynamic lengths");
                     switch_to_state(State::lengths_failed);
                     break;
                 }
@@ -345,21 +348,25 @@ namespace Gzip
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
-                if (this->HCLEN_current->children[b])
+                this->HCLEN_current = this->HCLEN_current->children[b];
+                if (!this->HCLEN_current)
                 {
-                    this->HCLEN_current = this->HCLEN_current->children[b];
+                    HandleError("bad code length (HCLEN) huffman tree");
+                    switch_to_state(State::lengths_failed);
+                    break;
                 }
-                else
+
+                if (this->HCLEN_current->is_leaf())
                 {
-                    byte value = this->HCLEN_current->value;
-                    if (value < 16)
+                    auto symbol = this->HCLEN_current->symbol;
+                    if (symbol < 16)
                     {
-                        this->dynamic_code_lengths.push_back(value);
+                        this->dynamic_code_lengths.push_back(symbol);
                     }
                     else
                     {
-                        this->value_with_extra_bits = value;
-                        auto extra_bits_index = value - 16;
+                        this->symbol_with_extra_bits = symbol;
+                        auto extra_bits_index = symbol - 16;
                         this->extra_bits_parameters = Deflate::clen_extra_bits_parameters + extra_bits_index;
                         this->state_after_extra_bits = State::lengths_after_extra_bits_state;
                         this->extra_bits = 0;
@@ -373,29 +380,34 @@ namespace Gzip
 
         case State::extra_bits_state:
             {
-                //if (this->extra_bits_count == this->extra_bits_parameters->length)
-                //{
-                //    this->extra_bits_count = 0;
-                //    this->extra_bits += this->extra_bits_parameters->base;
-                //    switch_to_state(this->state_after_extra_bits);
-                //    break;
-                //}
+                if (false)
+                {
+                    if (this->extra_bits_count == this->extra_bits_parameters->length)
+                    {
+                        this->extra_bits_count = 0;
+                        this->extra_bits += this->extra_bits_parameters->base;
+                        switch_to_state(this->state_after_extra_bits);
+                        break;
+                    }
 
-                //byte b;
-                //EventResult result = read_next(event, &b, 1);
-                //if (result == event_result_yield)
-                //    return EventResult::event_result_yield;
+                    byte b;
+                    EventResult result = read_next(event, &b, 1);
+                    if (result == event_result_yield)
+                        return EventResult::event_result_yield;
 
-                //this->extra_bits = (this->extra_bits << 1) | b;
-                //this->extra_bits_count++;
+                    this->extra_bits = (this->extra_bits << 1) | b;
+                    this->extra_bits_count++;
+                }
+                else
+                {
+                    byte b;
+                    EventResult result = read_next(event, &b, this->extra_bits_parameters->length);
+                    if (result == event_result_yield)
+                        return EventResult::event_result_yield;
 
-                byte b;
-                EventResult result = read_next(event, &b, this->extra_bits_parameters->length);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
-
-                this->extra_bits = w + this->extra_bits_parameters->base;
-                switch_to_state(this->state_after_extra_bits);
+                    this->extra_bits = w + this->extra_bits_parameters->base;
+                    switch_to_state(this->state_after_extra_bits);
+                }
             }
             break;
 
@@ -404,7 +416,7 @@ namespace Gzip
                 byte b;
                 auto count = (size_t)this->extra_bits;
 
-                switch (this->value_with_extra_bits)
+                switch (this->symbol_with_extra_bits)
                 {
                 case 16:
                     b = this->dynamic_code_lengths.back();
@@ -429,20 +441,24 @@ namespace Gzip
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            if (this->HLIT_current->children[b])
+            this->HLIT_current = this->HLIT_current->children[b];
+            if (!this->HLIT_current)
             {
-                this->HLIT_current = this->HLIT_current->children[b];
+                HandleError("bad literal/length (HLIT) huffman tree");
+                switch_to_state(State::length_code_failed);
+                break;
             }
-            else
+
+            if (this->HLIT_current->is_leaf())
             {
-                auto value = this->HLIT_current->value;
+                auto symbol = this->HLIT_current->symbol;
                 this->HLIT_current = this->HLIT_root;
 
-                if (value < 256)
+                if (symbol < 256)
                 {
-                    this->output_stream->write_element((byte)value);
+                    this->output_stream->write_element((byte)symbol);
                 }
-                else if (value == 256)
+                else if (symbol == 256)
                 {
                     this->HCLEN_count = 0;
 
@@ -460,8 +476,8 @@ namespace Gzip
                 }
                 else
                 {
-                    this->value_with_extra_bits = value;
-                    auto extra_bits_index = value - 257;
+                    this->symbol_with_extra_bits = symbol;
+                    auto extra_bits_index = symbol - 257;
                     this->extra_bits_parameters = Deflate::lit_extra_bits_parameters + extra_bits_index;
                     this->state_after_extra_bits = State::after_extra_length_bits_state;
                     this->extra_bits = 0;
@@ -480,16 +496,20 @@ namespace Gzip
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            if (this->HDIST_current->children[b])
+            this->HDIST_current = this->HDIST_current->children[b];
+            if (!this->HDIST_current)
             {
-                this->HDIST_current = this->HDIST_current->children[b];
+                HandleError("bad distance (HDIST) huffman tree");
+                switch_to_state(State::distance_code_failed);
+                break;
             }
-            else
+
+            if (this->HDIST_current->is_leaf())
             {
-                auto value = this->HDIST_current->value;
+                auto symbol = this->HDIST_current->symbol;
                 this->HDIST_current = this->HDIST_root;
 
-                this->extra_bits_parameters = Deflate::dist_extra_bits_parameters + value;
+                this->extra_bits_parameters = Deflate::dist_extra_bits_parameters + symbol;
                 this->state_after_extra_bits = State::after_extra_distance_bits_state;
                 this->extra_bits = 0;
                 switch_to_state(State::extra_bits_state);

@@ -20,6 +20,8 @@
 #include "Service.HtmlNamedCharacterReferences.h"
 #include "Web.Globals.h"
 #include "Ftp.Globals.h"
+#include "Basic.ProcessStream.h"
+#include "Gzip.FileFormat.h"
 
 template <typename type>
 void make_immortal(type** pointer, std::shared_ptr<type>* ref)
@@ -190,6 +192,65 @@ namespace Service
 
         SetThreadCount(0); // 1 is good for debugging, 0 is good for perf (matches CPU count)
 
+        TestHuffman();
+        TestGzip();
+
+        return true;
+    }
+
+    bool Globals::TestHuffman()
+    {
+        std::shared_ptr<Gzip::HuffmanAlphabet<byte> > root;
+        std::vector<byte> lengths;
+        lengths.insert(lengths.end(), 5, 3);
+        lengths.insert(lengths.end(), 1, 2);
+        lengths.insert(lengths.end(), 2, 4);
+        Gzip::HuffmanAlphabet<byte>::make_alphabet(4, (uint16)lengths.size(), lengths, &root);
+        return true;
+    }
+
+    bool Globals::TestGzip()
+    {
+        // $$ should we close pfx_file? if we can do it now, pfx_file can be a local variable.
+        HANDLE file = ::CreateFileA(
+            "c:\\users\\brian\\amazon.zip",
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            0,
+            OPEN_EXISTING,
+            FILE_FLAG_OVERLAPPED,
+            0);
+        if (file == INVALID_HANDLE_VALUE)
+            return Basic::globals->HandleError("CreateFileA", GetLastError());
+
+        HANDLE result = CreateIoCompletionPort(file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
+        if (result == 0)
+            return Basic::globals->HandleError("CreateIoCompletionPort", GetLastError());
+
+        LARGE_INTEGER size;
+        bool success = (bool)GetFileSizeEx(file, &size);
+        if (!success)
+            return Basic::globals->HandleError("GetFileSizeEx", GetLastError());
+
+        if (size.HighPart > 0)
+            return Basic::globals->HandleError("GetFileSizeEx returned unexpectedly large size", 0);
+
+        std::shared_ptr<ByteString> data = std::make_shared<ByteString>();
+        data->resize(size.LowPart);
+
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), data);
+
+        success = (bool)ReadFile(file, data->address(), data->size(), 0, job.get());
+        if (!success)
+        {
+            DWORD error = GetLastError();
+            if (error != ERROR_IO_PENDING)
+            {
+                job->Internal = error;
+                Service::globals->QueueJob(job);
+            }
+        }
+
         return true;
     }
 
@@ -273,15 +334,22 @@ namespace Service
     {
         std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(context);
 
-        bool success = ParseCert(bytes.get(), count, error);
-        if (!success)
-        {
-            success = CreateSelfSignCert();
-            if (!success)
-            {
-                SendStopSignal();
-            }
-        }
+        auto console_decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
+        auto gzip = std::make_shared<Gzip::FileFormat>(console_decoder);
+        ProcessStream<byte>::write_elements_to_process(gzip, bytes->address(), count);
+
+        //bool success = ParseCert(bytes.get(), count, error);
+        //if (!success)
+        //{
+        //    success = CreateSelfSignCert();
+        //    if (!success)
+        //    {
+        //        SendStopSignal();
+        //    }
+        //}
+
+        //CloseHandle(this->pfx_file);
+        //this->pfx_file = INVALID_HANDLE_VALUE;
     }
 
     bool Globals::ExtractPrivateKey()
@@ -510,19 +578,8 @@ namespace Service
             throw Basic::FatalError("Globals::QueueJob PostQueuedCompletionStatus", GetLastError());
     }
 
-    void Globals::BindToCompletionQueue(FileLog* log_file)
+    void Globals::BindToCompletionQueue(HANDLE handle)
     {
-        HANDLE handle = log_file->file;
-
-        HANDLE result = CreateIoCompletionPort(handle, this->queue, 0, 0);
-        if (result == 0)
-            throw Basic::FatalError("CreateIoCompletionPort", GetLastError());
-    }
-
-    void Globals::BindToCompletionQueue(Socket* socket)
-    {
-        HANDLE handle = reinterpret_cast<HANDLE>(socket->socket);
-
         HANDLE result = CreateIoCompletionPort(handle, this->queue, 0, 0);
         if (result == 0)
             throw Basic::FatalError("CreateIoCompletionPort", GetLastError());

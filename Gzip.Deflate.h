@@ -42,6 +42,8 @@ namespace Gzip
             NLEN_failed,
             uncompressed_data_failed,
             lengths_failed,
+            length_code_failed,
+            distance_code_failed,
             after_extra_distance_bits_failed,
         };
 
@@ -82,7 +84,7 @@ namespace Gzip
         std::shared_ptr<HuffmanAlphabet<byte> > HDIST_current;
         std::vector<byte> dynamic_code_lengths;
 
-        uint16 value_with_extra_bits;
+        uint16 symbol_with_extra_bits;
         uint16 extra_bits = 0;
 
         uint16 length;

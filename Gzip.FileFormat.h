@@ -25,12 +25,12 @@ namespace Gzip
         };
 
         std::vector<std::shared_ptr<MemberHeader> > members;
-        std::shared_ptr<IStream<byte> > uncompressed;
+        std::shared_ptr<IStream<byte> > first_output;
         std::shared_ptr<MemberHeader> member;
         std::shared_ptr<MemberFrame> member_frame;
 
     public:
-        FileFormat(std::shared_ptr<IStream<byte> > uncompressed);
+        FileFormat(std::shared_ptr<IStream<byte> > first_output);
 
         virtual EventResult IProcess::consider_event(IEvent* event);
     };

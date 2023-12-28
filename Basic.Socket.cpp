@@ -17,7 +17,7 @@ namespace Basic
         if (this->socket == INVALID_SOCKET)
             throw Basic::FatalError("socket", WSAGetLastError());
 
-        Basic::globals->BindToCompletionQueue(this);
+        Basic::globals->BindToCompletionQueue(reinterpret_cast<HANDLE>(this->socket));
     }
 
     Socket::~Socket()
