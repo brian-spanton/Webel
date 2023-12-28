@@ -117,7 +117,7 @@ namespace Http
 
                 transaction->request = this->request;
 
-                this->body_frame = BodyFrame::make_body_frame(count_stream, transaction.get());
+                BodyFrame::make_body_frame(count_stream, transaction.get(), &this->body_frame);
                 if (!this->body_frame)
                 {
                     switch_to_state(State::done_state);

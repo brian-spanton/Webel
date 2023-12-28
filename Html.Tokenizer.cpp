@@ -179,7 +179,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError("data _stateNULL");
+                    ParseError("data_state received character 0");
                     EmitCharacter(c);
                     break;
 
@@ -234,7 +234,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError("RCDATA _stateNULL");
+                    ParseError("RCDATA_state received character 0");
                     EmitCharacter(0xFFFD);
                     break;
 

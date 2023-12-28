@@ -109,6 +109,7 @@
     <ClInclude Include="Ftp.Globals.h" />
     <ClInclude Include="Ftp.Server.h" />
     <ClInclude Include="Gzip.Types.h" />
+    <ClInclude Include="Basic.SplitStream.h" />
     <ClInclude Include="Service.Endpoint.h" />
     <ClInclude Include="Service.FtpServerEndpoint.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />

@@ -475,6 +475,9 @@
     <ClInclude Include="Gzip.Deflate.h">
       <Filter>Gzip</Filter>
     </ClInclude>
+    <ClInclude Include="Basic.SplitStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">

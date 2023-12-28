@@ -144,7 +144,7 @@ namespace Http
                 if (!this->decoded_content_stream)
                     this->decoded_content_stream = std::make_shared<IgnoreFrame<byte> >();
 
-                this->body_frame = BodyFrame::make_body_frame(this->decoded_content_stream, this->transaction.get());
+                BodyFrame::make_body_frame(this->decoded_content_stream, this->transaction.get(), &this->body_frame);
                 if (!this->body_frame)
                 {
                     switch_to_state(State::done_state);

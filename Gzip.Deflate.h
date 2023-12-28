@@ -42,6 +42,7 @@ namespace Gzip
             NLEN_failed,
             uncompressed_data_failed,
             lengths_failed,
+            after_extra_distance_bits_failed,
         };
 
         enum BlockType : byte
@@ -53,6 +54,7 @@ namespace Gzip
         };
 
         std::shared_ptr<IStream<byte> > output_stream;
+        std::shared_ptr<String<byte> > look_back;
 
         uint32 buffered_bits = 0;
         byte buffered_bits_length = 0;
@@ -67,8 +69,9 @@ namespace Gzip
         StreamFrame<byte> uncompressed_data_frame;
         NumberFrame<decltype(LEN)> LEN_frame;
         NumberFrame<decltype(NLEN)> NLEN_frame;
-        byte HCLEN_count;
+        byte HCLEN_count = 0;
         ExtraBits* extra_bits_parameters;
+        uint16 extra_bits_count = 0;
         State state_after_extra_bits;
 
         std::shared_ptr<HuffmanAlphabet<byte> > HCLEN_root;
@@ -78,16 +81,19 @@ namespace Gzip
         std::shared_ptr<HuffmanAlphabet<byte> > HDIST_root;
         std::shared_ptr<HuffmanAlphabet<byte> > HDIST_current;
         std::vector<byte> dynamic_code_lengths;
-        uint16 extra_bits;
+
         uint16 value_with_extra_bits;
+        uint16 extra_bits = 0;
+
         uint16 length;
-        uint16 distance;
 
         static uint32 masks[16];
         static byte HCLEN_index[19];
         static ExtraBits clen_extra_bits_parameters[18 - 16 + 1];
         static ExtraBits lit_extra_bits_parameters[285 - 257 + 1];
         static ExtraBits dist_extra_bits_parameters[30];
+        static std::shared_ptr<HuffmanAlphabet<uint16> > HLIT_fixed;
+        static std::shared_ptr<HuffmanAlphabet<byte> > HDIST_fixed;
 
         EventResult read_next(IEvent* event, uint16* output, byte count);
         EventResult read_next(IEvent* event, byte* output, byte count);

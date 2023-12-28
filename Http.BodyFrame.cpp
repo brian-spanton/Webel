@@ -19,7 +19,7 @@ namespace Http
     {
     }
     
-    std::shared_ptr<BodyFrame> BodyFrame::make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, Transaction* transaction)
+    void BodyFrame::make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, Transaction* transaction, std::shared_ptr<BodyFrame>* output)
     {
         uint16 code = transaction->response->code;
 
@@ -34,7 +34,10 @@ namespace Http
             UnicodeStringRef contentType;
             success = transaction->response->headers->get_string(Http::globals->header_content_type, &contentType);
             if (!success)
-                return std::shared_ptr<BodyFrame>();
+            {
+                (*output) = std::shared_ptr<BodyFrame>();
+                return;
+            }
         }
 
         UnicodeStringRef contentEncoding;
@@ -54,7 +57,8 @@ namespace Http
 
                 HandleError((char*)error.c_str());
 
-                return std::shared_ptr<BodyFrame>();
+                (*output) = std::shared_ptr<BodyFrame>();
+                return;
             }
         }
 
@@ -66,10 +70,16 @@ namespace Http
         if (success)
         {
             if (equals<UnicodeString, false>(transferEncoding.get(), Http::globals->chunked.get()))
-                return std::make_shared<BodyChunksFrame>(decoded_content_stream, transaction->response->headers);
+            {
+                (*output) = std::make_shared<BodyChunksFrame>(decoded_content_stream, transaction->response->headers);
+                return;
+            }
 
             if (!equals<UnicodeString, false>(transferEncoding.get(), Http::globals->identity.get()))
-                return std::shared_ptr<BodyFrame>();
+            {
+                (*output) = std::shared_ptr<BodyFrame>();
+                return;
+            }
         }
 
         // $ why does transfer-length take precedence over content-length? if we have both what should we do?
@@ -78,21 +88,29 @@ namespace Http
         if (success)
         {
             if (contentLength == 0)
-                return std::shared_ptr<BodyFrame>();
+            {
+                (*output) = std::shared_ptr<BodyFrame>();
+                return;
+            }
 
-            return std::make_shared<LengthBodyFrame>(decoded_content_stream, contentLength);
+            (*output) = std::make_shared<LengthBodyFrame>(decoded_content_stream, contentLength);
+            return;
         }
 
         success = transaction->response->headers->get_base_10(Http::globals->header_content_length, &contentLength);
         if (success)
         {
             if (contentLength == 0)
-                return std::shared_ptr<BodyFrame>();
+            {
+                (*output) = std::shared_ptr<BodyFrame>();
+                return;
+            }
             
-            return std::make_shared<LengthBodyFrame>(decoded_content_stream, contentLength);
+            (*output) = std::make_shared<LengthBodyFrame>(decoded_content_stream, contentLength);
+            return;
         }
 
         // if there is no content length, then the body is terminated by transport disconnect
-        return std::make_shared<DisconnectBodyFrame>(decoded_content_stream);
+        (*output) = std::make_shared<DisconnectBodyFrame>(decoded_content_stream);
     }
 }

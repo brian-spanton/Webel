@@ -89,10 +89,10 @@ namespace Gzip
         value_type value;
 
         template <typename length_type>
-        static std::shared_ptr<HuffmanAlphabet<value_type> > make_alphabet(byte max_length, uint16 count, std::vector<length_type>& lengths)
+        static void make_alphabet(byte max_length, uint16 count, std::vector<length_type>& lengths, std::shared_ptr<HuffmanAlphabet<value_type> >* alphabet)
         {
             std::vector<byte> length_count;
-            length_count.insert(length_count.begin(), max_length + 1, 0);
+            length_count.insert(length_count.end(), max_length + 1, 0);
 
             for (uint16 i = 0; i < count; i++)
             {
@@ -104,21 +104,20 @@ namespace Gzip
             }
 
             std::vector<byte> next_code;
-            next_code.push_back(0);
+            next_code.insert(next_code.end(), max_length + 1, 0);
 
             byte code = 0;
-
-            for (byte length = 0; length < max_length; length++)
+            for (byte length = 1; length <= max_length; length++)
             {
-                code = (code + length_count[length]) << 1;
-                next_code.push_back(code);
+                code = (code + length_count[length - 1]) << 1;
+                next_code[length] = code;
             }
 
             auto root = std::make_shared<HuffmanAlphabet<value_type> >();
 
-            for (value_type i = 0; i < count; i++)
+            for (uint16 i = 0; i < count; i++)
             {
-                byte length = lengths[i];
+                auto length = lengths[i];
                 if (length == 0)
                     continue;
 
@@ -129,8 +128,6 @@ namespace Gzip
 
                 for (byte bit = 0; bit < length; bit++)
                 {
-                    auto next = current->children[code & 1];
-
                     if (!current->children[code & 1])
                         current->children[code & 1] = std::make_shared<HuffmanAlphabet<value_type> >();
 
@@ -138,10 +135,10 @@ namespace Gzip
                     code = (code >> 1);
                 }
 
-                current->value = i;
+                current->value = (value_type)i;
             }
 
-            return root;
+            (*alphabet) = root;
         }
     };
 }
