@@ -89,7 +89,6 @@ namespace Gzip
 
         uint16 length;
 
-        static uint32 masks[16];
         static byte HCLEN_index[19];
         static ExtraBits clen_extra_bits_parameters[18 - 16 + 1];
         static ExtraBits lit_extra_bits_parameters[285 - 257 + 1];

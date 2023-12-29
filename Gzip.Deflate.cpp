@@ -8,7 +8,7 @@
 
 namespace Gzip
 {
-    uint32 Deflate::masks[] = { 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff };
+    uint32 masks[] = { 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff };
     byte Deflate::HCLEN_index[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
     ExtraBits Deflate::clen_extra_bits_parameters[] =
@@ -99,11 +99,11 @@ namespace Gzip
             lit_code_lengths.insert(lit_code_lengths.end(), 255 - 144 + 1, 9);
             lit_code_lengths.insert(lit_code_lengths.end(), 279 - 256 + 1, 7);
             lit_code_lengths.insert(lit_code_lengths.end(), 287 - 280 + 1, 8);
-            HuffmanAlphabet<uint16>::make_alphabet(9, (uint16)lit_code_lengths.size(), lit_code_lengths, &Deflate::HLIT_fixed);
+            HuffmanAlphabet<uint16>::make_alphabet((uint16)lit_code_lengths.size(), lit_code_lengths, &Deflate::HLIT_fixed);
 
             std::vector<byte> dist_code_lengths;
             dist_code_lengths.insert(dist_code_lengths.end(), 32, 5);
-            HuffmanAlphabet<byte>::make_alphabet(5, (uint16)dist_code_lengths.size(), dist_code_lengths, &Deflate::HDIST_fixed);
+            HuffmanAlphabet<byte>::make_alphabet((uint16)dist_code_lengths.size(), dist_code_lengths, &Deflate::HDIST_fixed);
         }
 
         this->look_back = std::make_shared<String<byte> >();
@@ -137,7 +137,7 @@ namespace Gzip
                 return EventResult::event_result_yield;
         }
 
-        dw = this->buffered_bits & Deflate::masks[count];
+        dw = this->buffered_bits & Gzip::masks[count];
         (*output) = (uint16)dw;
 
         this->buffered_bits = this->buffered_bits >> count;
@@ -163,7 +163,6 @@ namespace Gzip
 
         EventResult result;
         byte b;
-        uint16 w = 0;
 
         switch (get_state())
         {
@@ -273,7 +272,7 @@ namespace Gzip
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            this->HDIST = (byte)b + 1;
+            this->HDIST = b + 1;
             switch_to_state(HCLEN_state);
             break;
 
@@ -282,7 +281,7 @@ namespace Gzip
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            this->HCLEN = (byte)b + 4;
+            this->HCLEN = b + 4;
             this->HCLEN_count = 0;
             this->dynamic_code_lengths.insert(this->dynamic_code_lengths.end(), _countof(Deflate::HCLEN_index), 0);
 
@@ -293,7 +292,7 @@ namespace Gzip
             {
                 if (this->HCLEN == this->HCLEN_count)
                 {
-                    HuffmanAlphabet<byte>::make_alphabet(7, (uint16)this->dynamic_code_lengths.size(), this->dynamic_code_lengths, &this->HCLEN_root);
+                    HuffmanAlphabet<byte>::make_alphabet((uint16)this->dynamic_code_lengths.size(), this->dynamic_code_lengths, &this->HCLEN_root);
                     this->HCLEN_current = this->HCLEN_root;
                     this->dynamic_code_lengths.clear();
 
@@ -324,7 +323,7 @@ namespace Gzip
 
                 if (this->dynamic_code_lengths.size() == expected)
                 {
-                    HuffmanAlphabet<uint16>::make_alphabet(15, this->HLIT, this->dynamic_code_lengths, &this->HLIT_root);
+                    HuffmanAlphabet<uint16>::make_alphabet(this->HLIT, this->dynamic_code_lengths, &this->HLIT_root);
                     this->HLIT_current = this->HLIT_root;
                     this->dynamic_code_lengths.erase(this->dynamic_code_lengths.begin(), this->dynamic_code_lengths.begin() + this->HLIT);
 
@@ -336,7 +335,7 @@ namespace Gzip
                             HandleError("this happened $$$");
                     }
 
-                    HuffmanAlphabet<byte>::make_alphabet(15, this->HDIST, this->dynamic_code_lengths, &this->HDIST_root);
+                    HuffmanAlphabet<byte>::make_alphabet(this->HDIST, this->dynamic_code_lengths, &this->HDIST_root);
                     this->HDIST_current = this->HDIST_root;
                     this->dynamic_code_lengths.clear();
 
@@ -380,34 +379,13 @@ namespace Gzip
 
         case State::extra_bits_state:
             {
-                if (false)
-                {
-                    if (this->extra_bits_count == this->extra_bits_parameters->length)
-                    {
-                        this->extra_bits_count = 0;
-                        this->extra_bits += this->extra_bits_parameters->base;
-                        switch_to_state(this->state_after_extra_bits);
-                        break;
-                    }
+                uint16 w;
+                EventResult result = read_next(event, &w, this->extra_bits_parameters->length);
+                if (result == event_result_yield)
+                    return EventResult::event_result_yield;
 
-                    byte b;
-                    EventResult result = read_next(event, &b, 1);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
-
-                    this->extra_bits = (this->extra_bits << 1) | b;
-                    this->extra_bits_count++;
-                }
-                else
-                {
-                    byte b;
-                    EventResult result = read_next(event, &b, this->extra_bits_parameters->length);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
-
-                    this->extra_bits = w + this->extra_bits_parameters->base;
-                    switch_to_state(this->state_after_extra_bits);
-                }
+                this->extra_bits = w + this->extra_bits_parameters->base;
+                switch_to_state(this->state_after_extra_bits);
             }
             break;
 

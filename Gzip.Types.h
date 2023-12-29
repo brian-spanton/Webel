@@ -81,58 +81,108 @@ namespace Gzip
         uint16 base;
     };
 
-    template <typename value_type>
+    extern uint32 masks[16];
+
+    template <typename symbol_type>
     struct HuffmanAlphabet
     {
-        std::shared_ptr<HuffmanAlphabet<value_type> > children[2];
+        std::shared_ptr<HuffmanAlphabet<symbol_type> > children[2];
 
-        value_type symbol;
+        uint16 code = 0;
+        byte length = 0;
+        symbol_type symbol = 0;
+
+        void validate()
+        {
+            validate(0, 0);
+        }
+
+        void validate(byte test_length, uint16 test_code)
+        {
+            if (children[0])
+            {
+                // not a leaf node, must have both children (right?)
+                if (!children[1])
+                    throw FatalError("invalid huffman tree");
+
+                children[0]->validate(test_length + 1, (test_code << 1) | 0);
+
+                children[1]->validate(test_length + 1, (test_code << 1) | 1);
+
+                return;
+            }
+
+            // it is a leaf node, cannot have children, must have correct values
+
+            if (children[1])
+                throw FatalError("invalid huffman tree");
+
+            if (this->code != test_code)
+                throw FatalError("invalid huffman tree");
+
+            if (this->length != test_length)
+                throw FatalError("invalid huffman tree");
+        }
 
         bool is_leaf()
         {
-            if (!children[0] != !children[1])
-                throw FatalError("bad huffman tree with non-leaf unbalanced node");
-
             return !children[0] && !children[1];
         }
 
-        template <typename length_type>
-        static void make_alphabet(byte max_length, uint16 count, std::vector<length_type>& lengths, std::shared_ptr<HuffmanAlphabet<value_type> >* alphabet)
+        static void make_alphabet(uint16 count, std::vector<byte>& lengths, std::shared_ptr<HuffmanAlphabet<symbol_type> >* alphabet)
         {
-            if (max_length > 15)
-                throw FatalError("Gzip::HuffmanAlphabet::make_alphabet max_length > 15");
+            if (count > lengths.size())
+                throw FatalError("Gzip::HuffmanAlphabet::make_alphabet count > lengths.size()");
 
-            std::vector<byte> length_count;
-            length_count.insert(length_count.end(), max_length + 1, 0);
+            std::vector<uint16> length_count;
+            length_count.reserve(16);
 
-            for (uint16 i = 0; i < count; i++)
+            for (uint16 symbol = 0; symbol < count; symbol++)
             {
-                auto length = lengths[i];
+                byte length = lengths[symbol];
                 if (length == 0)
                     continue;
 
+                byte length_vector_size = length + 1;
+                if (length_vector_size > length_count.size())
+                    length_count.insert(length_count.end(), length_vector_size - length_count.size(), 0);
+
                 length_count[length]++;
+
+                if (length_count[length] > Gzip::masks[length] + 1)
+                    throw FatalError("Gzip::HuffmanAlphabet::make_alphabet first_code > masks[length]");
             }
+
+            if (length_count.size() > 16)
+                throw FatalError("Gzip::HuffmanAlphabet::make_alphabet length_count.size() > 16");
+
+            byte max_length = (byte)length_count.size() - 1;
 
             std::vector<uint16> next_code;
             next_code.insert(next_code.end(), max_length + 1, 0);
 
-            uint16 code = 0;
+            uint16 first_code = 0;
             for (byte length = 1; length <= max_length; length++)
             {
-                code = (code + length_count[length - 1]) << 1;
-                next_code[length] = code;
+                uint16 previous_count = length_count[length - 1];
+                uint16 previous_last_code = first_code + previous_count;
+                first_code = (previous_last_code << 1);
+
+                if (first_code > Gzip::masks[length])
+                    throw FatalError("Gzip::HuffmanAlphabet::make_alphabet first_code > masks[length]");
+
+                next_code[length] = first_code;
             }
 
-            auto root = std::make_shared<HuffmanAlphabet<value_type> >();
+            auto root = std::make_shared<HuffmanAlphabet<symbol_type> >();
 
             for (uint16 symbol = 0; symbol < count; symbol++)
             {
-                auto length = lengths[symbol];
+                byte length = lengths[symbol];
                 if (length == 0)
                     continue;
 
-                auto code = next_code[length];
+                uint16 code = next_code[length];
                 next_code[length]++;
 
                 auto current = root;
@@ -143,14 +193,20 @@ namespace Gzip
                     byte bit = (code >> shift) & 1;
 
                     if (!current->children[bit])
-                        current->children[bit] = std::make_shared<HuffmanAlphabet<value_type> >();
+                        current->children[bit] = std::make_shared<HuffmanAlphabet<symbol_type> >();
 
                     current = current->children[bit];
                 }
 
-                current->symbol = (value_type)symbol;
+                if (current->length != 0)
+                    throw FatalError("duplicate code in huffman tree");
+
+                current->symbol = (symbol_type)symbol;
+                current->code = code;
+                current->length = length;
             }
 
+            root->validate();
             (*alphabet) = root;
         }
     };

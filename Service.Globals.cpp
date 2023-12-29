@@ -205,7 +205,7 @@ namespace Service
         lengths.insert(lengths.end(), 5, 3);
         lengths.insert(lengths.end(), 1, 2);
         lengths.insert(lengths.end(), 2, 4);
-        Gzip::HuffmanAlphabet<byte>::make_alphabet(4, (uint16)lengths.size(), lengths, &root);
+        Gzip::HuffmanAlphabet<byte>::make_alphabet((uint16)lengths.size(), lengths, &root);
         return true;
     }
 
@@ -213,7 +213,7 @@ namespace Service
     {
         // $$ should we close pfx_file? if we can do it now, pfx_file can be a local variable.
         HANDLE file = ::CreateFileA(
-            "c:\\users\\brian\\amazon.zip",
+            "c:\\users\\brian\\foo.gz",
             GENERIC_READ,
             FILE_SHARE_READ,
             0,
@@ -338,6 +338,7 @@ namespace Service
         auto gzip = std::make_shared<Gzip::FileFormat>(console_decoder);
         ProcessStream<byte>::write_elements_to_process(gzip, bytes->address(), count);
 
+        // $$$ put this back or fix up so both job types can coexist
         //bool success = ParseCert(bytes.get(), count, error);
         //if (!success)
         //{

@@ -20,8 +20,8 @@ namespace Basic
             done_state = Succeeded_State,
         };
 
-        int expected;
-        int received;
+        int expected = 0;
+        int received = 0;
         std::shared_ptr<IStream<element_type> > destination;
 
     public:
