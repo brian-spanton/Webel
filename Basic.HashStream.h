@@ -22,6 +22,6 @@ namespace Basic
         void Initialize(HashAlgorithm* algorithm, byte* secret, uint32 secret_length, byte* output, uint32 output_max);
 
         virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
-        virtual void write_eof();
+        virtual void IStream<byte>::write_eof();
     };
 }

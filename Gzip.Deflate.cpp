@@ -8,7 +8,7 @@
 
 namespace Gzip
 {
-    uint32 masks[] = { 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff };
+    uint32 Deflate::masks[] = { 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff };
     byte Deflate::HCLEN_index[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
     ExtraBits Deflate::clen_extra_bits_parameters[] =
@@ -87,6 +87,7 @@ namespace Gzip
 
     std::shared_ptr<HuffmanAlphabet<uint16> > Deflate::HLIT_fixed;
     std::shared_ptr<HuffmanAlphabet<byte> > Deflate::HDIST_fixed;
+    size_t Deflate::max_look_back = 0x8000;
 
     Deflate::Deflate(std::shared_ptr<IStream<byte> > output_stream) :
         LEN_frame(&this->LEN),
@@ -106,9 +107,10 @@ namespace Gzip
             HuffmanAlphabet<byte>::make_alphabet((uint16)dist_code_lengths.size(), dist_code_lengths, &Deflate::HDIST_fixed);
         }
 
-        this->look_back = std::make_shared<String<byte> >();
-
         auto splitter = std::make_shared<SplitStream<byte> >();
+
+        this->look_back = std::make_shared<String<byte> >();
+        this->look_back->reserve(0x10000);
         splitter->outputs.push_back(this->look_back);
 
         if (output_stream)
@@ -121,7 +123,10 @@ namespace Gzip
     {
         uint32 dw = 0;
 
-        if (this->buffered_bits_length < count)
+        if (count > 16)
+            throw FatalError("Gzip::Deflate::read_next count > 16");
+
+        while (this->buffered_bits_length < count)
         {
             byte b;
             EventResult result = Event::ReadNext(event, &b);
@@ -132,16 +137,16 @@ namespace Gzip
             dw = (dw << this->buffered_bits_length);
             this->buffered_bits |= dw;
             this->buffered_bits_length += 8;
-
-            if (this->buffered_bits_length < count)
-                return EventResult::event_result_yield;
         }
 
-        dw = this->buffered_bits & Gzip::masks[count];
+        dw = this->buffered_bits & Deflate::masks[count];
         (*output) = (uint16)dw;
 
         this->buffered_bits = this->buffered_bits >> count;
         this->buffered_bits_length -= count;
+
+        if (this->buffered_bits_length > 7)
+            throw FatalError("consumed too many bytes somehow");
 
         return EventResult::event_result_continue;
     }
@@ -166,12 +171,21 @@ namespace Gzip
 
         switch (get_state())
         {
-        case State::start_state:
-            if (this->BFINAL)
-                switch_to_state(State::done_state);
-            else
-                switch_to_state(State::BFINAL_state);
+        case State::next_block_state:
+            {
+                this->block_counter++;
+                if (this->block_counter >= 22)
+                    HandleError("about to repro");
 
+                auto size = this->look_back->size();
+                if (size > Deflate::max_look_back)
+                    this->look_back->erase(0, size - Deflate::max_look_back);
+
+                if (this->BFINAL)
+                    switch_to_state(State::done_state);
+                else
+                    switch_to_state(State::BFINAL_state);
+            }
             break;
 
         case State::BFINAL_state:
@@ -227,9 +241,6 @@ namespace Gzip
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            this->look_back->reserve(this->LEN);
-            this->uncompressed_data_frame.reset(this->output_stream, this->LEN);
-
             switch_to_state(State::NLEN_state);
             break;
 
@@ -246,16 +257,31 @@ namespace Gzip
                     return EventResult::event_result_yield;
                 }
 
-                switch_to_state(State::uncompressed_data_state);
+                if (this->LEN == 0)
+                {
+                    switch_to_state(State::next_block_state);
+                }
+                else
+                {
+                    this->uncompressed_data_frame.reset(this->output_stream, this->LEN);
+                    switch_to_state(State::uncompressed_data_state);
+                }
             }
             break;
 
         case State::uncompressed_data_state:
+            // $$$
+            Basic::globals->DebugWriter()->WriteFormat<0x80>("before: block_counter = %d, LEN = %d, look_back->size() == %d", this->block_counter, this->LEN, this->look_back->size());
+            Basic::globals->DebugWriter()->WriteLine();
+
             result = delegate_event_change_state_on_fail(&this->uncompressed_data_frame, event, State::uncompressed_data_failed);
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
 
-            switch_to_state(State::start_state);
+            Basic::globals->DebugWriter()->WriteFormat<0x80>("after: block_counter = %d, LEN = %d, look_back->size() == %d", this->block_counter, this->LEN, this->look_back->size());
+            Basic::globals->DebugWriter()->WriteLine();
+
+            switch_to_state(State::next_block_state);
             break;
 
         case State::HLIT_state:
@@ -333,7 +359,7 @@ namespace Gzip
                             HandleError("this happened $$$");
                         else if (this->dynamic_code_lengths.back() == 1)
                             HandleError("this happened $$$");
-                    }
+                        }
 
                     HuffmanAlphabet<byte>::make_alphabet(this->HDIST, this->dynamic_code_lengths, &this->HDIST_root);
                     this->HDIST_current = this->HDIST_root;
@@ -450,7 +476,7 @@ namespace Gzip
                     this->HDIST_root.reset();
                     this->HDIST_current.reset();
 
-                    switch_to_state(State::start_state);
+                    switch_to_state(State::next_block_state);
                 }
                 else
                 {
@@ -490,25 +516,27 @@ namespace Gzip
                 this->extra_bits_parameters = Deflate::dist_extra_bits_parameters + symbol;
                 this->state_after_extra_bits = State::after_extra_distance_bits_state;
                 this->extra_bits = 0;
+
                 switch_to_state(State::extra_bits_state);
             }
             break;
 
         case State::after_extra_distance_bits_state:
             {
-                auto distance = this->extra_bits;
-                auto size = this->look_back->size();
-                auto first = size - distance;
+                uint32 distance = this->extra_bits;
+                uint32 size = this->look_back->size();
 
                 if (distance > size)
                 {
                     HandleError("distance > size");
                     switch_to_state(State::after_extra_distance_bits_failed);
+                    break;
                 }
 
-                for (uint16 i = 0; i < this->length; i++)
+                uint32 first = size - distance;
+
+                for (uint32 index = first; index < first + this->length; index++)
                 {
-                    auto index = first + i;
                     auto value = this->look_back->at(index);
                     this->output_stream->write_element(value);
                 }

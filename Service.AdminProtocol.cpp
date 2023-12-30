@@ -55,7 +55,7 @@ namespace Service
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
-            Service::TaskCompleteEvent* cookie_event = (Service::TaskCompleteEvent*)event;
+            Http::ResponseHeadersEvent* cookie_event = (Http::ResponseHeadersEvent*)event;
 
             if (cookie_event->cookie.get() != this->get_cookie.get())
                 throw FatalError("unexpected completion");

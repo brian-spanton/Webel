@@ -56,7 +56,7 @@ namespace Basic
                 produce_event(protocol.get(), &event);
 
                 if (!this->protocol_element_source.Exhausted() && !protocol->failed())
-                    throw FatalError("Basic::ReceivedBytesEvent::Consume this->elements_read < this->count");
+                    throw FatalError("Basic::ConnectedSocket::Received { !this->protocol_element_source.Exhausted() && !protocol->failed() }");
             }
         }
     }

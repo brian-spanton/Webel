@@ -44,6 +44,11 @@ namespace Gzip
             }
             else
             {
+                byte b;
+                auto result = Event::ReadNext(event, &b);
+                if (result == event_result_yield)
+                    return EventResult::event_result_yield;
+
                 // $$ NYI multi-member gzip files
                 switch_to_state(State::next_member_failed);
             }

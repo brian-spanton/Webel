@@ -32,8 +32,7 @@ namespace Basic
         if (event->get_type() != EventType::received_bytes_event)
         {
             HandleError("unexpected event");
-            throw FatalError("unexpected event");
-            //return EventResult::event_result_yield; // unexpected event
+            return EventResult::event_result_yield; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;

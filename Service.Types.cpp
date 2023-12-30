@@ -14,4 +14,16 @@ namespace Service
     {
         return EventType::characters_complete_event;
     }
+
+    IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :
+        context(context),
+        count(count),
+        error(error)
+    {
+    }
+
+    uint32 IoCompletionEvent::get_type()
+    {
+        return EventType::io_completion_event;
+    }
 }

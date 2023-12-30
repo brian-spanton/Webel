@@ -22,6 +22,8 @@
 #include "Ftp.Globals.h"
 #include "Basic.ProcessStream.h"
 #include "Gzip.FileFormat.h"
+#include "Basic.FileStream.h"
+#include "Basic.SplitStream.h"
 
 template <typename type>
 void make_immortal(type** pointer, std::shared_ptr<type>* ref)
@@ -79,6 +81,8 @@ namespace Service
 
     bool Globals::Initialize()
     {
+        TestHuffman();
+
         this->index = std::make_shared<Index>();
 
         make_immortal<Tls::Globals>(&Tls::globals, 0);
@@ -172,28 +176,13 @@ namespace Service
         if (!success)
             return false;
 
-        DebugWriter()->WriteLine("initializing certificate");
-
-        if (!Service::globals->certificate_file_name.empty())
-        {
-            success = ReadCertificate();
-        }
-        else
-        {
-            success = false;
-        }
-
-        if (!success)
-        {
-            success = CreateSelfSignCert();
-            if (!success)
-                return false;
-        }
-
         SetThreadCount(0); // 1 is good for debugging, 0 is good for perf (matches CPU count)
 
-        TestHuffman();
-        TestGzip();
+        if (!TestGzip())
+        {
+            if (!ReadCertificate())
+                return false;
+        }
 
         return true;
     }
@@ -211,24 +200,25 @@ namespace Service
 
     bool Globals::TestGzip()
     {
-        // $$ should we close pfx_file? if we can do it now, pfx_file can be a local variable.
-        HANDLE file = ::CreateFileA(
-            "c:\\users\\brian\\foo.gz",
+        DebugWriter()->WriteLine("testing gzip");
+
+        this->gzip_test_file = ::CreateFileA(
+            "c:\\users\\brian\\test.gz",
             GENERIC_READ,
             FILE_SHARE_READ,
             0,
             OPEN_EXISTING,
             FILE_FLAG_OVERLAPPED,
             0);
-        if (file == INVALID_HANDLE_VALUE)
+        if (this->gzip_test_file == INVALID_HANDLE_VALUE)
             return Basic::globals->HandleError("CreateFileA", GetLastError());
 
-        HANDLE result = CreateIoCompletionPort(file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
+        HANDLE result = CreateIoCompletionPort(this->gzip_test_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
         if (result == 0)
             return Basic::globals->HandleError("CreateIoCompletionPort", GetLastError());
 
         LARGE_INTEGER size;
-        bool success = (bool)GetFileSizeEx(file, &size);
+        bool success = (bool)GetFileSizeEx(this->gzip_test_file, &size);
         if (!success)
             return Basic::globals->HandleError("GetFileSizeEx", GetLastError());
 
@@ -240,7 +230,9 @@ namespace Service
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), data);
 
-        success = (bool)ReadFile(file, data->address(), data->size(), 0, job.get());
+        switch_to_state(State::test_gzip_state);
+
+        success = (bool)ReadFile(this->gzip_test_file, data->address(), data->size(), 0, job.get());
         if (!success)
         {
             DWORD error = GetLastError();
@@ -256,6 +248,11 @@ namespace Service
 
     bool Globals::ReadCertificate()
     {
+        DebugWriter()->WriteLine("initializing certificate");
+
+        if (Service::globals->certificate_file_name.empty())
+            return false;
+
         char pfx_path[MAX_PATH + 0x100];
         GetFilePath(Service::globals->certificate_file_name.c_str(), pfx_path);
 
@@ -289,6 +286,8 @@ namespace Service
         pfx_data->resize(size.LowPart);
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), pfx_data);
+
+        switch_to_state(State::pending_pfx_state);
 
         success = (bool)ReadFile(this->pfx_file, pfx_data->address(), pfx_data->size(), 0, job.get());
         if (!success)
@@ -332,25 +331,8 @@ namespace Service
 
     void Globals::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
-        std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(context);
-
-        auto console_decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
-        auto gzip = std::make_shared<Gzip::FileFormat>(console_decoder);
-        ProcessStream<byte>::write_elements_to_process(gzip, bytes->address(), count);
-
-        // $$$ put this back or fix up so both job types can coexist
-        //bool success = ParseCert(bytes.get(), count, error);
-        //if (!success)
-        //{
-        //    success = CreateSelfSignCert();
-        //    if (!success)
-        //    {
-        //        SendStopSignal();
-        //    }
-        //}
-
-        //CloseHandle(this->pfx_file);
-        //this->pfx_file = INVALID_HANDLE_VALUE;
+        IoCompletionEvent event(context, count, error);
+        produce_event(this, &event);
     }
 
     bool Globals::ExtractPrivateKey()
@@ -453,6 +435,84 @@ namespace Service
     {
         switch (get_state())
         {
+            case State::test_gzip_state:
+            {
+                if (event->get_type() != Service::EventType::io_completion_event)
+                    return EventResult::event_result_yield; // unexpected event
+
+                CloseHandle(this->gzip_test_file);
+                this->gzip_test_file = INVALID_HANDLE_VALUE;
+
+                IoCompletionEvent* completion = static_cast<IoCompletionEvent*>(event);
+
+                std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(completion->context);
+
+                auto splitter = std::make_shared<SplitStream<byte> >();
+
+                auto file_stream = std::make_shared<FileStream>();
+                file_stream->Initialize("c:\\users\\brian\\test_result.tar");
+                splitter->outputs.push_back(file_stream);
+
+                auto count_stream = std::make_shared<CountStream<byte> >();
+                splitter->outputs.push_back(count_stream);
+
+                //auto console_decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
+                //splitter->outputs.push_back(console_decoder);
+                //splitter->outputs.push_back(this->debug_log);
+
+                auto gzip = std::make_shared<Gzip::FileFormat>(splitter);
+
+                ProcessStream<byte>::write_elements_to_process(gzip, bytes->address(), completion->count);
+
+                bool success = ReadCertificate();
+                if (success)
+                    break;
+
+                switch_to_state(State::initialize_html_globals);
+            }
+            break;
+
+        case State::pending_pfx_state:
+            {
+                if (event->get_type() != Service::EventType::io_completion_event)
+                    return EventResult::event_result_yield; // unexpected event
+
+                CloseHandle(this->pfx_file);
+                this->pfx_file = INVALID_HANDLE_VALUE;
+
+                IoCompletionEvent* completion = static_cast<IoCompletionEvent*>(event);
+
+                std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(completion->context);
+
+                bool success = ParseCert(bytes.get(), completion->count, completion->error);
+                if (!success)
+                    HandleError("ParseCert", GetLastError());
+
+                switch_to_state(State::initialize_html_globals);
+            }
+            break;
+
+        case State::initialize_html_globals:
+            {
+                if (this->cert == 0)
+                {
+                    bool success = CreateSelfSignCert();
+                    if (!success)
+                    {
+                        SendStopSignal();
+                        return EventResult::event_result_yield;
+                    }
+                }
+
+                DebugWriter()->WriteLine("initializing html globals");
+
+                std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
+                named_characters->start();
+
+                switch_to_state(State::named_character_references_pending_state);
+            }
+            break;
+
         case State::encodings_pending_state:
             {
                 if (event->get_type() != Basic::EventType::encodings_complete_event)
@@ -472,8 +532,8 @@ namespace Service
 
         case State::named_character_references_pending_state:
             {
-            if (event->get_type() != Service::EventType::characters_complete_event)
-                return EventResult::event_result_yield; // unexpected event
+                if (event->get_type() != Service::EventType::characters_complete_event)
+                    return EventResult::event_result_yield; // unexpected event
 
                 DebugWriter()->WriteLine("initializing endpoints");
 
@@ -492,7 +552,8 @@ namespace Service
             break;
 
         case State::accepts_pending_state:
-            throw FatalError("was Yield... what is expected for this state?");
+            // this is basically an idle state, waiting for connections.
+            throw FatalError("was Yield");
 
         default:
             throw FatalError("Html::Globals::Complete unexpected state");

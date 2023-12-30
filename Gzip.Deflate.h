@@ -16,7 +16,7 @@ namespace Gzip
     private:
         enum State
         {
-            start_state = Start_State,
+            next_block_state = Start_State,
             BFINAL_state,
             BTYPE_state,
             LEN_state,
@@ -62,6 +62,7 @@ namespace Gzip
         byte buffered_bits_length = 0;
 
         bool BFINAL = false;
+        uint32 block_counter = 0;
         uint16 LEN;
         uint16 NLEN;
         uint16 HLIT;
@@ -89,6 +90,8 @@ namespace Gzip
 
         uint16 length;
 
+        static size_t max_look_back;
+        static uint32 masks[16];
         static byte HCLEN_index[19];
         static ExtraBits clen_extra_bits_parameters[18 - 16 + 1];
         static ExtraBits lit_extra_bits_parameters[285 - 257 + 1];

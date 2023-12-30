@@ -81,8 +81,6 @@ namespace Gzip
         uint16 base;
     };
 
-    extern uint32 masks[16];
-
     template <typename symbol_type>
     struct HuffmanAlphabet
     {
@@ -112,10 +110,10 @@ namespace Gzip
                 return;
             }
 
-            // it is a leaf node, cannot have children, must have correct values
-
             if (children[1])
                 throw FatalError("invalid huffman tree");
+
+            // it is a leaf node, validate the node values
 
             if (this->code != test_code)
                 throw FatalError("invalid huffman tree");
@@ -149,7 +147,7 @@ namespace Gzip
 
                 length_count[length]++;
 
-                if (length_count[length] > Gzip::masks[length] + 1)
+                if (length_count[length] > (1 << length))
                     throw FatalError("Gzip::HuffmanAlphabet::make_alphabet first_code > masks[length]");
             }
 
@@ -168,7 +166,7 @@ namespace Gzip
                 uint16 previous_last_code = first_code + previous_count;
                 first_code = (previous_last_code << 1);
 
-                if (first_code > Gzip::masks[length])
+                if (first_code > ((1 << length) - 1))
                     throw FatalError("Gzip::HuffmanAlphabet::make_alphabet first_code > masks[length]");
 
                 next_code[length] = first_code;

@@ -61,9 +61,7 @@ namespace Http
 
                 if (this->size == 0)
                 {
-                    // $ I don't remember why this is getting headers at the end after a chunked body, check the RFC.
-                    // however, not doing this definitely causes problems due to the check in ConnectedSocket::Receive:
-                    // "if (!this->protocol_element_source.Exhausted() && !protocol->failed())"
+                    // it's weird that chunked bodies have "footers"
 
                     switch_to_state(State::headers_frame_pending);
                 }

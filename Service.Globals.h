@@ -34,6 +34,9 @@ namespace Service
         {
             cert_pending_state = Start_State,
             encodings_pending_state,
+            test_gzip_state,
+            pending_pfx_state,
+            initialize_html_globals,
             named_character_references_pending_state,
             accepts_pending_state,
             done_state = Succeeded_State,
@@ -45,8 +48,9 @@ namespace Service
         HANDLE stopEvent;
         HANDLE consoleThread;
         HANDLE pfx_file;
+        HANDLE gzip_test_file;
         ThreadList threads;
-        Basic::PCCERT_CONTEXT cert;
+        Basic::PCCERT_CONTEXT cert = 0;
         Basic::NCRYPT_KEY_HANDLE private_key;
         Tls::Certificates certificates;
 

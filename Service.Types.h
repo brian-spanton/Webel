@@ -13,20 +13,35 @@ namespace Service
     {
         task_complete_event = 0x4000,
         characters_complete_event,
+        io_completion_event,
     };
 
-    struct TaskCompleteEvent : public Basic::IEvent
+    struct CookieContextualizedEvent : public Basic::IEvent
     {
         Basic::ByteStringRef cookie;
 
-        virtual uint32 get_type();
+        virtual uint32 Basic::IEvent::get_type() = 0;
     };
 
-    struct CharactersCompleteEvent : public Basic::IEvent
+    struct TaskCompleteEvent : public CookieContextualizedEvent
     {
-        Basic::ByteStringRef cookie;
+        virtual uint32 Basic::IEvent::get_type();
+    };
 
-        virtual uint32 get_type();
+    struct CharactersCompleteEvent : public CookieContextualizedEvent
+    {
+        virtual uint32 Basic::IEvent::get_type();
+    };
+
+    struct IoCompletionEvent : public Basic::IEvent
+    {
+        IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error);
+
+        std::shared_ptr<void> context;
+        uint32 count;
+        uint32 error;
+
+        virtual uint32 Basic::IEvent::get_type();
     };
 
     typedef Basic::SuffixArray<std::shared_ptr<Json::Object> > Index;

@@ -84,7 +84,7 @@ namespace Basic
     EventResult delegate_event(IProcess* process, IEvent* event)
     {
         // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
-        for (uint64 i = 0; i != 0x100000; i++)
+        for (uint64 i = 0; i != 0x10000000; i++)
         {
             // doing this check first so that inactive processes never receive events.
             // this simplifies process state machines.
@@ -103,7 +103,7 @@ namespace Basic
         EventResult result = delegate_event(process, event);
 
         if (process->failed())
-            throw FatalError("delegate_event_throw_error_on_fail process->failed()");
+            throw FatalError("Basic::Frame::delegate_event_throw_error_on_fail { process->failed() }");
 
         return result;
     }
@@ -113,6 +113,6 @@ namespace Basic
     {
         EventResult result = delegate_event(process, event);
         if (result == EventResult::event_result_continue)
-            throw FatalError("incomplete event processing");
+            throw FatalError("Basic::Frame::produce_event { result == EventResult::event_result_continue }");
     }
 }
