@@ -5,6 +5,7 @@
 #include "Basic.NumberFrame.h"
 #include "Basic.IStream.h"
 #include "Gzip.Types.h"
+#include "Basic.NullTerminatedAsciiStringFrame.h"
 
 namespace Gzip
 {
@@ -67,6 +68,8 @@ namespace Gzip
         std::shared_ptr<IProcess> compressed_blocks_frame;
         NumberFrame<decltype(MemberHeader::CRC32)> CRC32_frame;
         NumberFrame<decltype(MemberHeader::ISIZE)> ISIZE_frame;
+        NullTerminatedAsciiStringFrame original_file_name_frame;
+        NullTerminatedAsciiStringFrame file_comment_frame;
 
     public:
         MemberFrame(MemberHeader* member);

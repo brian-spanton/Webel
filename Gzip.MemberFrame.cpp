@@ -16,7 +16,9 @@ namespace Gzip
         XFL_frame(&this->member->XFL),
         OS_frame(&this->member->OS),
         CRC32_frame(&this->member->CRC32),
-        ISIZE_frame(&this->member->ISIZE)
+        ISIZE_frame(&this->member->ISIZE),
+        original_file_name_frame(&this->member->original_file_name),
+        file_comment_frame(&this->member->file_comment)
     {
     }
 
@@ -104,31 +106,34 @@ namespace Gzip
             if (this->member->FLG.FEXTRA)
             {
                 switch_to_state(State::XLEN_failed);
+                break;
             }
-            else
-            {
-                switch_to_state(State::original_file_name_state);
-            }
+
+            switch_to_state(State::original_file_name_state);
             break;
 
         case State::original_file_name_state:
-            if (this->member->FLG.FNAME)
             {
-                switch_to_state(State::original_file_name_failed);
-            }
-            else
-            {
+                if (this->member->FLG.FNAME)
+                {
+                    result = delegate_event_change_state_on_fail(&this->original_file_name_frame, event, State::original_file_name_failed);
+                    if (result == event_result_yield)
+                        return EventResult::event_result_yield;
+                }
+
                 switch_to_state(State::file_comment_state);
             }
             break;
 
         case State::file_comment_state:
-            if (this->member->FLG.FCOMMENT)
             {
-                switch_to_state(State::file_comment_failed);
-            }
-            else
-            {
+                if (this->member->FLG.FCOMMENT)
+                {
+                    result = delegate_event_change_state_on_fail(&this->file_comment_frame, event, State::file_comment_failed);
+                    if (result == event_result_yield)
+                        return EventResult::event_result_yield;
+                }
+
                 switch_to_state(State::CRC16_state);
             }
             break;
@@ -137,11 +142,10 @@ namespace Gzip
             if (this->member->FLG.FHCRC)
             {
                 switch_to_state(State::CRC16_failed);
+                break;
             }
-            else
-            {
-                switch_to_state(State::compressed_blocks_state);
-            }
+
+            switch_to_state(State::compressed_blocks_state);
             break;
 
         case State::compressed_blocks_state:

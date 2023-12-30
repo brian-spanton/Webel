@@ -478,7 +478,12 @@
     <ClInclude Include="Basic.SplitStream.h">
       <Filter>Basic</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.FileStream.h" />
+    <ClInclude Include="Basic.FileStream.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.NullTerminatedAsciiStringFrame.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -868,7 +873,12 @@
     <ClCompile Include="Gzip.Deflate.cpp">
       <Filter>Gzip</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.FileStream.cpp" />
+    <ClCompile Include="Basic.FileStream.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.NullTerminatedAsciiStringFrame.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Http">

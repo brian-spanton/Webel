@@ -97,6 +97,7 @@
     <ClInclude Include="Basic.ConsoleLog.h" />
     <ClInclude Include="Basic.DebugLog.h" />
     <ClInclude Include="Basic.FileStream.h" />
+    <ClInclude Include="Basic.NullTerminatedAsciiStringFrame.h" />
     <ClInclude Include="Basic.NumberFrame.h" />
     <ClInclude Include="Gzip.Deflate.h" />
     <ClInclude Include="Gzip.FileFormat.h" />
@@ -259,6 +260,7 @@
     <ClCompile Include="Basic.ConsoleLog.cpp" />
     <ClCompile Include="Basic.DebugLog.cpp" />
     <ClCompile Include="Basic.FileStream.cpp" />
+    <ClCompile Include="Basic.NullTerminatedAsciiStringFrame.cpp" />
     <ClCompile Include="Gzip.Deflate.cpp" />
     <ClCompile Include="Gzip.FileFormat.cpp" />
     <ClCompile Include="Gzip.MemberFrame.cpp" />
