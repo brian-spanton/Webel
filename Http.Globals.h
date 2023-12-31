@@ -73,6 +73,9 @@ namespace Http
         UnicodeStringRef secure_av_name;
         UnicodeStringRef httponly_av_name;
         UnicodeStringRef header_cookie;
+        UnicodeStringRef text_media_type;
+        UnicodeStringRef html_media_subtype;
+        UnicodeStringRef plain_media_subtype;
 
         UnicodeStringRef application_x_www_form_urlencoded_media_type;
 

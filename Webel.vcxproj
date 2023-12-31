@@ -201,6 +201,7 @@
     <ClInclude Include="Basic.Uri.h" />
     <ClInclude Include="Service.Globals.h" />
     <ClInclude Include="Web.Globals.h" />
+    <ClInclude Include="Web.IFrame.h" />
     <ClInclude Include="Web.Proxy.h" />
     <ClInclude Include="Json.ArrayFrame.h" />
     <ClInclude Include="Json.ByteStreamDecoder.h" />
@@ -339,6 +340,7 @@
     <ClCompile Include="Http.MediaType.cpp" />
     <ClCompile Include="Http.MediaTypeStream.cpp" />
     <ClCompile Include="Web.Globals.cpp" />
+    <ClCompile Include="Web.IFrame.cpp" />
     <ClCompile Include="Web.Proxy.cpp" />
     <ClCompile Include="Http.Types.cpp" />
     <ClCompile Include="Http.HeadersFrame.cpp" />

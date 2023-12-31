@@ -54,6 +54,9 @@ namespace Http
         initialize_unicode(&secure_av_name, "secure");
         initialize_unicode(&httponly_av_name, "httponly");
         initialize_unicode(&header_cookie, "cookie");
+        initialize_unicode(&text_media_type, "text");
+        initialize_unicode(&html_media_subtype, "html");
+        initialize_unicode(&plain_media_subtype, "plain");
 
         initialize_unicode(&application_x_www_form_urlencoded_media_type, "application/x-www-form-urlencoded");
 

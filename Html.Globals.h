@@ -85,6 +85,7 @@ namespace Html
         UnicodeStringRef target_attribute_name;
         UnicodeStringRef accept_charset_attribute_name;
         UnicodeStringRef class_attribute_name;
+        UnicodeStringRef src_attribute_name;
 
         UnicodeStringRef on_value;
 
@@ -99,7 +100,7 @@ namespace Html
         UnicodeStringRef _charset__name;
         UnicodeStringRef isindex_name;
 
-        UnicodeStringRef text_html_media_type;
+        UnicodeStringRef text_html_media_type; // $$$ use a proper MediaType
         UnicodeStringRef application_xhtml_xml_media_type;
 
         std::shared_ptr<ElementName> HTML_applet;

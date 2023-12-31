@@ -61,6 +61,7 @@ namespace Html
         initialize_unicode(&target_attribute_name, "target");
         initialize_unicode(&accept_charset_attribute_name, "accept-charset");
         initialize_unicode(&class_attribute_name, "class");
+        initialize_unicode(&src_attribute_name, "src");
 
         initialize_unicode(&on_value, "on");
 

@@ -6,6 +6,7 @@
 #include "Html.Globals.h"
 #include "Html.TextNode.h"
 #include "Basic.CountStream.h"
+#include "Web.IFrame.h"
 
 namespace Web
 {
@@ -41,6 +42,13 @@ namespace Web
             else if (element->has_element_name(Html::globals->HTML_a.get()))
             {
                 std::shared_ptr<Link> item = std::make_shared<Link>();
+                item->Initialize(element, this->document->url);
+                this->links.push_back(item);
+                prune = false;
+            }
+            else if (element->has_element_name(Html::globals->HTML_iframe.get()))
+            {
+                std::shared_ptr<IFrame> item = std::make_shared<IFrame>();
                 item->Initialize(element, this->document->url);
                 this->links.push_back(item);
                 prune = false;

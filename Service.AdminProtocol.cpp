@@ -41,15 +41,35 @@ namespace Service
         }
         else if (event->get_type() == Http::EventType::response_headers_event)
         {
+            this->html_parser.reset();
+
             std::shared_ptr<Uri> url;
             this->client->get_url(&url);
+
+            std::shared_ptr<Web::MediaType> content_type;
+            this->client->get_content_type(&content_type);
 
             UnicodeStringRef charset;
             this->client->get_content_type_charset(&charset);
 
-            this->html_parser = std::make_shared<Html::Parser>(url, charset);
-
-            this->client->set_decoded_content_stream(this->html_parser);
+            if (equals<UnicodeString, false>(content_type->type.get(), Http::globals->text_media_type.get()))
+            {
+                if (equals<UnicodeString, false>(content_type->subtype.get(), Http::globals->html_media_subtype.get()))
+                {
+                    this->html_parser = std::make_shared<Html::Parser>(url, charset);
+                    this->client->set_decoded_content_stream(this->html_parser);
+                }
+                else if (equals<UnicodeString, false>(content_type->subtype.get(), Http::globals->plain_media_subtype.get()))
+                {
+                    std::shared_ptr<IDecoder> decoder;
+                    Basic::globals->GetDecoder(charset, &decoder);
+                    if (decoder)
+                    {
+                        decoder->set_destination(this->peer.get());
+                        this->client->set_decoded_content_stream(decoder);
+                    }
+                }
+            }
 
             return EventResult::event_result_yield; // event consumed
         }
@@ -64,11 +84,11 @@ namespace Service
             {
                 this->current_page = std::make_shared<Web::Page>(this->html_parser->tree->document, this->client);
 
-                writer.WriteLine("Get completed");
+                writer.WriteLine("Get completed with html");
             }
-            else
+            else 
             {
-                writer.WriteLine("Get failed to produce html");
+                writer.WriteLine("Get completed without html");
             }
 
             return EventResult::event_result_yield; // event consumed

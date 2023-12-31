@@ -484,6 +484,9 @@
     <ClInclude Include="Basic.NullTerminatedAsciiStringFrame.h">
       <Filter>Basic</Filter>
     </ClInclude>
+    <ClInclude Include="Web.IFrame.h">
+      <Filter>Web</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -878,6 +881,9 @@
     </ClCompile>
     <ClCompile Include="Basic.NullTerminatedAsciiStringFrame.cpp">
       <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Web.IFrame.cpp">
+      <Filter>Web</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
