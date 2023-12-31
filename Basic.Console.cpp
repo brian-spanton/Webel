@@ -48,7 +48,7 @@ namespace Basic
         if (!success)
             return Basic::globals->HandleError("GetConsoleMode", GetLastError());
 
-        success = (bool)SetConsoleMode(input, ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT);
+        success = (bool)SetConsoleMode(input, ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_PROCESSED_INPUT);
         if (!success)
             return Basic::globals->HandleError("SetConsoleMode", GetLastError());
 
@@ -78,51 +78,48 @@ namespace Basic
     {
         while (true)
         {
-            INPUT_RECORD inputs[0x100];
+            INPUT_RECORD record;
             uint32 count;
 
-            BOOL success = ReadConsoleInputW(input, inputs, _countof(inputs), &count);
+            BOOL success = ReadConsoleInputW(input, &record, 1, &count);
             if (success == FALSE)
                 return Basic::globals->HandleError("ReadConsoleInputA", GetLastError());
 
-            for (uint32 i = 0; i < count; i++)
+            if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown == TRUE)
             {
-                if (inputs[i].EventType == KEY_EVENT && inputs[i].Event.KeyEvent.bKeyDown == TRUE)
+                for (uint16 x = 0; x < record.Event.KeyEvent.wRepeatCount; x++)
                 {
-                    for (uint16 x = 0; x < inputs[i].Event.KeyEvent.wRepeatCount; x++)
+                    Codepoint b = record.Event.KeyEvent.uChar.UnicodeChar;
+
+                    switch (b)
                     {
-                        Codepoint b = inputs[x].Event.KeyEvent.uChar.UnicodeChar;
+                    case 0:
+                        // just a control key probably
+                        break;
 
-                        switch (b)
+                    case '\r':
                         {
-                        case 0:
-                            // just a control key probably
-                            break;
+                            write_elements(Basic::globals->CRLF->address(), Basic::globals->CRLF->size());
 
-                        case '\r':
-                            {
-                                write_elements(Basic::globals->CRLF->address(), Basic::globals->CRLF->size());
+                            this->protocol_element_source.Initialize(&b, 1);
 
-                                this->protocol_element_source.Initialize(&b, 1);
-
-                                ReceivedCodepointsEvent event;
-                                event.Initialize(&this->protocol_element_source);
-                                produce_event(this->protocol.get(), &event);
-                            }
-                            break;
-
-                        default:
-                            {
-                                write_element(b);
-
-                                this->protocol_element_source.Initialize(&b, 1);
-
-                                ReceivedCodepointsEvent event;
-                                event.Initialize(&this->protocol_element_source);
-                                produce_event(this->protocol.get(), &event);
-                            }
-                            break;
+                            ReceivedCodepointsEvent event;
+                            event.Initialize(&this->protocol_element_source);
+                            produce_event(this->protocol.get(), &event);
                         }
+                        break;
+
+                    default:
+                        {
+                            write_element(b);
+
+                            this->protocol_element_source.Initialize(&b, 1);
+
+                            ReceivedCodepointsEvent event;
+                            event.Initialize(&this->protocol_element_source);
+                            produce_event(this->protocol.get(), &event);
+                        }
+                        break;
                     }
                 }
             }
