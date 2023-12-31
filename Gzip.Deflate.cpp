@@ -174,8 +174,6 @@ namespace Gzip
         case State::next_block_state:
             {
                 this->block_counter++;
-                if (this->block_counter >= 22)
-                    HandleError("about to repro");
 
                 auto size = this->look_back->size();
                 if (size > Deflate::max_look_back)
@@ -270,16 +268,9 @@ namespace Gzip
             break;
 
         case State::uncompressed_data_state:
-            // $$$
-            Basic::globals->DebugWriter()->WriteFormat<0x80>("before: block_counter = %d, LEN = %d, look_back->size() == %d", this->block_counter, this->LEN, this->look_back->size());
-            Basic::globals->DebugWriter()->WriteLine();
-
             result = delegate_event_change_state_on_fail(&this->uncompressed_data_frame, event, State::uncompressed_data_failed);
             if (result == event_result_yield)
                 return EventResult::event_result_yield;
-
-            Basic::globals->DebugWriter()->WriteFormat<0x80>("after: block_counter = %d, LEN = %d, look_back->size() == %d", this->block_counter, this->LEN, this->look_back->size());
-            Basic::globals->DebugWriter()->WriteLine();
 
             switch_to_state(State::next_block_state);
             break;
@@ -353,15 +344,32 @@ namespace Gzip
                     this->HLIT_current = this->HLIT_root;
                     this->dynamic_code_lengths.erase(this->dynamic_code_lengths.begin(), this->dynamic_code_lengths.begin() + this->HLIT);
 
-                    if (this->dynamic_code_lengths.size() == 1)
+                    if (this->HDIST == 1)
                     {
                         if (this->dynamic_code_lengths.back() == 0)
-                            HandleError("this happened $$$");
-                        else if (this->dynamic_code_lengths.back() == 1)
-                            HandleError("this happened $$$");
+                        {
+                            // RFC1951: One distance code of zero bits means that there are no
+                            // distance codes used at all (the data is all literals).
+                            this->HDIST_root.reset();
                         }
+                        else if (this->dynamic_code_lengths.back() == 1)
+                        {
+                            // RFC1951: If only one distance code is used, it is encoded using one bit, not zero bits; in
+                            // this case there is a single code length of one, with one unused code.
+                            // 
+                            // HuffmanAlphabet<byte>::make_alphabet will fail for this special case, so construct by hand
+                            this->HDIST_root = std::make_shared<HuffmanAlphabet<byte> >();
+                            this->HDIST_root->children[0] = std::make_shared<HuffmanAlphabet<byte> >();
+                            this->HDIST_root->children[0]->symbol = 0;
+                            this->HDIST_root->children[0]->code = 0;
+                            this->HDIST_root->children[0]->length = 1;
+                        }
+                    }
+                    else
+                    {
+                        HuffmanAlphabet<byte>::make_alphabet(this->HDIST, this->dynamic_code_lengths, &this->HDIST_root);
+                    }
 
-                    HuffmanAlphabet<byte>::make_alphabet(this->HDIST, this->dynamic_code_lengths, &this->HDIST_root);
                     this->HDIST_current = this->HDIST_root;
                     this->dynamic_code_lengths.clear();
 

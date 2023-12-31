@@ -266,17 +266,11 @@ namespace Web
 
                 if (this->response_frame->failed())
                 {
-                    // $$$ this was commented out, is it ok actually?
                     if (this->transport.get() != 0)
                     {
                         this->transport->write_eof();
                         this->transport.reset();
                     }
-
-                    // $$$ is this necessary due to the check in ConnectedSocket::Receive?
-                    // "if (!this->protocol_element_source.Exhausted() && !protocol->failed())"
-                    //// consume all remaining bytes (if any)
-                    //Event::Read<byte>(event, 0xffffffff, 0, 0);
 
                     Retry(this->transaction->request);
                     QueuePlanned();
