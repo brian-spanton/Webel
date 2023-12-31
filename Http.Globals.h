@@ -44,6 +44,7 @@ namespace Http
         bool WSP[0x100] = { 0 }; // white space
         bool COOKIE_OCTET[0x100] = { 0 };
 
+        UnicodeStringRef header_accept_type;
         UnicodeStringRef header_content_length;
         UnicodeStringRef header_connection;
         UnicodeStringRef keep_alive;
@@ -59,6 +60,7 @@ namespace Http
         UnicodeStringRef header_content_encoding;
         UnicodeStringRef identity;
         UnicodeStringRef gzip;
+        UnicodeStringRef deflate;
         UnicodeStringRef header_transfer_encoding;
         UnicodeStringRef header_transfer_length;
         UnicodeStringRef chunked;

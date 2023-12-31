@@ -25,6 +25,7 @@ namespace Http
         byte CRLF[] = { CR, LF };
         CopyMemory(this->CRLF, CRLF, sizeof(CRLF));
 
+        initialize_unicode(&header_accept_type, "accept-type");
         initialize_unicode(&header_content_length, "content-length");
         initialize_unicode(&header_connection, "connection");
         initialize_unicode(&keep_alive, "keep-alive");
@@ -40,6 +41,7 @@ namespace Http
         initialize_unicode(&header_content_encoding, "content-encoding");
         initialize_unicode(&identity, "identity");
         initialize_unicode(&gzip, "gzip");
+        initialize_unicode(&deflate, "deflate");
         initialize_unicode(&header_transfer_encoding, "transfer-encoding");
         initialize_unicode(&header_transfer_length, "transfer-length");
         initialize_unicode(&chunked, "chunked");

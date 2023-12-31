@@ -11,6 +11,7 @@
 #include "Basic.SingleByteDecoder.h"
 #include "Basic.SingleByteEncodingIndex.h"
 #include "Web.Globals.h"
+#include "Basic.TextWriter.h"
 
 namespace Web
 {
@@ -69,6 +70,7 @@ namespace Web
             request->Initialize(this->transaction->request.get());
             request->resource = url;
 
+            //$$$
             //Note: RFC1945 and RFC2068 specify that the client is not allowed
             //to change the method on the redirected request.  However, most
             //existing user agent implementations treat 302 as if it were a 303
@@ -137,6 +139,13 @@ namespace Web
 
             this->planned_request->headers->set_string(Http::globals->header_te, Http::globals->trailers);
             this->planned_request->headers->set_string(Http::globals->header_host, planned_request->resource->host);
+
+            UnicodeStringRef accept_type_value = std::make_shared<UnicodeString>();
+            accept_type_value->append(*Http::globals->gzip);
+            TextWriter writer(accept_type_value.get());
+            writer.write_literal(", ");
+            accept_type_value->append(*Http::globals->deflate);
+            this->planned_request->headers->set_string(Http::globals->header_accept_type, accept_type_value);
 
             UnicodeStringRef cookie_header_value;
 
