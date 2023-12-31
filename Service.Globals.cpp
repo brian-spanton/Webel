@@ -468,16 +468,16 @@ namespace Service
 
                 std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(completion->context);
 
-                auto splitter = std::make_shared<SplitStream<byte> >();
-
                 auto file_stream = std::make_shared<FileStream>();
                 file_stream->Initialize("c:\\users\\brian\\test_result.tar");
-                splitter->outputs.push_back(file_stream);
 
                 auto count_stream = std::make_shared<CountStream<byte> >();
-                splitter->outputs.push_back(count_stream);
 
                 //auto console_decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
+
+                auto splitter = std::make_shared<SplitStream<byte> >();
+                splitter->outputs.push_back(file_stream);
+                splitter->outputs.push_back(count_stream);
                 //splitter->outputs.push_back(console_decoder);
                 //splitter->outputs.push_back(this->debug_log);
 

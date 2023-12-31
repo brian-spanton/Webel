@@ -54,13 +54,6 @@ namespace Service
 
                 if (this->client->transaction->response->code != 200)
                 {
-                    std::shared_ptr<Uri> url;
-                    this->client->get_url(&url);
-
-                    url->write_to_stream(Service::globals->LogStream(), 0, 0);
-                    Service::globals->DebugWriter()->WriteFormat<0x40>(" returned %d", this->client->transaction->response->code);
-                    Service::globals->DebugWriter()->WriteLine();
-
                     switch_to_state(State::done_state);
                     return EventResult::event_result_yield;
                 }

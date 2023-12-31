@@ -170,7 +170,6 @@ namespace Web
             Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
             request_bytes.write_to_stream(this->transport.get());
 
-            Basic::globals->DebugWriter()->write_literal("Request sent: ");
             render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
             Basic::globals->DebugWriter()->WriteLine();
 
@@ -249,6 +248,13 @@ namespace Web
                 // can choose and set a body stream
                 if (this->planned_request.get() == 0)
                 {
+                    std::shared_ptr<Uri> url;
+                    get_url(&url);
+
+                    url->write_to_stream(Basic::globals->LogStream(), 0, 0);
+                    Basic::globals->DebugWriter()->WriteFormat<0x40>(" returned %d", this->transaction->response->code);
+                    Basic::globals->DebugWriter()->WriteLine();
+
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)
                     {

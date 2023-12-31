@@ -150,9 +150,10 @@ namespace Http
         SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        value->method->write_to_stream(&encoder);
+        value->resource->write_to_stream(&encoder, true, false);
 
-        stream->write_element(Http::globals->SP);
-        value->resource->write_to_stream(&encoder, true, true);
+        TextWriter text_writer(&encoder);
+        text_writer.write_literal(" method ");
+        value->method->write_to_stream(&encoder);
     }
 }
