@@ -36,6 +36,11 @@ namespace Service
     {
         if (event->get_type() == Http::EventType::response_complete_event)
         {
+            std::shared_ptr<Uri> url;
+            this->client->get_url(&url);
+            url->write_to_stream(Basic::globals->LogStream(), 0, 0);
+            Basic::globals->DebugWriter()->WriteLine();
+
             switch_to_state(State::connection_lost_error);
             return EventResult::event_result_continue;
         }
@@ -53,10 +58,11 @@ namespace Service
                     this->client->get_url(&url);
 
                     url->write_to_stream(Service::globals->LogStream(), 0, 0);
-                    Service::globals->DebugWriter()->WriteLine(" did not return 200");
+                    Service::globals->DebugWriter()->WriteFormat<0x40>(" returned %d", this->client->transaction->response->code);
+                    Service::globals->DebugWriter()->WriteLine();
 
                     switch_to_state(State::done_state);
-                    return EventResult::event_result_continue;
+                    return EventResult::event_result_yield;
                 }
 
                 this->client->set_decoded_content_stream(this->shared_from_this());

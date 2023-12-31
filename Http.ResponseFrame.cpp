@@ -129,9 +129,10 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
-                Basic::globals->DebugWriter()->write_literal("Response headers received: ");
-                this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
-                Basic::globals->DebugWriter()->WriteLine();
+                // $$ log level?
+                //Basic::globals->DebugWriter()->write_literal("Response headers received: ");
+                //this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
+                //Basic::globals->DebugWriter()->WriteLine();
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)

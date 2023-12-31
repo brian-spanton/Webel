@@ -124,6 +124,7 @@ namespace Http
                 if (result == event_result_yield)
                     return EventResult::event_result_yield;
 
+                this->decoded_content_stream->write_eof();
                 switch_to_state(State::done_state);
             }
             break;

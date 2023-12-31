@@ -176,14 +176,35 @@ namespace Service
         if (!success)
             return false;
 
-        SetThreadCount(0); // 1 is good for debugging, 0 is good for perf (matches CPU count)
+        SetThreadCount(1); // 1 is good for debugging, 0 is good for perf (matches CPU count)
 
         if (!TestGzip())
         {
             if (!ReadCertificate())
+            {
+                if (!InitializeHtmlGlobals())
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool Globals::InitializeHtmlGlobals()
+    {
+        if (this->cert == 0)
+        {
+            bool success = CreateSelfSignCert();
+            if (!success)
                 return false;
         }
 
+        DebugWriter()->WriteLine("initializing html globals");
+
+        std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
+        named_characters->start();
+
+        switch_to_state(State::named_character_references_pending_state);
         return true;
     }
 
@@ -493,24 +514,7 @@ namespace Service
             break;
 
         case State::initialize_html_globals:
-            {
-                if (this->cert == 0)
-                {
-                    bool success = CreateSelfSignCert();
-                    if (!success)
-                    {
-                        SendStopSignal();
-                        return EventResult::event_result_yield;
-                    }
-                }
-
-                DebugWriter()->WriteLine("initializing html globals");
-
-                std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
-                named_characters->start();
-
-                switch_to_state(State::named_character_references_pending_state);
-            }
+            InitializeHtmlGlobals();
             break;
 
         case State::encodings_pending_state:
@@ -553,7 +557,7 @@ namespace Service
 
         case State::accepts_pending_state:
             // this is basically an idle state, waiting for connections.
-            throw FatalError("was Yield");
+            return EventResult::event_result_yield;
 
         default:
             throw FatalError("Html::Globals::Complete unexpected state");

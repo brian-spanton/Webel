@@ -63,6 +63,8 @@ namespace Service
         bool TestHuffman();
         bool TestGzip();
 
+        bool InitializeHtmlGlobals();
+
         virtual EventResult IProcess::consider_event(IEvent* event);
 
     public:

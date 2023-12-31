@@ -16,12 +16,9 @@ namespace Http
     }
 
     LengthBodyFrame::LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream, uint32 bytes_expected) :
-        BodyFrame(body_stream),
-        bytes_expected(bytes_expected),
-        bytes_received(0)
+        BodyFrame(body_stream)
     {
-        if (this->bytes_expected == 0)
-            switch_to_state(State::done_state);
+        reset(bytes_expected);
     }
 
     void LengthBodyFrame::reset(uint32 bytes_expected)
@@ -32,7 +29,10 @@ namespace Http
         this->bytes_received = 0;
 
         if (this->bytes_expected == 0)
+        {
+            this->decoded_content_stream->write_eof();
             switch_to_state(State::done_state);
+        }
     }
 
     EventResult LengthBodyFrame::consider_event(IEvent* event)
@@ -54,6 +54,7 @@ namespace Http
 
                 if (this->bytes_received == this->bytes_expected)
                 {
+                    this->decoded_content_stream->write_eof();
                     switch_to_state(State::done_state);
                     return EventResult::event_result_continue;
                 }

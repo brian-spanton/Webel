@@ -62,7 +62,8 @@ namespace Service
                         this->client->get_url(&url);
 
                         url->write_to_stream(Service::globals->LogStream(), 0, 0);
-                        Service::globals->DebugWriter()->WriteLine(" did not return 200");
+                        Service::globals->DebugWriter()->WriteFormat<0x40>(" returned %d", this->client->transaction->response->code);
+                        Service::globals->DebugWriter()->WriteLine();
 
                         switch_to_state(State::done_state);
                         return EventResult::event_result_continue;
