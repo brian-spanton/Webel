@@ -22,7 +22,6 @@ namespace Http
                 if (event->get_type() == Basic::EventType::element_stream_ending_event)
                 {
                     this->decoded_content_stream->write_eof();
-
                     switch_to_state(State::done_state);
                     return EventResult::event_result_continue;
                 }
