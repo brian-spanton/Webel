@@ -113,6 +113,12 @@ namespace Service
 		command_log.Initialize("log");
 		command_list.push_back(command_log);
 
+		command_amazon.Initialize("amazon");
+		command_list.push_back(command_amazon);
+
+		command_netflix.Initialize("netflix");
+		command_list.push_back(command_netflix);
+
 		command_get.Initialize("get");
 		command_list.push_back(command_get);
 
@@ -140,6 +146,46 @@ namespace Service
 		command_search.Initialize("search");
 		command_list.push_back(command_search);
 
+		streams_namespace.Initialize("dynamo.streams");
+
+		amazon_title_class.Initialize("ilt2");
+		amazon_result_id_prefix.Initialize("result_");
+		amazon_source_name.Initialize("Amazon");
+		amazon_sign_in_link.Initialize("Hello. Sign in Your Account");
+		amazon_sign_in_form.Initialize("ap_signin_form");
+		amazon_email_control.Initialize("email");
+		amazon_password_control.Initialize("password");
+		amazon_prime_link.Initialize("Your Prime");
+		amazon_browse_link.Initialize("Browse Prime Instant Video");
+		amazon_movies_link.Initialize("movies");
+		amazon_next_page_link.Initialize("Next Page");
+
+		netflix_sign_in_link.Initialize("Member Sign In");
+		netflix_movieid_param.Initialize("movieid");
+		netflix_movie_url.Initialize("http://dvd.netflix.com/Movie");
+		netflix_search_form.Initialize("global-search");
+		netflix_logon_form.Initialize("login-form");
+		netflix_email_control.Initialize("email");
+		netflix_password_control.Initialize("password");
+		netflix_query1_control.Initialize("raw_query");
+		netflix_query2_control.Initialize("v1");
+		netflix_search_path.Initialize("Search");
+		netflix_row_param.Initialize("row");
+
+		for (Codepoint c = '0'; c <= '9'; c++)
+		{
+			Basic::UnicodeString::Ref term = New<UnicodeString>();
+			term->push_back(c);
+			netflix_search_space.push_back(term);
+		}
+
+		for (Codepoint c = 'a'; c <= 'z'; c++)
+		{
+			Basic::UnicodeString::Ref term = New<UnicodeString>();
+			term->push_back(c);
+			netflix_search_space.push_back(term);
+		}
+
 		root_admin.Initialize("admin");
 		root_echo.Initialize("echo");
 		root_question.Initialize("question");
@@ -147,6 +193,12 @@ namespace Service
 		title_property.Initialize("title"); // $ schema for search index
 		as_of_property.Initialize("as of"); // $ schema for search index
 		source_property.Initialize("source"); // $ schema for search index
+
+		this->netflix_url = New<Basic::Uri>();
+		this->netflix_url->Initialize("https://signup.netflix.com/Login");
+
+		this->amazon_url = New<Basic::Uri>();
+		this->amazon_url->Initialize("http://www.amazon.com/s/ref=sr_il_to_instant-video?rh=n%3A2858778011&ie=UTF8");
 
 		DebugWriter()->WriteLine("initializing io completion port");
 
@@ -475,6 +527,30 @@ namespace Service
 				HttpServerEndpoint::Ref https_endpoint = New<HttpServerEndpoint>();
 				https_endpoint->Initialize(Basic::ListenSocket::Face_Default, 82, this);
 				https_endpoint->SpawnListeners(20);
+
+				//Uri::Ref server_1 = New<Uri>();
+				//server_1->Initialize("http://192.168.1.51/");
+				//HttpProxyEndpoint::Ref proxy_1_endpoint = New<HttpProxyEndpoint>();
+				//proxy_1_endpoint->Initialize(Basic::ListenSocket::Face_Default, 451, true, server_1);
+				//proxy_1_endpoint->SpawnListeners(20);
+
+				//Uri::Ref server_2 = New<Uri>();
+				//server_2->Initialize("http://192.168.1.52/");
+				//HttpProxyEndpoint::Ref proxy_2_endpoint = New<HttpProxyEndpoint>();
+				//proxy_2_endpoint->Initialize(Basic::ListenSocket::Face_Default, 452, true, server_2);
+				//proxy_2_endpoint->SpawnListeners(20);
+
+				//Uri::Ref server_3 = New<Uri>();
+				//server_3->Initialize("http://192.168.1.53/");
+				//HttpProxyEndpoint::Ref proxy_3_endpoint = New<HttpProxyEndpoint>();
+				//proxy_3_endpoint->Initialize(Basic::ListenSocket::Face_Default, 453, true, server_3);
+				//proxy_3_endpoint->SpawnListeners(20);
+
+				//Uri::Ref server_4 = New<Uri>();
+				//server_4->Initialize("http://192.168.1.54/");
+				//HttpProxyEndpoint::Ref proxy_4_endpoint = New<HttpProxyEndpoint>();
+				//proxy_4_endpoint->Initialize(Basic::ListenSocket::Face_Default, 454, true, server_4);
+				//proxy_4_endpoint->SpawnListeners(20);
 
 				switch_to_state(State::accepts_pending_state);
 			}

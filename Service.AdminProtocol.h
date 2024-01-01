@@ -14,6 +14,8 @@
 #include "Basic.Lock.h"
 #include "Web.Page.h"
 #include "Web.Form.h"
+#include "Dynamo.AmazonScrape.h"
+#include "Dynamo.NetflixSearchScrape.h"
 #include "Basic.IStream.h"
 
 namespace Service
@@ -38,7 +40,11 @@ namespace Service
 		Html::Parser::Ref html_parser; // REF
 		Web::Page::Ref current_page; // REF
 		Web::Form::Ref current_form; // REF
+		Basic::ByteString::Ref amazon_cookie; // $$$
+		Basic::ByteString::Ref netflix_cookie; // $$$
 		Basic::ByteString::Ref get_cookie; // REF
+		AmazonScrape::Ref amazon_scrape; // $$$
+		NetflixSearchScrape::Ref netflix_scrape; // $$$
 
 		void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
 

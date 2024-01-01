@@ -1,5 +1,3 @@
-// Copyright © 2013 Brian Spanton
-
 #pragma once
 
 #include <Windows.h>
@@ -8,18 +6,14 @@
 #include "Basic.ListenSocket.h"
 #include "Basic.Cng.h"
 #include "Tls.CertificatesFrame.h"
-#include "Basic.Frame.h"
+#include "Dynamo.HeapStorage.h"
 #include "Basic.Uri.h"
-#include "Service.AdminProtocol.h"
-#include "Service.Types.h"
-#include "Basic.ICompletionQueue.h"
-#include "Tls.ICertificate.h"
+#include "Dynamo.AdminProtocol.h"
+#include "Dynamo.Types.h"
 
-namespace Service
+namespace Dynamo
 {
-	using namespace Basic;
-
-	class Globals : public Frame, public ICompletion, public IRefHolder, public IErrorHandler, public ICompletionQueue, public Tls::ICertificate
+	class Globals : public Frame, public ICompletion, public IRefHolder
 	{
 	private:
 		enum State
@@ -48,42 +42,70 @@ namespace Service
 		bool ParseCert(AsyncBytes* bytes, int transferred, int error);
 
 	public:
-		typedef Basic::StringMapCaseInsensitive<Basic::ListenSocket::Ref> Listeners; // REF
-		typedef std::vector<Basic::UnicodeString::Ref> CommandList; // REF
+		typedef Basic::StringMapCaseInsensitive<Basic::ListenSocket::Ref> Listeners; // $$$
+		typedef std::vector<Basic::UnicodeString::Ref> CommandList; // $$$
 
-		Basic::Ref<Basic::Console> console; // REF
-		Basic::DebugLog::Ref debugLog; // REF
+		Basic::Ref<Basic::Console> console; // $$$
+		Basic::DebugLog::Ref debugLog; // $$$
 
-		std::string service_name;
-		std::string self_sign_domain;
-		std::string certificate_file_name;
-		std::wstring certificate_file_password;
-
-		Basic::UnicodeString::Ref command_stop; // REF
-		Basic::UnicodeString::Ref command_log; // REF
-		Basic::UnicodeString::Ref command_get; // REF
-		Basic::UnicodeString::Ref command_follow_link; // REF
-		Basic::UnicodeString::Ref command_select_form; // REF
-		Basic::UnicodeString::Ref command_set_control_value; // REF
-		Basic::UnicodeString::Ref command_submit; // REF
-		Basic::UnicodeString::Ref command_render_links; // REF
-		Basic::UnicodeString::Ref command_render_forms; // REF
-		Basic::UnicodeString::Ref command_render_nodes; // REF
-		Basic::UnicodeString::Ref command_search; // REF
+		Basic::UnicodeString::Ref command_stop; // $$$
+		Basic::UnicodeString::Ref command_log; // $$$
+		Basic::UnicodeString::Ref command_amazon; // $$$
+		Basic::UnicodeString::Ref command_netflix; // $$$
+		Basic::UnicodeString::Ref command_get; // $$$
+		Basic::UnicodeString::Ref command_follow_link; // $$$
+		Basic::UnicodeString::Ref command_select_form; // $$$
+		Basic::UnicodeString::Ref command_set_control_value; // $$$
+		Basic::UnicodeString::Ref command_submit; // $$$
+		Basic::UnicodeString::Ref command_render_links; // $$$
+		Basic::UnicodeString::Ref command_render_forms; // $$$
+		Basic::UnicodeString::Ref command_render_nodes; // $$$
+		Basic::UnicodeString::Ref command_search; // $$$
 
 		CommandList command_list;
 
-		Basic::UnicodeString::Ref root_admin; // REF
-		Basic::UnicodeString::Ref root_echo; // REF
-		Basic::UnicodeString::Ref root_question; // REF
+		Basic::UnicodeString::Ref streams_namespace; // $$$
 
-		AdminProtocol::Ref adminProtocol; // REF
+		Basic::UnicodeString::Ref amazon_title_class; // $$$
+		Basic::UnicodeString::Ref amazon_result_id_prefix; // $$$
+		Basic::UnicodeString::Ref amazon_source_name; // $$$
+		Basic::UnicodeString::Ref amazon_sign_in_link; // $$$
+		Basic::UnicodeString::Ref amazon_sign_in_form; // $$$
+		Basic::UnicodeString::Ref amazon_email_control; // $$$
+		Basic::UnicodeString::Ref amazon_password_control; // $$$
+		Basic::UnicodeString::Ref amazon_prime_link; // $$$
+		Basic::UnicodeString::Ref amazon_browse_link; // $$$
+		Basic::UnicodeString::Ref amazon_movies_link; // $$$
+		Basic::UnicodeString::Ref amazon_next_page_link; // $$$
 
-		UnicodeString::Ref title_property; // REF
-		UnicodeString::Ref as_of_property; // REF
-		UnicodeString::Ref source_property; // REF
+		Basic::UnicodeString::Ref netflix_sign_in_link; // $$$
+		Basic::UnicodeString::Ref netflix_movieid_param; // $$$
+		Basic::UnicodeString::Ref netflix_movie_url; // $$$
+		Basic::UnicodeString::Ref netflix_search_form; // $$$
+		Basic::UnicodeString::Ref netflix_logon_form; // $$$
+		Basic::UnicodeString::Ref netflix_email_control; // $$$
+		Basic::UnicodeString::Ref netflix_password_control; // $$$
+		Basic::UnicodeString::Ref netflix_query1_control; // $$$
+		Basic::UnicodeString::Ref netflix_query2_control; // $$$
+		Basic::UnicodeString::Ref netflix_search_path; // $$$
+		Basic::UnicodeString::Ref netflix_row_param; // $$$
 
-		Index::Ref index; // REF
+		StringList netflix_search_space;
+
+		Basic::Uri::Ref netflix_url; // $$$
+		Basic::Uri::Ref amazon_url; // $$$
+
+		Basic::UnicodeString::Ref root_admin; // $$$
+		Basic::UnicodeString::Ref root_echo; // $$$
+		Basic::UnicodeString::Ref root_question; // $$$
+
+		AdminProtocol::Ref adminProtocol; // $$$
+
+		UnicodeString::Ref title_property; // $$$
+		UnicodeString::Ref as_of_property; // $$$
+		UnicodeString::Ref source_property; // $$$
+
+		VideoMap::Ref videos; // $$$
 
 		Globals();
 		~Globals();
@@ -97,6 +119,19 @@ namespace Service
 		bool SendStopSignal();
 		bool Thread();
 		bool SetThreadCount(uint32 count);
+
+		void CreateCertFrame(Tls::CertificatesFrame::Ref* frame);
+
+		LPFN_CONNECTEX ConnectEx;
+
+		Basic::IStream<Codepoint>* DebugStream();
+		Basic::TextWriter* DebugWriter();
+
+		void CreateSocket(int af, int type, int protocol, Basic::ICompletion* completion, SOCKET* createdSocket);
+		void PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
+		void QueueProcess(Basic::Ref<IProcess> completion, ByteString::Ref cookie);
+
+		bool CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);
 
 		void Store(UnicodeString::Ref source, Json::Value::Ref value);
 		void Search(UnicodeString::Ref query, Json::Array::Ref* results);
@@ -120,18 +155,6 @@ namespace Service
 			strcat_s(value, "\\");
 			strcat_s(value, name);
 		}
-
-		virtual bool IErrorHandler::HandleError(const char* context, uint32 error);
-		virtual Basic::IStream<Codepoint>* IErrorHandler::DebugStream();
-		virtual Basic::TextWriter* IErrorHandler::DebugWriter();
-
-		virtual void ICompletionQueue::BindToCompletionQueue(Socket::Ref socket);
-		virtual void ICompletionQueue::BindToCompletionQueue(LogFile::Ref socket);
-		virtual void ICompletionQueue::PostCompletion(Basic::ICompletion* completion, LPOVERLAPPED overlapped);
-		virtual void ICompletionQueue::QueueProcess(Basic::Ref<IProcess> process, ByteString::Ref cookie);
-
-		virtual bool ICertificate::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult);
-		virtual Tls::Certificates* ICertificate::Certificates();
 	};
 
 	extern Basic::Inline<Globals>* globals;

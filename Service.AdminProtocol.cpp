@@ -1,6 +1,4 @@
-﻿// Copyright © 2013 Brian Spanton
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Service.AdminProtocol.h"
 #include "Basic.TextWriter.h"
 #include "Basic.AsyncBytes.h"
@@ -46,7 +44,26 @@ namespace Service
 
 		if (event->get_type() == Service::EventType::task_complete_event)
 		{
-			throw new Exception("unexpected completion");
+			Dynamo::TaskCompleteEvent* cookie_event = (Dynamo::TaskCompleteEvent*)event;
+
+			if (cookie_event->cookie.item() == this->amazon_cookie.item())
+			{
+				this->current_page = this->amazon_scrape->current_page;
+				this->amazon_scrape = 0;
+
+				writer.WriteLine("Amazon completed");
+			}
+			else if (cookie_event->cookie.item() == this->netflix_cookie.item())
+			{
+				this->current_page = this->netflix_scrape->current_page;
+				this->netflix_scrape = 0;
+
+				writer.WriteLine("Netflix completed");
+			}
+			else
+			{
+				throw new Exception("unexpected completion");
+			}
 		}
 		else if (event->get_type() == Http::EventType::response_headers_event)
 		{
@@ -126,6 +143,60 @@ namespace Service
 				else if (this->command.size() == 1 && this->command.at(0).equals<false>(Service::globals->command_log))
 				{
 					Service::globals->debugLog->WriteTo(&writer);
+					handled = true;
+				}
+				else if (this->command.size() == 1 && this->command.at(0).equals<false>(Dynamo::globals->command_amazon))
+				{
+					if (this->amazon_scrape.item() == 0)
+					{
+						this->amazon_cookie = New<ByteString>();
+
+						this->amazon_scrape = New<AmazonScrape>();
+						this->amazon_scrape->Initialize(this, this->amazon_cookie);
+
+						writer.WriteLine("Amazon scrape started");
+					}
+					else
+					{
+						if (this->amazon_scrape->current_page.item() != 0)
+						{
+							this->current_page = this->amazon_scrape->current_page;
+
+							writer.WriteLine("Amazon scrape peeked");
+						}
+						else
+						{
+							writer.WriteLine("Amazon scrape has no page (yet?)");
+						}
+					}
+
+					handled = true;
+				}
+				else if (this->command.size() == 2 && this->command.at(0).equals<false>(Dynamo::globals->command_netflix))
+				{
+					if (this->netflix_scrape.item() == 0)
+					{
+						this->netflix_cookie = New<ByteString>();
+
+						this->netflix_scrape = New<NetflixSearchScrape>();
+						this->netflix_scrape->Initialize(this->command.at(1), this, this->netflix_cookie);
+
+						writer.WriteLine("Netflix scrape started");
+					}
+					else
+					{
+						if (this->netflix_scrape->current_page.item() != 0)
+						{
+							this->current_page = this->netflix_scrape->current_page;
+
+							writer.WriteLine("Netflix scrape peeked");
+						}
+						else
+						{
+							writer.WriteLine("Netflix scrape has no page (yet?)");
+						}
+					}
+
 					handled = true;
 				}
 				else if (this->command.size() == 2 && this->command.at(0).equals<false>(Service::globals->command_get))
