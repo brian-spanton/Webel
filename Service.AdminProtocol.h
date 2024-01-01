@@ -14,6 +14,8 @@
 #include "Web.Page.h"
 #include "Web.Form.h"
 #include "Basic.IStream.h"
+#include "Scrape.Netflix.h"
+#include "Scrape.Amazon.h"
 
 namespace Service
 {
@@ -39,6 +41,11 @@ namespace Service
         std::shared_ptr<Web::Page> current_page;
         std::shared_ptr<Web::Form> current_form;
         Basic::ByteStringRef get_cookie;
+
+		ByteStringRef amazon_cookie;
+		ByteStringRef netflix_cookie;
+		std::shared_ptr<Scrape::Amazon> amazon_scrape;
+		std::shared_ptr<Scrape::Netflix> netflix_scrape;
 
         void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
 

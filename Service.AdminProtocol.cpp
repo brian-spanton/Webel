@@ -12,6 +12,7 @@
 #include "Basic.TextSanitizer.h"
 #include "Service.Types.h"
 #include "Basic.Event.h"
+#include "Scrape.Globals.h"
 
 namespace Service
 {
@@ -35,9 +36,30 @@ namespace Service
     {
         TextWriter writer(this->peer.get());
 
-        if (event->get_type() == Service::EventType::task_complete_event)
+        if (event->get_type() == Scrape::EventType::task_complete_event)
         {
-            throw FatalError("unexpected completion");
+			Scrape::TaskCompleteEvent* cookie_event = (Scrape::TaskCompleteEvent*)event;
+
+            // $ this comparison won't work cross-process
+			if (cookie_event->cookie.get() == this->amazon_cookie.get())
+			{
+				this->current_page = this->amazon_scrape->current_page;
+				writer.WriteLine("Amazon completed");
+
+                throw Yield("event consumed");
+			}
+            // $ this comparison won't work cross-process
+			else if (cookie_event->cookie.get() == this->netflix_cookie.get())
+			{
+				this->current_page = this->netflix_scrape->current_page;
+				writer.WriteLine("Netflix completed");
+
+                throw Yield("event consumed");
+			}
+			else
+			{
+                throw FatalError("unexpected completion");
+            }
         }
         else if (event->get_type() == Http::EventType::response_headers_event)
         {
@@ -272,13 +294,59 @@ namespace Service
                 else if (this->command.size() == 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_search.get()))
                 {
                     std::shared_ptr<Json::Array> results;
-                    Service::globals->Search(this->command.at(1), &results);
+                    Scrape::globals->Search(this->command.at(1), &results);
 
                     results->write_to_stream(this->peer.get());
                     writer.WriteLine();
 
                     handled = true;
                 }
+				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_amazon.get()))
+				{
+					if (this->amazon_scrape->current_page.get() != 0)
+					{
+						this->current_page = this->amazon_scrape->current_page;
+						writer.WriteLine("Amazon scrape peeked");
+					}
+					else
+					{
+						writer.WriteLine("Amazon scrape has no page (yet?)");
+					}
+
+					handled = true;
+				}
+				else if (this->command.size() == 3 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_amazon.get()))
+				{
+					this->amazon_cookie = std::make_shared<ByteString>();
+					this->amazon_scrape = std::make_shared<Scrape::Amazon>(this->command.at(1), this->command.at(2), this->shared_from_this(), this->amazon_cookie);
+                    this->amazon_scrape->start();
+
+					writer.WriteLine("Amazon scrape started");
+				}
+				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_netflix.get()))
+				{
+					if (this->netflix_scrape->current_page.get() != 0)
+					{
+						this->current_page = this->netflix_scrape->current_page;
+						writer.WriteLine("Netflix scrape peeked");
+					}
+					else
+					{
+						writer.WriteLine("Netflix scrape has no page (yet?)");
+					}
+
+					handled = true;
+				}
+				else if (this->command.size() == 4 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_netflix.get()))
+				{
+					this->netflix_cookie = std::make_shared<ByteString>();
+					this->netflix_scrape = std::make_shared<Scrape::Netflix>(this->command.at(1), this->command.at(2), this->command.at(3), this->shared_from_this(), this->netflix_cookie);
+                    this->netflix_scrape->start();
+
+					writer.WriteLine("Netflix scrape started");
+
+					handled = true;
+				}
 
                 if (!handled)
                 {
