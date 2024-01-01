@@ -293,6 +293,7 @@ namespace Html
 
         // 3. Let entry be the last (most recently added) element in the list of active formatting elements.
         int entry_index = this->active_formatting_elements.size() - 1;
+        entry = this->active_formatting_elements.at(entry_index);
 
 step_4:
         // 4. If there are no entries before entry in the list of active formatting elements, then jump to step 8.
@@ -319,6 +320,30 @@ step_7:
         }
 
 step_8:
+        if (!entry)
+        {
+            HandleError("!entry");
+            return;
+        }
+
+        if (!entry->element)
+        {
+            HandleError("!entry->element");
+            return;
+        }
+
+        if (!entry->element->element_name)
+        {
+            HandleError("!entry->element->element_name");
+            return;
+        }
+
+        if (!entry->element->element_name->name_space)
+        {
+            HandleError("!entry->element->element_name->name_space");
+            return;
+        }
+
         // 8. Create an element for the token for which the element entry was created, to obtain new element.
         std::shared_ptr<ElementNode> new_element;
         create_an_element_for_a_token(entry->token.get(), entry->element->element_name->name_space, &new_element);
@@ -1600,8 +1625,12 @@ loop:
 
                 if (anything_else)
                 {
-                    // If the document is not an iframe srcdoc document, then this is a parse error; set the Document to quirks mode.
-                    HandleNyi(token.get(), true); // $ NYI
+                    if (!this->document->is_iframe)
+                    {
+                        // If the document is not an iframe srcdoc document, then this is a parse error; set the Document to quirks mode.
+                        ParseError(token.get());
+                        this->document->mode = Document::Mode::quirks_mode;
+                    }
 
                     // In any case, switch the insertion mode to "before html", then reprocess the current token.
                     switch_the_insertion_mode(InsertionMode::before_html_insertion_mode);
@@ -1912,7 +1941,7 @@ loop:
                             // extracting a character encoding from a meta element to that attribute's value returns a supported 
                             // ASCII-compatible character encoding or a UTF-16 encoding, and the confidence is currently tentative, 
                             // then change the encoding to the extracted encoding.
-                            HandleNyi(token.get(), false); // $ NYI
+                            HandleNyi(token.get(), false); // $$ NYI
                         }
                         else if (tag->has_name_of(Html::globals->HTML_title.get()))
                         {

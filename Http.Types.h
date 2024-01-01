@@ -17,6 +17,7 @@ namespace Http
         UnicodeStringRef protocol;
         std::shared_ptr<NameValueCollection> headers;
         std::shared_ptr<IStreamWriter<byte> > request_body;
+        bool is_iframe = false;
 
         void Initialize();
         void Initialize(Request* request);

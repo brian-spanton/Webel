@@ -25,6 +25,7 @@ namespace Html
         std::shared_ptr<DocumentTypeNode> doctype;
         Mode mode = Mode::quirks_mode;
         std::shared_ptr<Uri> url;
+        bool is_iframe = false;
 
         Document(std::shared_ptr<Uri> url);
 

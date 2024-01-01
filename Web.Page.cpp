@@ -50,6 +50,7 @@ namespace Web
             {
                 std::shared_ptr<IFrame> item = std::make_shared<IFrame>();
                 item->Initialize(element, this->document->url);
+                item->is_iframe = true;
                 this->links.push_back(item);
                 prune = false;
             }

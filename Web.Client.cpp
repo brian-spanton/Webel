@@ -17,12 +17,13 @@ namespace Web
 {
     using namespace Basic;
 
-    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
+    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie, bool is_iframe)
     {
         std::shared_ptr<Request> request = std::make_shared<Request>();
         request->Initialize();
         request->method = Http::globals->get_method;
         request->resource = url;
+        request->is_iframe = is_iframe;
 
         Get(request, max_retries, completion, cookie);
     }

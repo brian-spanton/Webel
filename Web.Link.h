@@ -18,6 +18,7 @@ namespace Web
         std::shared_ptr<ElementNode> element;
         std::shared_ptr<Uri> url;
         UnicodeStringRef text;
+        bool is_iframe = false;
 
         virtual void Initialize(std::shared_ptr<ElementNode> element, std::shared_ptr<Uri> document_url);
     };

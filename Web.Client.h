@@ -54,8 +54,8 @@ namespace Web
         std::shared_ptr<Transaction> transaction;
         CookieList http_cookies;
 
+        void Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie, bool is_iframe = false);
         void Get(std::shared_ptr<Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
-        void Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
 
         virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 

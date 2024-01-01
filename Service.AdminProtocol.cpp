@@ -57,6 +57,7 @@ namespace Service
                 if (equals<UnicodeString, false>(content_type->subtype.get(), Http::globals->html_media_subtype.get()))
                 {
                     this->html_parser = std::make_shared<Html::Parser>(url, charset);
+                    this->html_parser->tree->document->is_iframe = this->client->transaction->request->is_iframe;
                     this->client->set_decoded_content_stream(this->html_parser);
                 }
                 else if (equals<UnicodeString, false>(content_type->subtype.get(), Http::globals->plain_media_subtype.get()))
@@ -159,10 +160,11 @@ namespace Service
                     {
                         if (this->client->get_state() == Web::Client::State::inactive_state)
                         {
-                            std::shared_ptr<Uri> url = this->current_page->links[index]->url;
+                            auto link = this->current_page->links[index];
+                            std::shared_ptr<Uri> url = link->url;
                             this->get_cookie = std::make_shared<ByteString>();
                             this->client->http_cookies = this->current_page->http_cookies;
-                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie);
+                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie, link->is_iframe);
                         }
                         else
                         {
