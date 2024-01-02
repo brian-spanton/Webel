@@ -100,7 +100,7 @@ namespace Html
         UnicodeStringRef _charset__name;
         UnicodeStringRef isindex_name;
 
-        UnicodeStringRef text_html_media_type; // $$$ use a proper MediaType
+        UnicodeStringRef text_html_media_type; // $$ use a proper MediaType?
         UnicodeStringRef application_xhtml_xml_media_type;
 
         std::shared_ptr<ElementName> HTML_applet;

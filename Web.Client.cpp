@@ -30,7 +30,7 @@ namespace Web
 
     void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
     {
-        // $$$ review how threading, eventing, job queueing and locking works with this class
+        // $$ review how threading, eventing, job queueing and locking works with this class
 
         Hold hold(this->lock);
 

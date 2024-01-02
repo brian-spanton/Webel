@@ -50,7 +50,7 @@ namespace Web
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        // $$$ these members being public makes them accessible without taking the lock... sketchy
+        // l$$ these members being public makes them accessible without taking the lock... sketchy
         std::shared_ptr<Transaction> transaction;
         CookieList http_cookies;
 

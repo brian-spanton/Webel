@@ -68,7 +68,7 @@ namespace Scrape
         {
             return consider_event_throw(event);
         }
-        catch (State error) // $$$ why are exceptions used here?  Seems like an expected condition, that should not rely on exception handling
+        catch (State error)
         {
 		    Basic::globals->HandleError("Netflix", error);
 		    switch_to_state(error);
