@@ -21,7 +21,7 @@ namespace Tls
         switch (get_state())
         {
         case State::version_frame_pending_state:
-            result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
+            result = process_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -29,7 +29,7 @@ namespace Tls
             break;
 
         case State::random_frame_pending_state:
-            result = delegate_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
+            result = process_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 

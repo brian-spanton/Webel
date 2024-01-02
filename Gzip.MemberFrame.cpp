@@ -31,7 +31,7 @@ namespace Gzip
         switch (get_state())
         {
         case State::ID1_state:
-            result = delegate_event_change_state_on_fail(&this->ID1_frame, event, State::ID1_failed);
+            result = process_event_change_state_on_fail(&this->ID1_frame, event, State::ID1_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -43,7 +43,7 @@ namespace Gzip
             break;
 
         case State::ID2_state:
-            result = delegate_event_change_state_on_fail(&this->ID2_frame, event, State::ID2_failed);
+            result = process_event_change_state_on_fail(&this->ID2_frame, event, State::ID2_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -55,7 +55,7 @@ namespace Gzip
             break;
 
         case State::CM_state:
-            result = delegate_event_change_state_on_fail(&this->CM_frame, event, State::CM_failed);
+            result = process_event_change_state_on_fail(&this->CM_frame, event, State::CM_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -71,7 +71,7 @@ namespace Gzip
             break;
 
         case State::FLG_state:
-            result = delegate_event_change_state_on_fail(&this->FLG_frame, event, State::FLG_failed);
+            result = process_event_change_state_on_fail(&this->FLG_frame, event, State::FLG_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -79,7 +79,7 @@ namespace Gzip
             break;
 
         case State::MTIME_state:
-            result = delegate_event_change_state_on_fail(&this->MTIME_frame, event, State::MTIME_failed);
+            result = process_event_change_state_on_fail(&this->MTIME_frame, event, State::MTIME_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -87,7 +87,7 @@ namespace Gzip
             break;
 
         case State::XFL_state:
-            result = delegate_event_change_state_on_fail(&this->XFL_frame, event, State::XFL_failed);
+            result = process_event_change_state_on_fail(&this->XFL_frame, event, State::XFL_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -95,7 +95,7 @@ namespace Gzip
             break;
 
         case State::OS_state:
-            result = delegate_event_change_state_on_fail(&this->OS_frame, event, State::OS_failed);
+            result = process_event_change_state_on_fail(&this->OS_frame, event, State::OS_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -116,7 +116,7 @@ namespace Gzip
             {
                 if (this->member->FLG.FNAME)
                 {
-                    result = delegate_event_change_state_on_fail(&this->original_file_name_frame, event, State::original_file_name_failed);
+                    result = process_event_change_state_on_fail(&this->original_file_name_frame, event, State::original_file_name_failed);
                     if (result == process_result_blocked)
                         return ProcessResult::process_result_blocked;
                 }
@@ -129,7 +129,7 @@ namespace Gzip
             {
                 if (this->member->FLG.FCOMMENT)
                 {
-                    result = delegate_event_change_state_on_fail(&this->file_comment_frame, event, State::file_comment_failed);
+                    result = process_event_change_state_on_fail(&this->file_comment_frame, event, State::file_comment_failed);
                     if (result == process_result_blocked)
                         return ProcessResult::process_result_blocked;
                 }
@@ -149,7 +149,7 @@ namespace Gzip
             break;
 
         case State::compressed_blocks_state:
-            result = delegate_event_change_state_on_fail(this->compressed_blocks_frame.get(), event, State::OS_failed);
+            result = process_event_change_state_on_fail(this->compressed_blocks_frame.get(), event, State::OS_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -157,7 +157,7 @@ namespace Gzip
             break;
 
         case State::CRC32_state:
-            result = delegate_event_change_state_on_fail(&this->CRC32_frame, event, State::CRC32_failed);
+            result = process_event_change_state_on_fail(&this->CRC32_frame, event, State::CRC32_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -165,7 +165,7 @@ namespace Gzip
             break;
 
         case State::ISIZE_state:
-            result = delegate_event_change_state_on_fail(&this->ISIZE_frame, event, State::ISIZE_failed);
+            result = process_event_change_state_on_fail(&this->ISIZE_frame, event, State::ISIZE_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 

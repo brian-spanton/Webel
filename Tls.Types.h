@@ -1004,7 +1004,7 @@ namespace Tls
             {
             case State::length_frame_pending_state:
                 {
-                    ProcessResult result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
+                    ProcessResult result = process_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
                     if (result == process_result_blocked)
                         return ProcessResult::process_result_blocked;
 
@@ -1057,7 +1057,7 @@ namespace Tls
 
             case State::item_pending_state:
                 {
-                    ProcessResult result = delegate_event_change_state_on_fail(this->item_frame.get(), event, State::item_frame_failed);
+                    ProcessResult result = process_event_change_state_on_fail(this->item_frame.get(), event, State::item_frame_failed);
                     if (result == process_result_blocked)
                         return ProcessResult::process_result_blocked;
 

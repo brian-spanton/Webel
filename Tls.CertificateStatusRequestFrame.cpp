@@ -20,7 +20,7 @@ namespace Tls
         {
         case State::type_frame_pending_state:
             {
-                ProcessResult result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+                ProcessResult result = process_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
@@ -39,7 +39,7 @@ namespace Tls
 
         case State::request_frame_pending_state:
             {
-                ProcessResult result = delegate_event_change_state_on_fail(&this->request_frame, event, State::request_frame_failed);
+                ProcessResult result = process_event_change_state_on_fail(&this->request_frame, event, State::request_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

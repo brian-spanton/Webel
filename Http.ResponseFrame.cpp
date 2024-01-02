@@ -125,7 +125,7 @@ namespace Http
 
         case State::headers_frame_pending_state:
             {
-                ProcessResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+                ProcessResult result = process_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
@@ -159,7 +159,7 @@ namespace Http
 
         case State::body_pending_state:
             {
-                ProcessResult result = delegate_event_change_state_on_fail(this->body_frame.get(), event, State::body_failed);
+                ProcessResult result = process_event_change_state_on_fail(this->body_frame.get(), event, State::body_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

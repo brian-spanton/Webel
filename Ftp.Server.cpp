@@ -71,7 +71,7 @@ namespace Ftp
 
         case State::command_frame_pending_state:
             {
-                ProcessResult result = delegate_event(&this->command_frame, event);
+                ProcessResult result = process_event(&this->command_frame, event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

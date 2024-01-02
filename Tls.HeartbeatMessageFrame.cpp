@@ -27,7 +27,7 @@ namespace Tls
         switch (get_state())
         {
         case State::type_frame_pending_state:
-            result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
+            result = process_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -36,7 +36,7 @@ namespace Tls
 
         case State::payload_length_frame_pending_state:
             {
-                result = delegate_event_change_state_on_fail(&this->payload_length_frame, event, State::payload_length_frame_failed);
+                result = process_event_change_state_on_fail(&this->payload_length_frame, event, State::payload_length_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
@@ -78,7 +78,7 @@ namespace Tls
 
         case State::payload_frame_pending_state:
             {
-                result = delegate_event_change_state_on_fail(&this->payload_frame, event, State::payload_frame_failed);
+                result = process_event_change_state_on_fail(&this->payload_frame, event, State::payload_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
@@ -89,7 +89,7 @@ namespace Tls
             break;
 
         case State::padding_frame_pending_state:
-            result = delegate_event_change_state_on_fail(&this->padding_frame, event, State::padding_frame_failed);
+            result = process_event_change_state_on_fail(&this->padding_frame, event, State::padding_frame_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 

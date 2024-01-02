@@ -126,7 +126,7 @@ namespace Service
 
         case State::command_frame_pending_state:
             {
-                ProcessResult result = delegate_event_throw_error_on_fail(&this->command_frame, event);
+                ProcessResult result = process_event_throw_error_on_fail(&this->command_frame, event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

@@ -276,7 +276,7 @@ namespace Web
             }
             else if (event->get_type() < response_headers_event)
             {
-                ProcessResult result = delegate_event(this->response_frame.get(), event);
+                ProcessResult result = process_event(this->response_frame.get(), event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

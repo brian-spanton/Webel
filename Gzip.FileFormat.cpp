@@ -29,7 +29,7 @@ namespace Gzip
             break;
 
         case State::member_frame_state:
-            result = delegate_event_change_state_on_fail(this->member_frame.get(), event, State::member_frame_failed);
+            result = process_event_change_state_on_fail(this->member_frame.get(), event, State::member_frame_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 

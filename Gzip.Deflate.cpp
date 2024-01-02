@@ -235,7 +235,7 @@ namespace Gzip
             break;
 
         case State::LEN_state:
-            result = delegate_event_change_state_on_fail(&this->LEN_frame, event, State::LEN_failed);
+            result = process_event_change_state_on_fail(&this->LEN_frame, event, State::LEN_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 
@@ -244,7 +244,7 @@ namespace Gzip
 
         case State::NLEN_state:
             {
-                result = delegate_event_change_state_on_fail(&this->NLEN_frame, event, State::NLEN_failed);
+                result = process_event_change_state_on_fail(&this->NLEN_frame, event, State::NLEN_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
@@ -268,7 +268,7 @@ namespace Gzip
             break;
 
         case State::uncompressed_data_state:
-            result = delegate_event_change_state_on_fail(&this->uncompressed_data_frame, event, State::uncompressed_data_failed);
+            result = process_event_change_state_on_fail(&this->uncompressed_data_frame, event, State::uncompressed_data_failed);
             if (result == process_result_blocked)
                 return ProcessResult::process_result_blocked;
 

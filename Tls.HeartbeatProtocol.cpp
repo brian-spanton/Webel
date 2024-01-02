@@ -36,7 +36,7 @@ namespace Tls
         {
         case State::heartbeat_message_frame_pending_state:
             {
-                ProcessResult result = delegate_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
+                ProcessResult result = process_event_change_state_on_fail(&this->heartbeat_message_frame, event, State::heartbeat_message_frame_failed);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

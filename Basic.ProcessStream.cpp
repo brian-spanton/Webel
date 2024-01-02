@@ -12,7 +12,7 @@ namespace Basic
         ReceivedBytesEvent event;
         event.Initialize(&this->element_source);
 
-        auto result = delegate_event(this->process.get(), &event);
+        auto result = process_event(this->process.get(), &event);
 
         if (this->process->failed())
             throw FatalError("ProcessStream<byte>::write_elements { this->process->failed() }");
@@ -28,7 +28,7 @@ namespace Basic
         ReceivedCodepointsEvent event;
         event.Initialize(&this->element_source);
 
-        auto result = delegate_event(this->process.get(), &event);
+        auto result = process_event(this->process.get(), &event);
 
         if (this->process->failed())
             throw FatalError("ProcessStream<Codepoint>::write_elements { this->process->failed() }");
