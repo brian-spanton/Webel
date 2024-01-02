@@ -1,7 +1,5 @@
 // Copyright © 2013 Brian Spanton
 
-// $$$ update all the copyrights
-
 #include "stdafx.h"
 #include "Tls.Types.h"
 #include "Tls.Globals.h"
