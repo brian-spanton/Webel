@@ -71,16 +71,19 @@ namespace Web
             request->Initialize(this->transaction->request.get());
             request->resource = url;
 
-            //$$$
-            //Note: RFC1945 and RFC2068 specify that the client is not allowed
-            //to change the method on the redirected request.  However, most
-            //existing user agent implementations treat 302 as if it were a 303
-            //response, performing a GET on the Location field-value regardless
-            //of the original request method. The status codes 303 and 307 have
-            //been added for servers that wish to make unambiguously clear which
-            //kind of reaction is expected of the client.
-            request->method = Http::globals->get_method;
-            request->request_body = 0;
+            if (this->transaction->response->code != 307)
+            {
+                // Note: RFC1945 and RFC2068 specify that the client is not allowed
+                // to change the method on the redirected request.  However, most
+                // existing user agent implementations treat 302 as if it were a 303
+                // response, performing a GET on the Location field-value regardless
+                // of the original request method. The status codes 303 and 307 have
+                // been added for servers that wish to make unambiguously clear which
+                // kind of reaction is expected of the client.
+
+                request->method = Http::globals->get_method;
+                request->request_body = 0;
+            }
 
             this->planned_request = request;
         }
