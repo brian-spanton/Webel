@@ -26,7 +26,7 @@ namespace Tls
         NumberFrame<uint32> time_frame;
         MemoryRange bytes_frame;
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         RandomFrame(Random* random);

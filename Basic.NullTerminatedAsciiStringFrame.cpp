@@ -12,16 +12,16 @@ namespace Basic
     {
     }
 
-    EventResult NullTerminatedAsciiStringFrame::consider_event(IEvent* event)
+    ProcessResult NullTerminatedAsciiStringFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::receiving_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == 0)
                 {
@@ -38,6 +38,6 @@ namespace Basic
             throw FatalError("Basic::StreamFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

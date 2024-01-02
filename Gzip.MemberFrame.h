@@ -74,6 +74,6 @@ namespace Gzip
     public:
         MemberFrame(MemberHeader* member);
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
     };
 }

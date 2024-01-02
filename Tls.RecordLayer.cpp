@@ -69,12 +69,12 @@ namespace Tls
         this->transport = peer;
     }
 
-    EventResult RecordLayer::consider_event(IEvent* event)
+    ProcessResult RecordLayer::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             DisconnectApplication();
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
         }
 
         switch (get_state())
@@ -84,7 +84,7 @@ namespace Tls
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
                 }
 
                 // produce same event but with specific element source so that handshake_protocol can AddObserver
@@ -101,7 +101,7 @@ namespace Tls
                     switch_to_state(State::receive_record_state);
                 }
 
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
@@ -112,9 +112,9 @@ namespace Tls
 
         case State::record_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(&this->record_frame, event, State::record_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 try // $$ remove dependency on exceptions
                 {
@@ -123,7 +123,7 @@ namespace Tls
                 catch (State error_state)
                 {
                     switch_to_state(error_state);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 switch_to_state(State::receive_record_state);
@@ -134,7 +134,7 @@ namespace Tls
             throw FatalError("Tls::RecordLayer::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     void RecordLayer::WriteAlert(AlertDescription description, AlertLevel level)

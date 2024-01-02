@@ -49,7 +49,7 @@ namespace Service
 
         void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);
 
-        virtual EventResult Basic::IProcess::consider_event(Basic::IEvent* event);
+        virtual ProcessResult Basic::IProcess::consider_event(Basic::IEvent* event);
 
     public:
         AdminProtocol(std::shared_ptr<Basic::IStream<Codepoint> > peer);

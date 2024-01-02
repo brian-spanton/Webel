@@ -21,7 +21,7 @@ namespace Http
             done_state = Succeeded_State,
         };
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         DisconnectBodyFrame(std::shared_ptr<IStream<byte> > body_stream);

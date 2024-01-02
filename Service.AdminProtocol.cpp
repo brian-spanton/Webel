@@ -32,7 +32,7 @@ namespace Service
         this->command_frame.reset();
     }
 
-    EventResult AdminProtocol::consider_event(Basic::IEvent* event)
+    ProcessResult AdminProtocol::consider_event(Basic::IEvent* event)
     {
         TextWriter writer(this->peer.get());
 
@@ -46,7 +46,7 @@ namespace Service
 				this->current_page = this->amazon_scrape->current_page;
 				writer.WriteLine("Amazon completed");
 
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
 			}
             // $ this comparison won't work cross-process
 			else if (cookie_event->cookie.get() == this->netflix_cookie.get())
@@ -54,7 +54,7 @@ namespace Service
 				this->current_page = this->netflix_scrape->current_page;
 				writer.WriteLine("Netflix completed");
 
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
 			}
 			else
 			{
@@ -94,7 +94,7 @@ namespace Service
                 }
             }
 
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
@@ -114,7 +114,7 @@ namespace Service
                 writer.WriteLine("Get completed without html");
             }
 
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
         }
         else switch (get_state())
         {
@@ -126,9 +126,9 @@ namespace Service
 
         case State::command_frame_pending_state:
             {
-                EventResult result = delegate_event_throw_error_on_fail(&this->command_frame, event);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_throw_error_on_fail(&this->command_frame, event);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 switch_to_state(State::start_state);
 
@@ -393,7 +393,7 @@ namespace Service
             throw Basic::FatalError("AdminProtocol::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
     
     void AdminProtocol::write_to_human_with_context(Html::Node* node, IStream<Codepoint>* stream, bool verbose)

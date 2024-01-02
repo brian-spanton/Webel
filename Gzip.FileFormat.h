@@ -32,6 +32,6 @@ namespace Gzip
     public:
         FileFormat(std::shared_ptr<IStream<byte> > first_output);
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
     };
 }

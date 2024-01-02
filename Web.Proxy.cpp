@@ -47,14 +47,14 @@ namespace Web
         }
     }
 
-    EventResult Proxy::consider_event(IEvent* event)
+    ProcessResult Proxy::consider_event(IEvent* event)
     {
         Hold hold(this->lock);
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             switch_to_state(State::done_state);
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
 
         switch (get_state())
@@ -64,7 +64,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
                 }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
@@ -91,7 +91,7 @@ namespace Web
                 {
                     HandleError("resolve failed");
                     switch_to_state(State::done_state);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 client_socket->StartConnect(addr);
@@ -140,17 +140,17 @@ namespace Web
             throw FatalError("Web::Proxy::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
-    EventResult Proxy::consider_server_event(IEvent* event)
+    ProcessResult Proxy::consider_server_event(IEvent* event)
     {
         Hold hold(this->lock);
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             switch_to_state(State::done_state);
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
 
         switch (get_state())
@@ -160,7 +160,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
                 }
 
                 if (this->buffer->size() > 0)
@@ -196,7 +196,7 @@ namespace Web
             throw FatalError("Web::Proxy::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     void ServerProxy::Initialize(std::shared_ptr<Proxy> proxy)
@@ -204,7 +204,7 @@ namespace Web
         this->proxy = proxy;
     }
 
-    EventResult ServerProxy::consider_event(IEvent* event)
+    ProcessResult ServerProxy::consider_event(IEvent* event)
     {
         return this->proxy->consider_server_event(event);
     }

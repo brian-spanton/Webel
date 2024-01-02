@@ -22,7 +22,7 @@ namespace Http
         uint32 bytes_expected;
         uint32 bytes_received;
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         LengthBodyFrame(std::shared_ptr<IStream<byte> > body_stream);

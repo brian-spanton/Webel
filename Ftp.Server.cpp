@@ -36,7 +36,7 @@ namespace Ftp
         }
     }
 
-    EventResult Server::consider_event(IEvent* event)
+    ProcessResult Server::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -71,9 +71,9 @@ namespace Ftp
 
         case State::command_frame_pending_state:
             {
-                EventResult result = delegate_event(&this->command_frame, event);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event(&this->command_frame, event);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (this->command_frame.failed())
                 {
@@ -94,6 +94,6 @@ namespace Ftp
             throw FatalError("Ftp::Server::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

@@ -32,19 +32,19 @@ namespace Basic
             this->word = std::make_shared<String<element_type> >();
         }
 
-        virtual EventResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
             case State::word_state:
                 {
                     if (event->get_type() == EventType::can_send_codepoints_event)
-                        return EventResult::event_result_yield; // event consumed
+                        return ProcessResult::process_result_blocked; // event consumed
 
                     element_type b;
-                    EventResult result = Event::ReadNext(event, &b);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
+                    ProcessResult result = Event::ReadNext(event, &b);
+                    if (result == process_result_blocked)
+                        return ProcessResult::process_result_blocked;
 
                     if (b == ' ')
                     {
@@ -67,7 +67,7 @@ namespace Basic
                 throw FatalError("CommandFrame::handle_event unexpected state");
             }
 
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
     };
 }

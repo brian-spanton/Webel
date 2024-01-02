@@ -121,7 +121,7 @@ namespace Basic
             this->received = 0;
         }
 
-        virtual EventResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -133,9 +133,9 @@ namespace Basic
             case State::receiving_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 byte* value_bytes = reinterpret_cast<byte*>(this->value);
                 int index = encoded_length - this->received - 1;
@@ -152,7 +152,7 @@ namespace Basic
                 throw FatalError("Tls::NumberFrame::handle_event unexpected state");
             }
 
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
     };
 

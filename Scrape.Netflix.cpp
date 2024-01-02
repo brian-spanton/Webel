@@ -61,7 +61,7 @@ namespace Scrape
 	}
 
 	// $$$ rename consider_event to process_event
-	EventResult Netflix::consider_event(IEvent* event)
+	ProcessResult Netflix::consider_event(IEvent* event)
 	{
 		Hold hold(this->lock);
 
@@ -74,11 +74,11 @@ namespace Scrape
 		    Basic::globals->HandleError("Netflix", error);
 		    switch_to_state(error);
 		    Complete();
-			return EventResult::event_result_process_inactive;
+			return ProcessResult::process_result_exited;
         }
     }
 
-	EventResult Netflix::consider_event_throw(IEvent* event)
+	ProcessResult Netflix::consider_event_throw(IEvent* event)
 	{
 		switch (this->get_state())
 		{
@@ -92,7 +92,7 @@ namespace Scrape
                     throw State::sign_in_page_headers_error;
 
                 switch_to_state(State::sign_in_page_body_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
 			break;
 
@@ -139,7 +139,7 @@ namespace Scrape
                     throw State::auth_landing_page_headers_error;
 
                 switch_to_state(State::auth_landing_page_body_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
@@ -151,7 +151,7 @@ namespace Scrape
 				this->client->Get(Scrape::globals->netflix_url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::auth_landing_page_headers_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
 			}
 			break;
 
@@ -165,7 +165,7 @@ namespace Scrape
                     throw State::auth_home_page_headers_error;
 
                 switch_to_state(State::auth_home_page_body_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
@@ -205,7 +205,7 @@ namespace Scrape
                     throw State::form_submit_error;
 
 				switch_to_state(State::search_paging_headers_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
 			}
 			break;
 
@@ -219,7 +219,7 @@ namespace Scrape
                     throw State::search_paging_headers_error;
 
                 switch_to_state(State::search_paging_body_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
@@ -239,7 +239,7 @@ namespace Scrape
 				{
 					switch_to_state(State::done_state);
 					Complete();
-					return EventResult::event_result_yield;
+					return ProcessResult::process_result_blocked;
 				}
 
 				this->current_row = next_row;
@@ -254,7 +254,7 @@ namespace Scrape
 				{
 					switch_to_state(State::search_paging_headers_state);
 					this->client->Get(this->next_page, 0, this->shared_from_this(), ByteStringRef());
-					return EventResult::event_result_yield; // event consumed
+					return ProcessResult::process_result_blocked; // event consumed
 				}
 
 				UnicodeStringRef movie_id = this->movies.back();
@@ -267,7 +267,7 @@ namespace Scrape
 				this->client->Get(movie_url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::movie_page_headers_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
 			}
 			break;
 
@@ -281,7 +281,7 @@ namespace Scrape
                     throw State::movie_page_headers_error;
 
                 switch_to_state(State::movie_page_body_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
 			break;
 
@@ -302,7 +302,7 @@ namespace Scrape
 			throw FatalError("Netflix::Process unexpected state");
 		}
 
-		return EventResult::event_result_continue;
+		return ProcessResult::process_result_ready;
 	}
 
 	void Netflix::ScrapeMovies(std::shared_ptr<Basic::Uri>* next_page, uint32* next_row)

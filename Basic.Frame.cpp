@@ -68,20 +68,20 @@ namespace Basic
         return StateMachine::failed();
     }
 
-    EventResult Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
+    ProcessResult Frame::delegate_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
     {
-        EventResult result = delegate_event(process, event);
+        ProcessResult result = delegate_event(process, event);
 
         if (process->failed())
         {
             this->switch_to_state(state);
-            return EventResult::event_result_yield; // process failed
+            return ProcessResult::process_result_blocked; // process failed
         }
 
         return result;
     }
 
-    EventResult delegate_event(IProcess* process, IEvent* event)
+    ProcessResult delegate_event(IProcess* process, IEvent* event)
     {
         // give up to 0x100000 CPU slices to the current process so long as it reports it is still doing work
         for (uint64 i = 0; i != 0x10000000; i++)
@@ -89,19 +89,19 @@ namespace Basic
             // doing this check first so that inactive processes never receive events.
             // this simplifies process state machines.
             if (!process->in_progress())
-                return EventResult::event_result_process_inactive;
+                return ProcessResult::process_result_exited;
 
             // $$$ rename yield to blocked
-            if (process->consider_event(event) == event_result_yield)
-                return EventResult::event_result_yield;
+            if (process->consider_event(event) == process_result_blocked)
+                return ProcessResult::process_result_blocked;
         }
 
         throw FatalError("runaway frame?");
     }
 
-    EventResult delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
+    ProcessResult delegate_event_throw_error_on_fail(IProcess* process, IEvent* event)
     {
-        EventResult result = delegate_event(process, event);
+        ProcessResult result = delegate_event(process, event);
 
         if (process->failed())
             throw FatalError("Basic::Frame::delegate_event_throw_error_on_fail { process->failed() }");
@@ -112,8 +112,8 @@ namespace Basic
     // an event producer calls this guy, which doesn't care whether the event is fully consumed
     void produce_event(IProcess* process, IEvent* event)
     {
-        EventResult result = delegate_event(process, event);
-        if (result == EventResult::event_result_continue)
-            throw FatalError("Basic::Frame::produce_event { result == EventResult::event_result_continue }");
+        ProcessResult result = delegate_event(process, event);
+        if (result == ProcessResult::process_result_ready)
+            throw FatalError("Basic::Frame::produce_event { result == ProcessResult::process_result_ready }");
     }
 }

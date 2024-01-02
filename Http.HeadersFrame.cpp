@@ -15,16 +15,16 @@ namespace Http
     {
     }
 
-    EventResult HeadersFrame::consider_event(IEvent* event)
+    ProcessResult HeadersFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::expecting_name_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -46,9 +46,9 @@ namespace Http
         case State::receiving_name_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->colon)
                 {
@@ -79,9 +79,9 @@ namespace Http
         case State::expecting_colon_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->colon)
                 {
@@ -100,9 +100,9 @@ namespace Http
         case State::expecting_value_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -122,9 +122,9 @@ namespace Http
         case State::receiving_value_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -140,9 +140,9 @@ namespace Http
         case State::expecting_LF_after_value_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->LF)
                 {
@@ -158,9 +158,9 @@ namespace Http
         case State::expecting_next_header_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -198,9 +198,9 @@ namespace Http
         case State::expecting_LF_after_headers_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->LF)
                 {
@@ -217,6 +217,6 @@ namespace Http
             throw FatalError("HeadersFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

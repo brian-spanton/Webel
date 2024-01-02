@@ -46,9 +46,9 @@ namespace Tls
             Event::RemoveObserver<byte>(event, this->counter);
     }
 
-    EventResult ClientHelloFrame::consider_event(IEvent* event)
+    ProcessResult ClientHelloFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
@@ -61,32 +61,32 @@ namespace Tls
 
         case State::version_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::random_frame_pending_state);
             break;
 
         case State::random_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::session_id_frame_pending_state);
             break;
 
         case State::session_id_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->session_id_frame, event, State::session_id_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::cipher_suites_frame_pending_state);
             break;
 
         case State::cipher_suites_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->cipher_suites_frame, event, State::cipher_suites_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             // IANA cipher suites registry
             // http:// www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-3
@@ -96,8 +96,8 @@ namespace Tls
         case State::compression_methods_frame_pending_state:
             {
                 result = delegate_event_change_state_on_fail(&this->compression_methods_frame, event, State::compression_methods_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 uint32 received = this->counter->count;
 
@@ -119,8 +119,8 @@ namespace Tls
         case State::extensions_length_frame_pending_state:
             {
                 result = delegate_event_change_state_on_fail(&this->extensions_length_frame, event, State::extensions_length_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 this->counter->count = 0;
                 this->extension_header_frame.reset();
@@ -131,8 +131,8 @@ namespace Tls
         case State::extension_header_frame_pending_state:
             {
                 result = delegate_event_change_state_on_fail(&this->extension_header_frame, event, State::extension_header_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 uint32 received = this->counter->count;
 
@@ -183,56 +183,56 @@ namespace Tls
 
         case State::server_name_list_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->server_name_list_frame, event, State::server_name_list_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::supported_signature_algorithms_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->supported_signature_algorithms_frame, event, State::supported_signature_algorithms_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::renegotiation_info_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->renegotiation_info_frame, event, State::renegotiation_info_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::certificate_status_request_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->certificate_status_request_frame, event, State::certificate_status_request_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::elliptic_curve_list_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->elliptic_curve_list_frame, event, State::elliptic_curve_list_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::ec_point_format_list_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->ec_point_format_list_frame, event, State::ec_point_format_list_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
 
         case State::heartbeat_extension_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->heartbeat_extension_frame, event, State::heartbeat_extension_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             this->clientHello->heartbeat_extension_initialized = true;
@@ -240,8 +240,8 @@ namespace Tls
 
         case State::unknown_extension_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->unknown_extension_frame, event, State::unknown_extension_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(event, State::next_extension_state);
             break;
@@ -270,6 +270,6 @@ namespace Tls
             throw FatalError("ClientHelloFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

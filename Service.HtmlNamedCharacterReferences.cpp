@@ -39,7 +39,7 @@ namespace Service
         }
     }
 
-    EventResult HtmlNamedCharacterReferences::consider_event(IEvent* event)
+    ProcessResult HtmlNamedCharacterReferences::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -51,7 +51,7 @@ namespace Service
                     if (this->client->transaction->response->code != 200)
                     {
                         switch_to_state(State::done_state);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
 
                     UnicodeStringRef charset;
@@ -61,7 +61,7 @@ namespace Service
 
                     this->client->set_decoded_content_stream(this->json_parser);
 
-                    return EventResult::event_result_yield; // event consumed
+                    return ProcessResult::process_result_blocked; // event consumed
                 }
                 break;
 
@@ -138,6 +138,6 @@ namespace Service
             throw FatalError("Html::Globals::Complete unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

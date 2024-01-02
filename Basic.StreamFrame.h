@@ -33,7 +33,7 @@ namespace Basic
             this->received = 0;
         }
 
-        virtual EventResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -42,9 +42,9 @@ namespace Basic
                     const element_type* elements;
                     uint32 useable;
 
-                    EventResult result = Event::Read(event, this->expected - this->received, &elements, &useable);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
+                    ProcessResult result = Event::Read(event, this->expected - this->received, &elements, &useable);
+                    if (result == process_result_blocked)
+                        return ProcessResult::process_result_blocked;
 
                     destination->write_elements(elements, useable);
 
@@ -53,7 +53,7 @@ namespace Basic
                     if (this->received == this->expected)
                     {
                         switch_to_state(State::done_state);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
                 }
                 break;
@@ -62,7 +62,7 @@ namespace Basic
                 throw FatalError("Basic::StreamFrame::handle_event unexpected state");
             }
 
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
     };
 }

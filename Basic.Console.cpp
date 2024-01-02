@@ -134,7 +134,7 @@ namespace Basic
         if (output == INVALID_HANDLE_VALUE)
             return;
 
-        // $$$ switch to support UTF-16 using WriteConsoleW
+        // $$ switch to converting to UTF-16 and using WriteConsoleW
 
         ByteString ascii_elements;
 

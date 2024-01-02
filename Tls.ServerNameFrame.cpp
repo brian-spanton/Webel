@@ -15,9 +15,9 @@ namespace Tls
     {
     }
 
-    EventResult ServerNameFrame::consider_event(IEvent* event)
+    ProcessResult ServerNameFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
@@ -27,16 +27,16 @@ namespace Tls
 
         case State::type_state:
             result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::name_state);
             break;
 
         case State::name_state:
             result = delegate_event_change_state_on_fail(&this->name_frame, event, State::name_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -45,6 +45,6 @@ namespace Tls
             throw FatalError("Tls::ServerNameFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

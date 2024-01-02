@@ -37,7 +37,7 @@ namespace Http
         LengthBodyFrame chunk_frame;
         HeadersFrame headers_frame;
 
-        EventResult IProcess::consider_event(IEvent* event);
+        ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, std::shared_ptr<NameValueCollection> headers);

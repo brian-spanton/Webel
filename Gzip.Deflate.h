@@ -99,12 +99,12 @@ namespace Gzip
         static std::shared_ptr<HuffmanAlphabet<uint16> > HLIT_fixed;
         static std::shared_ptr<HuffmanAlphabet<byte> > HDIST_fixed;
 
-        EventResult read_next(IEvent* event, uint16* output, byte count);
-        EventResult read_next(IEvent* event, byte* output, byte count);
+        ProcessResult read_next(IEvent* event, uint16* output, byte count);
+        ProcessResult read_next(IEvent* event, byte* output, byte count);
 
     public:
         Deflate(std::shared_ptr<IStream<byte> > output_stream);
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
     };
 }

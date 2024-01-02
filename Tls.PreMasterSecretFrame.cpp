@@ -14,24 +14,24 @@ namespace Tls
     {
     }
 
-    EventResult PreMasterSecretFrame::consider_event(IEvent* event)
+    ProcessResult PreMasterSecretFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
         case State::version_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::random_frame_pending_state);
             break;
 
         case State::random_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->random_frame, event, State::random_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -40,6 +40,6 @@ namespace Tls
             throw FatalError("PreMasterSecretFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

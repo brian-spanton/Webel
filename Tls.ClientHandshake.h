@@ -61,7 +61,7 @@ namespace Tls
         VectorFrame<Certificates> certificates_frame;
 
         virtual void PartitionKeyMaterial(ByteString* key_material);
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         ClientHandshake(RecordLayer* session);

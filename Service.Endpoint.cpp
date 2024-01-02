@@ -21,15 +21,15 @@ namespace Service
         }
     }
 
-    EventResult Endpoint::consider_event(IEvent* event)
+    ProcessResult Endpoint::consider_event(IEvent* event)
     {
         if (event->get_type() != Http::EventType::accept_complete_event)
         {
             HandleError("unexpected event");
-            return EventResult::event_result_yield; // unexpected event
+            return ProcessResult::process_result_blocked; // unexpected event
         }
 
         SpawnListener();
-        return EventResult::event_result_yield; // event consumed
+        return ProcessResult::process_result_blocked; // event consumed
     }
 }

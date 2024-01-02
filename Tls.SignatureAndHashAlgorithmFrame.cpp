@@ -15,9 +15,9 @@ namespace Tls
     {
     }
 
-    EventResult SignatureAndHashAlgorithmFrame::consider_event(IEvent* event)
+    ProcessResult SignatureAndHashAlgorithmFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
@@ -27,16 +27,16 @@ namespace Tls
 
         case State::signature_algorithm_state:
             result = delegate_event_change_state_on_fail(&this->signature_algorithm_frame, event, State::signature_algorithm_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::name_state);
             break;
 
         case State::name_state:
             result = delegate_event_change_state_on_fail(&this->hash_algorithm_frame, event, State::hash_algorithm_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -45,6 +45,6 @@ namespace Tls
             throw FatalError("Tls::SignatureAndHashAlgorithmFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

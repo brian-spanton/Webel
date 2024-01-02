@@ -20,7 +20,7 @@ namespace Basic
         uint64 expected;
         uint64 received;
 
-        virtual EventResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::consider_event(IEvent* event)
         {
             switch (get_state())
             {
@@ -32,16 +32,16 @@ namespace Basic
                     uint64 still_needed = this->expected - this->received;
                     uint32 count = still_needed > 0xffffffff ? 0xffffffff : (uint32)still_needed;
 
-                    EventResult result = Event::Read(event, count, &elements, &useable);
-                    if (result == event_result_yield)
-                        return EventResult::event_result_yield;
+                    ProcessResult result = Event::Read(event, count, &elements, &useable);
+                    if (result == process_result_blocked)
+                        return ProcessResult::process_result_blocked;
 
                     this->received += useable;
 
                     if (this->received == this->expected)
                     {
                         switch_to_state(State::done_state);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
                 }
                 break;
@@ -50,7 +50,7 @@ namespace Basic
                 throw FatalError("Basic::IgnoreFrame::handle_event unexpected state");
             }
 
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
 
     public:

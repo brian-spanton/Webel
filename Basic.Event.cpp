@@ -7,41 +7,41 @@
 namespace Basic
 {
     template <>
-    EventResult Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
+    ProcessResult Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
     {
         if (event->get_type() != EventType::received_bytes_event)
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return EventResult::event_result_yield; // unexpected event
+            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 
         if (read_event->element_source->Exhausted())
-            return EventResult::event_result_yield;
+            return ProcessResult::process_result_blocked;
 
         read_event->element_source->Read(count, out_address, out_count);
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     template <>
-    EventResult Event::ReadNext(IEvent* event, byte* element)
+    ProcessResult Event::ReadNext(IEvent* event, byte* element)
     {
         if (event->get_type() != EventType::received_bytes_event)
         {
             HandleError("unexpected event");
-            return EventResult::event_result_yield; // unexpected event
+            return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
         if (read_event->element_source->Exhausted())
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
 
         read_event->element_source->ReadNext(element);
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     template <>
@@ -79,42 +79,42 @@ namespace Basic
     }
 
     template <>
-    EventResult Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
+    ProcessResult Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
     {
         if (event->get_type() != EventType::received_codepoints_event)
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return EventResult::event_result_yield; // unexpected event
+            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
 
         if (read_event->element_source->Exhausted())
-            return EventResult::event_result_yield;
+            return ProcessResult::process_result_blocked;
 
         read_event->element_source->Read(count, out_address, out_count);
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     template <>
-    EventResult Event::ReadNext(IEvent* event, Codepoint* element)
+    ProcessResult Event::ReadNext(IEvent* event, Codepoint* element)
     {
         if (event->get_type() != EventType::received_codepoints_event)
         {
             HandleError("unexpected event");
             throw FatalError("unexpected event");
-            //return EventResult::event_result_yield; // unexpected event
+            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
         if (read_event->element_source->Exhausted())
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
 
         read_event->element_source->ReadNext(element);
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     template <>

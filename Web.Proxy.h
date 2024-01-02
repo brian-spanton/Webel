@@ -32,13 +32,13 @@ namespace Web
 
         void switch_to_state(State state);
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         Proxy(std::shared_ptr<IProcess> completion, ByteStringRef cookie, std::shared_ptr<Uri> server_url);
 
         void start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate);
-        EventResult consider_server_event(IEvent* event);
+        ProcessResult consider_server_event(IEvent* event);
     };
 
     class ServerProxy : public Frame
@@ -46,7 +46,7 @@ namespace Web
     private:
         std::shared_ptr<Proxy> proxy;
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         void Initialize(std::shared_ptr<Proxy> proxy);

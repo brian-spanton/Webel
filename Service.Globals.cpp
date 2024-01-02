@@ -462,14 +462,14 @@ namespace Service
         return true;
     }
 
-    EventResult Globals::consider_event(IEvent* event)
+    ProcessResult Globals::consider_event(IEvent* event)
     {
         switch (get_state())
         {
             case State::test_gzip_state:
             {
                 if (event->get_type() != Service::EventType::io_completion_event)
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
 
                 CloseHandle(this->gzip_test_file);
                 this->gzip_test_file = INVALID_HANDLE_VALUE;
@@ -506,7 +506,7 @@ namespace Service
         case State::pending_pfx_state:
             {
                 if (event->get_type() != Service::EventType::io_completion_event)
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
 
                 CloseHandle(this->pfx_file);
                 this->pfx_file = INVALID_HANDLE_VALUE;
@@ -532,7 +532,7 @@ namespace Service
                 if (event->get_type() != Basic::EventType::encodings_complete_event)
                 {
                     Basic::HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
                 }
 
                 DebugWriter()->WriteLine("initializing html globals");
@@ -547,7 +547,7 @@ namespace Service
         case State::named_character_references_pending_state:
             {
                 if (event->get_type() != Service::EventType::characters_complete_event)
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
 
                 DebugWriter()->WriteLine("initializing endpoints");
 
@@ -561,19 +561,19 @@ namespace Service
                 this->ftp_control_endpoint->SpawnListeners(20);
 
                 switch_to_state(State::accepts_pending_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
         case State::accepts_pending_state:
             // this is basically an idle state, waiting for connections.
-            return EventResult::event_result_yield;
+            return ProcessResult::process_result_blocked;
 
         default:
             throw FatalError("Html::Globals::Complete unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     bool Globals::SetThreadCount(uint32 count)

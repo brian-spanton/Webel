@@ -23,24 +23,24 @@ namespace Tls
         this->length_frame.reset();
     }
 
-    EventResult RecordFrame::consider_event(IEvent* event)
+    ProcessResult RecordFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
         case State::type_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::version_frame_pending_state);
             break;
 
         case State::version_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->version_frame, event, State::version_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::length_frame_pending_state);
             break;
@@ -48,8 +48,8 @@ namespace Tls
         case State::length_frame_pending_state:
             {
                 result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 this->record->fragment = std::make_shared<ByteString>();
                 this->record->fragment->resize(this->record->length);
@@ -60,8 +60,8 @@ namespace Tls
 
         case State::fragment_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->fragment_frame, event, State::fragment_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -70,6 +70,6 @@ namespace Tls
             throw FatalError("Tls::RecordFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

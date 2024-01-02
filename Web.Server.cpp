@@ -46,12 +46,12 @@ namespace Web
         }
     }
 
-    EventResult Server::consider_event(IEvent* event)
+    ProcessResult Server::consider_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             switch_to_state(State::done_state);
-            return EventResult::event_result_yield; // event consumed
+            return ProcessResult::process_result_blocked; // event consumed
         }
 
         switch (get_state())
@@ -61,7 +61,7 @@ namespace Web
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
                     HandleError("unexpected event");
-                    return EventResult::event_result_yield; // unexpected event
+                    return ProcessResult::process_result_blocked; // unexpected event
                 }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
@@ -75,7 +75,7 @@ namespace Web
                 }
 
                 switch_to_state(State::new_request_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 
@@ -92,9 +92,9 @@ namespace Web
 
         case State::request_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(this->request_frame.get(), event, State::request_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 Basic::globals->DebugWriter()->write_literal("Request received: ");
                 render_request_line(this->request.get(),  &Basic::globals->DebugWriter()->decoder);
@@ -141,7 +141,7 @@ namespace Web
                     if (equals<UnicodeString, false>(connection.get(), Http::globals->keep_alive.get()))
                     {
                         switch_to_state(State::new_request_state);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
                 }
 
@@ -154,6 +154,6 @@ namespace Web
             throw FatalError("Web::Server::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

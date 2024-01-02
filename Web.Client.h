@@ -47,7 +47,7 @@ namespace Web
         void QueuePlanned();
         void QueueJob();
 
-        virtual EventResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::consider_event(IEvent* event);
 
     public:
         // $$$ these members being public makes them accessible without taking the lock... sketchy

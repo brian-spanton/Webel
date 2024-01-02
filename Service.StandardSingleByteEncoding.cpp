@@ -32,7 +32,7 @@ namespace Service
         }
     }
 
-    EventResult StandardSingleByteEncoding::consider_event(IEvent* event)
+    ProcessResult StandardSingleByteEncoding::consider_event(IEvent* event)
     {
         if (event->get_type() == Http::EventType::response_complete_event)
         {
@@ -42,7 +42,7 @@ namespace Service
             Basic::globals->DebugWriter()->WriteLine();
 
             switch_to_state(State::connection_lost_error);
-            return EventResult::event_result_continue;
+            return ProcessResult::process_result_ready;
         }
 
         switch (get_state())
@@ -55,13 +55,13 @@ namespace Service
                 if (this->client->transaction->response->code != 200)
                 {
                     switch_to_state(State::done_state);
-                    return EventResult::event_result_yield;
+                    return ProcessResult::process_result_blocked;
                 }
 
                 this->client->set_decoded_content_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
-                return EventResult::event_result_yield; // event consumed
+                return ProcessResult::process_result_blocked; // event consumed
             }
             break;
 

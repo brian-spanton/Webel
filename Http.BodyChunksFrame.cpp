@@ -19,16 +19,16 @@ namespace Http
     {
     }
 
-    EventResult BodyChunksFrame::consider_event(IEvent* event)
+    ProcessResult BodyChunksFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::start_chunk_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -40,7 +40,7 @@ namespace Http
                     if (!success)
                     {
                         switch_to_state(State::start_chunk_error);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
                 }
             }
@@ -49,14 +49,14 @@ namespace Http
         case State::expecting_LF_after_size_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b != Http::globals->LF)
                 {
                     switch_to_state(State::expecting_LF_after_size_error);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 if (this->size == 0)
@@ -75,9 +75,9 @@ namespace Http
 
         case State::chunk_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(&this->chunk_frame, event, State::chunk_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 switch_to_state(State::expecting_CR_after_chunk_state);
             }
@@ -86,14 +86,14 @@ namespace Http
         case State::expecting_CR_after_chunk_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b != Http::globals->CR)
                 {
                     switch_to_state(State::expecting_CR_after_chunk_error);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 switch_to_state(State::expecting_LF_after_chunk_state);
@@ -103,14 +103,14 @@ namespace Http
         case State::expecting_LF_after_chunk_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b != Http::globals->LF)
                 {
                     switch_to_state(State::expecting_LF_after_chunk_error);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 this->size_stream.reset();
@@ -120,9 +120,9 @@ namespace Http
 
         case State::headers_frame_pending:
             {
-                EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::header_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::header_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 this->decoded_content_stream->write_eof();
                 switch_to_state(State::done_state);
@@ -133,6 +133,6 @@ namespace Http
             throw FatalError("BodyChunksFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

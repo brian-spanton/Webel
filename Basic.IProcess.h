@@ -6,11 +6,11 @@ namespace Basic
 {
     __interface IEvent;
 
-    enum EventResult
+    enum ProcessResult
     {
-        event_result_yield = 0,
-        event_result_continue,
-        event_result_process_inactive,
+        process_result_blocked = 0,
+        process_result_ready,
+        process_result_exited,
     };
 
     enum EventType
@@ -30,7 +30,7 @@ namespace Basic
     // semantics are adequate, consider using IStream.
     __interface IProcess
     {
-        EventResult consider_event(IEvent* event);
+        ProcessResult consider_event(IEvent* event);
         bool in_progress();
         bool succeeded();
         bool failed();

@@ -21,24 +21,24 @@ namespace Tls
         this->length_frame.reset();
     }
 
-    EventResult HandshakeFrame::consider_event(IEvent* event)
+    ProcessResult HandshakeFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
         case State::type_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->type_frame, event, State::type_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::length_frame_pending_state);
             break;
 
         case State::length_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->length_frame, event, State::length_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -47,6 +47,6 @@ namespace Tls
             throw FatalError("Tls::HandshakeFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

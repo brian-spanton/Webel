@@ -14,24 +14,24 @@ namespace Tls
     {
     }
 
-    EventResult RandomFrame::consider_event(IEvent* event)
+    ProcessResult RandomFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
         case State::time_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->time_frame, event, State::time_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::bytes_frame_pending_state);
             break;
 
         case State::bytes_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->bytes_frame, event, State::bytes_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -40,6 +40,6 @@ namespace Tls
             throw FatalError("Tls::RandomFrame unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

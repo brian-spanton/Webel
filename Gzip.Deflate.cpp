@@ -119,7 +119,7 @@ namespace Gzip
         this->output_stream = splitter;
     }
 
-    EventResult Deflate::read_next(IEvent* event, uint16* output, byte count)
+    ProcessResult Deflate::read_next(IEvent* event, uint16* output, byte count)
     {
         uint32 dw = 0;
 
@@ -129,9 +129,9 @@ namespace Gzip
         while (this->buffered_bits_length < count)
         {
             byte b;
-            EventResult result = Event::ReadNext(event, &b);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            ProcessResult result = Event::ReadNext(event, &b);
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             dw = b;
             dw = (dw << this->buffered_bits_length);
@@ -148,25 +148,25 @@ namespace Gzip
         if (this->buffered_bits_length > 7)
             throw FatalError("consumed too many bytes somehow");
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
-    EventResult Deflate::read_next(IEvent* event, byte* output, byte count)
+    ProcessResult Deflate::read_next(IEvent* event, byte* output, byte count)
     {
         uint16 w;
-        EventResult result = read_next(event, &w, count);
-        if (result == EventResult::event_result_yield)
-            return EventResult::event_result_yield;
+        ProcessResult result = read_next(event, &w, count);
+        if (result == ProcessResult::process_result_blocked)
+            return ProcessResult::process_result_blocked;
 
         (*output) = (byte)w;
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
-    EventResult Deflate::consider_event(IEvent* event)
+    ProcessResult Deflate::consider_event(IEvent* event)
     {
         // RFC1951 https://www.rfc-editor.org/rfc/rfc1951
 
-        EventResult result;
+        ProcessResult result;
         byte b;
 
         switch (get_state())
@@ -188,8 +188,8 @@ namespace Gzip
 
         case State::BFINAL_state:
             result = read_next(event, &b, 1);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->BFINAL = (bool)b;
             switch_to_state(BTYPE_state);
@@ -198,8 +198,8 @@ namespace Gzip
         case State::BTYPE_state:
             {
                 result = read_next(event, &b, 2);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 BlockType BTYPE = (BlockType)b;
                 switch (BTYPE)
@@ -236,8 +236,8 @@ namespace Gzip
 
         case State::LEN_state:
             result = delegate_event_change_state_on_fail(&this->LEN_frame, event, State::LEN_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::NLEN_state);
             break;
@@ -245,14 +245,14 @@ namespace Gzip
         case State::NLEN_state:
             {
                 result = delegate_event_change_state_on_fail(&this->NLEN_frame, event, State::NLEN_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 uint16 ones_complement = this->LEN ^ 0xffff;
                 if (this->NLEN != ones_complement)
                 {
                     switch_to_state(NLEN_failed);
-                    return EventResult::event_result_yield;
+                    return ProcessResult::process_result_blocked;
                 }
 
                 if (this->LEN == 0)
@@ -269,16 +269,16 @@ namespace Gzip
 
         case State::uncompressed_data_state:
             result = delegate_event_change_state_on_fail(&this->uncompressed_data_frame, event, State::uncompressed_data_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::next_block_state);
             break;
 
         case State::HLIT_state:
             result = read_next(event, &b, 5);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->HLIT = (uint16)b + 257;
             switch_to_state(HDIST_state);
@@ -286,8 +286,8 @@ namespace Gzip
 
         case State::HDIST_state:
             result = read_next(event, &b, 5);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->HDIST = b + 1;
             switch_to_state(HCLEN_state);
@@ -295,8 +295,8 @@ namespace Gzip
 
         case State::HCLEN_state:
             result = read_next(event, &b, 4);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->HCLEN = b + 4;
             this->HCLEN_count = 0;
@@ -318,8 +318,8 @@ namespace Gzip
                 }
 
                 result = read_next(event, &b, 3);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 byte index = Deflate::HCLEN_index[this->HCLEN_count];
                 this->dynamic_code_lengths[index] = b;
@@ -378,8 +378,8 @@ namespace Gzip
                 }
 
                 result = read_next(event, &b, 1);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 this->HCLEN_current = this->HCLEN_current->children[b];
                 if (!this->HCLEN_current)
@@ -414,9 +414,9 @@ namespace Gzip
         case State::extra_bits_state:
             {
                 uint16 w;
-                EventResult result = read_next(event, &w, this->extra_bits_parameters->length);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = read_next(event, &w, this->extra_bits_parameters->length);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 this->extra_bits = w + this->extra_bits_parameters->base;
                 switch_to_state(this->state_after_extra_bits);
@@ -450,8 +450,8 @@ namespace Gzip
 
         case State::length_code_state:
             result = read_next(event, &b, 1);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->HLIT_current = this->HLIT_current->children[b];
             if (!this->HLIT_current)
@@ -505,8 +505,8 @@ namespace Gzip
 
         case State::distance_code_state:
             result = read_next(event, &b, 1);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             this->HDIST_current = this->HDIST_current->children[b];
             if (!this->HDIST_current)
@@ -557,6 +557,6 @@ namespace Gzip
             throw FatalError("ServerHelloFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

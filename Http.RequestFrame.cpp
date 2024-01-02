@@ -20,16 +20,16 @@ namespace Http
         this->resource_string->reserve(0x100);
     }
 
-    EventResult RequestFrame::consider_event(IEvent* event)
+    ProcessResult RequestFrame::consider_event(IEvent* event)
     {
         switch (get_state())
         {
         case State::receiving_method_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->SP)
                 {
@@ -49,9 +49,9 @@ namespace Http
         case State::receiving_resource_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->SP)
                 {
@@ -73,9 +73,9 @@ namespace Http
         case State::receiving_protocol_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->CR)
                 {
@@ -91,9 +91,9 @@ namespace Http
         case State::expecting_LF_after_protocol_state:
             {
                 byte b;
-                EventResult result = Event::ReadNext(event, &b);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = Event::ReadNext(event, &b);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 if (b == Http::globals->LF)
                 {
@@ -108,9 +108,9 @@ namespace Http
 
         case State::headers_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(&this->headers_frame, event, State::headers_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
                 std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>();
@@ -121,7 +121,7 @@ namespace Http
                 if (!this->body_frame)
                 {
                     switch_to_state(State::done_state);
-                    return EventResult::event_result_continue;
+                    return ProcessResult::process_result_ready;
                 }
 
                 switch_to_state(State::body_frame_pending_state);
@@ -130,9 +130,9 @@ namespace Http
 
         case State::body_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(this->body_frame.get(), event, State::body_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(this->body_frame.get(), event, State::body_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 switch_to_state(State::done_state);
             }
@@ -142,7 +142,7 @@ namespace Http
             throw FatalError("Http::RequestFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 
     void render_request_line(const Request* value, IStream<byte>* stream)

@@ -14,24 +14,24 @@ namespace Tls
     {
     }
 
-    EventResult OCSPStatusRequestFrame::consider_event(IEvent* event)
+    ProcessResult OCSPStatusRequestFrame::consider_event(IEvent* event)
     {
-        EventResult result;
+        ProcessResult result;
 
         switch (get_state())
         {
         case State::list_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->list_frame, event, State::list_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::extensions_frame_pending_state);
             break;
 
         case State::extensions_frame_pending_state:
             result = delegate_event_change_state_on_fail(&this->extensions_frame, event, State::extensions_frame_failed);
-            if (result == event_result_yield)
-                return EventResult::event_result_yield;
+            if (result == process_result_blocked)
+                return ProcessResult::process_result_blocked;
 
             switch_to_state(State::done_state);
             break;
@@ -40,6 +40,6 @@ namespace Tls
             throw FatalError("OCSPStatusRequestFrame::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

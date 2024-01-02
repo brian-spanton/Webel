@@ -69,7 +69,7 @@ namespace Scrape
 		void Scrape(std::shared_ptr<Html::Node> node);
 		bool set_body_stream();
 		void Error(const char* error);
-		EventResult consider_event_throw(IEvent* event);
+		ProcessResult consider_event_throw(IEvent* event);
 
 	public:
 		std::shared_ptr<Web::Page> current_page;
@@ -77,6 +77,6 @@ namespace Scrape
 		Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie);
 
         void start();
-		virtual EventResult IProcess::consider_event(IEvent* event);
+		virtual ProcessResult IProcess::consider_event(IEvent* event);
 	};
 }

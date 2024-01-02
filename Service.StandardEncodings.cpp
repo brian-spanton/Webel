@@ -45,7 +45,7 @@ namespace Service
         }
     }
 
-    EventResult StandardEncodings::consider_event(IEvent* event)
+    ProcessResult StandardEncodings::consider_event(IEvent* event)
     {
         bool found_ascii = false;
 
@@ -59,7 +59,7 @@ namespace Service
                     if (this->client->transaction->response->code != 200)
                     {
                         switch_to_state(State::done_state);
-                        return EventResult::event_result_continue;
+                        return ProcessResult::process_result_ready;
                     }
 
                     UnicodeStringRef charset;
@@ -69,7 +69,7 @@ namespace Service
 
                     this->client->set_decoded_content_stream(this->json_parser);
 
-                    return EventResult::event_result_yield; // event consumed
+                    return ProcessResult::process_result_blocked; // event consumed
                 }
                 break;
 
@@ -249,6 +249,6 @@ namespace Service
             throw FatalError("Globals::Complete unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }

@@ -15,7 +15,7 @@ namespace Tls
     {
     }
 
-    EventResult AlertProtocol::consider_event(IEvent* event)
+    ProcessResult AlertProtocol::consider_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -26,9 +26,9 @@ namespace Tls
 
         case State::alert_frame_pending_state:
             {
-                EventResult result = delegate_event_change_state_on_fail(this->alert_frame.get(), event, State::alert_frame_failed);
-                if (result == event_result_yield)
-                    return EventResult::event_result_yield;
+                ProcessResult result = delegate_event_change_state_on_fail(this->alert_frame.get(), event, State::alert_frame_failed);
+                if (result == process_result_blocked)
+                    return ProcessResult::process_result_blocked;
 
                 switch (this->alert.description)
                 {
@@ -50,6 +50,6 @@ namespace Tls
             throw FatalError("Tls::AlertProtocol::handle_event unexpected state");
         }
 
-        return EventResult::event_result_continue;
+        return ProcessResult::process_result_ready;
     }
 }
