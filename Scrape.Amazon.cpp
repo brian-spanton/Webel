@@ -65,7 +65,7 @@ namespace Scrape
 		    Basic::globals->HandleError("Amazon", error);
 		    switch_to_state(error);
 		    Complete();
-			return ProcessResult::process_result_exited; // $$$ rename process_inactive to finished
+			return ProcessResult::process_result_exited;
         }
     }
 

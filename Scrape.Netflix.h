@@ -57,7 +57,7 @@ namespace Scrape
         ByteStringRef completion_cookie;
 		std::vector<UnicodeStringRef> movies;
 		UnicodeStringRef search_term;
-		uint32 current_row;
+		uint32 current_row = 0;
 		std::shared_ptr<Uri> next_page;
         UnicodeStringRef name;
         UnicodeStringRef password;

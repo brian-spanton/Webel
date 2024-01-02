@@ -22,9 +22,16 @@ namespace Basic
         return Basic::globals->HandleError(context, 0);
     }
 
-    uint32 ProcessEvent::get_type()
+    IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :
+        context(context),
+        count(count),
+        error(error)
     {
-        return EventType::process_event;
+    }
+
+    uint32 IoCompletionEvent::get_type()
+    {
+        return EventType::io_completion_event;
     }
 
     uint32 ReceivedBytesEvent::get_type()

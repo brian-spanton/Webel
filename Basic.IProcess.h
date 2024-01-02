@@ -15,7 +15,7 @@ namespace Basic
 
     enum EventType
     {
-        process_event,
+        io_completion_event,
         received_bytes_event,
         can_send_bytes_event,
         received_codepoints_event,

@@ -51,7 +51,7 @@ namespace Web
 
     void Client::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
-        ProcessEvent event;
+        IoCompletionEvent event(context, count, error);
         produce_event(this, &event);
     }
 
@@ -325,7 +325,7 @@ namespace Web
         {
         case State::get_pending_state:
             {
-                if (event->get_type() != Basic::EventType::process_event)
+                if (event->get_type() != Basic::EventType::io_completion_event)
                 {
                     HandleError("unexpected event");
                     return ProcessResult::process_result_blocked; // unexpected event
@@ -396,7 +396,7 @@ namespace Web
 
         case State::response_complete_state:
             {
-                if (event->get_type() != Basic::EventType::process_event)
+                if (event->get_type() != Basic::EventType::io_completion_event)
                 {
                     HandleError("unexpected event");
                     return ProcessResult::process_result_blocked; // unexpected event

@@ -468,7 +468,7 @@ namespace Service
         {
             case State::test_gzip_state:
             {
-                if (event->get_type() != Service::EventType::io_completion_event)
+                if (event->get_type() != Basic::EventType::io_completion_event)
                     return ProcessResult::process_result_blocked; // unexpected event
 
                 CloseHandle(this->gzip_test_file);
@@ -505,7 +505,7 @@ namespace Service
 
         case State::pending_pfx_state:
             {
-                if (event->get_type() != Service::EventType::io_completion_event)
+                if (event->get_type() != Basic::EventType::io_completion_event)
                     return ProcessResult::process_result_blocked; // unexpected event
 
                 CloseHandle(this->pfx_file);

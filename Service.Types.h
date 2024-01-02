@@ -13,7 +13,6 @@ namespace Service
     {
         task_complete_event = 0x4000,
         characters_complete_event,
-        io_completion_event,
     };
 
     struct CookieContextualizedEvent : public Basic::IEvent
@@ -30,17 +29,6 @@ namespace Service
 
     struct CharactersCompleteEvent : public CookieContextualizedEvent
     {
-        virtual uint32 Basic::IEvent::get_type();
-    };
-
-    struct IoCompletionEvent : public Basic::IEvent
-    {
-        IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error);
-
-        std::shared_ptr<void> context;
-        uint32 count;
-        uint32 error;
-
         virtual uint32 Basic::IEvent::get_type();
     };
 
