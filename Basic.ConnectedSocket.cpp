@@ -53,7 +53,7 @@ namespace Basic
 
                 ReceivedBytesEvent event;
                 event.Initialize(&this->protocol_element_source);
-                produce_event(protocol.get(), &event);
+                process_event_ignore_failures(protocol.get(), &event);
 
                 if (!this->protocol_element_source.Exhausted() && !protocol->failed())
                     throw FatalError("Basic::ConnectedSocket::Received { !this->protocol_element_source.Exhausted() && !protocol->failed() }");
@@ -94,7 +94,7 @@ namespace Basic
         if (protocol.get() != 0)
         {
             ElementStreamEndingEvent event;
-            produce_event(protocol.get(), &event);
+            process_event_ignore_failures(protocol.get(), &event);
         }
     }
 

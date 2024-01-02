@@ -71,7 +71,7 @@ namespace Web
                 {
                     AcceptCompleteEvent event;
                     event.cookie = this->completion_cookie;
-                    produce_event(completion.get(), &event);
+                    process_event_ignore_failures(completion.get(), &event);
                 }
 
                 switch_to_state(State::new_request_state);

@@ -363,7 +363,7 @@ namespace Service
     void Globals::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
         IoCompletionEvent event(context, count, error);
-        produce_event(this, &event);
+        process_event_ignore_failures(this, &event);
     }
 
     bool Globals::ExtractPrivateKey()

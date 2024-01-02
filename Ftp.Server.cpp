@@ -50,7 +50,7 @@ namespace Ftp
                 {
                     Http::AcceptCompleteEvent event;
                     event.cookie = this->completion_cookie;
-                    produce_event(completion.get(), &event);
+                    process_event_ignore_failures(completion.get(), &event);
                 }
 
                 Ftp::globals->greeting->write_to_stream(this->transport.get());

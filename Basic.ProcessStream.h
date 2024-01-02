@@ -30,7 +30,7 @@ namespace Basic
         virtual void IStream<element_type>::write_eof()
         {
             ElementStreamEndingEvent event;
-            produce_event(this->process.get(), &event);
+            process_event_ignore_failures(this->process.get(), &event);
         }
 
         static bool write_elements_to_process(std::shared_ptr<IProcess> process, const element_type* bytes, uint32 count)

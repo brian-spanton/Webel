@@ -109,10 +109,10 @@ namespace Basic
     }
 
     // an event producer calls this guy, which doesn't care whether the event is fully consumed
-    void produce_event(IProcess* process, IEvent* event)
+    void process_event_ignore_failures(IProcess* process, IEvent* event)
     {
         ProcessResult result = process_event(process, event);
         if (result == ProcessResult::process_result_ready)
-            throw FatalError("Basic::Frame::produce_event { result == ProcessResult::process_result_ready }");
+            throw FatalError("Basic::Frame::process_event_ignore_failures { result == ProcessResult::process_result_ready }");
     }
 }

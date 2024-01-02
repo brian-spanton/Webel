@@ -41,7 +41,7 @@ namespace Basic
 
         CanSendBytesEvent event;
         event.Initialize(&this->protocol_element_source);
-        produce_event(protocol.get(), &event);
+        process_event_ignore_failures(protocol.get(), &event);
 
         if (count > 0)
         {

@@ -41,5 +41,5 @@ namespace Basic
 
     ProcessResult process_event(IProcess* process, IEvent* event);
     ProcessResult process_event_throw_error_on_fail(IProcess* process, IEvent* event);
-    void produce_event(IProcess* process, IEvent* event);
+    void process_event_ignore_failures(IProcess* process, IEvent* event);
 }

@@ -54,7 +54,7 @@ namespace Basic
 
         CanSendCodepointsEvent event;
         event.Initialize(&this->protocol_element_source);
-        produce_event(this->protocol.get(), &event);
+        process_event_ignore_failures(this->protocol.get(), &event);
 
         HANDLE thread = ::CreateThread(0, 0, Thread, this, 0, 0);
         if (thread == 0)
@@ -105,7 +105,7 @@ namespace Basic
 
                             ReceivedCodepointsEvent event;
                             event.Initialize(&this->protocol_element_source);
-                            produce_event(this->protocol.get(), &event);
+                            process_event_ignore_failures(this->protocol.get(), &event);
                         }
                         break;
 
@@ -117,7 +117,7 @@ namespace Basic
 
                             ReceivedCodepointsEvent event;
                             event.Initialize(&this->protocol_element_source);
-                            produce_event(this->protocol.get(), &event);
+                            process_event_ignore_failures(this->protocol.get(), &event);
                         }
                         break;
                     }

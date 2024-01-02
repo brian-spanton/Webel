@@ -52,7 +52,7 @@ namespace Web
     void Client::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
     {
         IoCompletionEvent event(context, count, error);
-        produce_event(this, &event);
+        process_event_ignore_failures(this, &event);
     }
 
     void Client::Redirect(std::shared_ptr<Uri> url)
@@ -111,7 +111,7 @@ namespace Web
             {
                 ResponseCompleteEvent event;
                 event.cookie = this->completion_cookie;
-                produce_event(completion.get(), &event);
+                process_event_ignore_failures(completion.get(), &event);
             }
         }
         else if (state == State::response_pending_state)
@@ -270,7 +270,7 @@ namespace Web
                     {
                         Http::ResponseHeadersEvent event;
                         event.cookie = this->completion_cookie;
-                        produce_event(completion.get(), &event);
+                        process_event_ignore_failures(completion.get(), &event);
                     }
                 }
             }

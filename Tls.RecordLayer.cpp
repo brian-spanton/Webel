@@ -90,7 +90,7 @@ namespace Tls
                 // produce same event but with specific element source so that handshake_protocol can AddObserver
                 CanSendBytesEvent handshake_event;
                 handshake_event.Initialize(&this->handshake_element_source);
-                produce_event(this->handshake_protocol.get(), &handshake_event);
+                process_event_ignore_failures(this->handshake_protocol.get(), &handshake_event);
 
                 if (this->handshake_protocol->failed())
                 {
@@ -179,7 +179,7 @@ namespace Tls
         this->application_connected = true;
         CanSendBytesEvent event;
         event.Initialize(&this->application_element_source);
-        produce_event(protocol.get(), &event);
+        process_event_ignore_failures(protocol.get(), &event);
 
         if (protocol->failed())
             throw State::application_stream_failed;
@@ -216,7 +216,7 @@ namespace Tls
              return;
 
         ElementStreamEndingEvent application_event;
-        produce_event(protocol.get(), &application_event);
+        process_event_ignore_failures(protocol.get(), &application_event);
     }
 
     void RecordLayer::switch_to_state(uint32 state)
@@ -286,7 +286,7 @@ namespace Tls
                 this->pending_read_state = std::make_shared<ConnectionState>();
 
                 ChangeCipherSpecEvent event;
-                produce_event(this->handshake_protocol.get(), &event);
+                process_event_ignore_failures(this->handshake_protocol.get(), &event);
 
                 if (this->handshake_protocol->failed())
                     throw State::handshake_protocol_failed;
@@ -308,7 +308,7 @@ namespace Tls
 
                 ReceivedBytesEvent event;
                 event.Initialize(&this->alert_element_source);
-                produce_event(this->alert_protocol.get(), &event);
+                process_event_ignore_failures(this->alert_protocol.get(), &event);
 
                 if (this->alert_protocol->failed())
                     throw State::alert_protocol_failed;
@@ -329,7 +329,7 @@ namespace Tls
 
                 ReceivedBytesEvent event;
                 event.Initialize(&this->heartbeat_element_source);
-                produce_event(this->heartbeat_protocol.get(), &event);
+                process_event_ignore_failures(this->heartbeat_protocol.get(), &event);
 
                 if (this->heartbeat_protocol->failed())
                     throw State::heartbeat_protocol_failed;
@@ -351,7 +351,7 @@ namespace Tls
 
                 ReceivedBytesEvent event;
                 event.Initialize(&this->handshake_element_source);
-                produce_event(this->handshake_protocol.get(), &event);
+                process_event_ignore_failures(this->handshake_protocol.get(), &event);
 
                 if (this->handshake_protocol->failed())
                     throw State::handshake_protocol_failed;
@@ -379,7 +379,7 @@ namespace Tls
 
                     ReceivedBytesEvent event;
                     event.Initialize(&this->application_element_source);
-                    produce_event(protocol.get(), &event);
+                    process_event_ignore_failures(protocol.get(), &event);
 
                     if (protocol->failed())
                         throw State::application_stream_failed;
