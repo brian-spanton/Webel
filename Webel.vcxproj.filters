@@ -487,6 +487,18 @@
     <ClInclude Include="Web.IFrame.h">
       <Filter>Web</Filter>
     </ClInclude>
+    <ClInclude Include="Scrape.Amazon.h">
+      <Filter>Scrape</Filter>
+    </ClInclude>
+    <ClInclude Include="Scrape.Globals.h">
+      <Filter>Scrape</Filter>
+    </ClInclude>
+    <ClInclude Include="Scrape.Netflix.h">
+      <Filter>Scrape</Filter>
+    </ClInclude>
+    <ClInclude Include="Scrape.Types.h">
+      <Filter>Scrape</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -885,6 +897,18 @@
     <ClCompile Include="Web.IFrame.cpp">
       <Filter>Web</Filter>
     </ClCompile>
+    <ClCompile Include="Scrape.Amazon.cpp">
+      <Filter>Scrape</Filter>
+    </ClCompile>
+    <ClCompile Include="Scrape.Globals.cpp">
+      <Filter>Scrape</Filter>
+    </ClCompile>
+    <ClCompile Include="Scrape.Netflix.cpp">
+      <Filter>Scrape</Filter>
+    </ClCompile>
+    <ClCompile Include="Scrape.Types.cpp">
+      <Filter>Scrape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Http">
@@ -916,6 +940,9 @@
     </Filter>
     <Filter Include="Gzip">
       <UniqueIdentifier>{5470dac1-f8ed-469d-9a3a-1d5d700a10a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scrape">
+      <UniqueIdentifier>{364f213c-e6d9-405f-bbc7-be36807c2a6a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

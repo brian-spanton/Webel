@@ -24,6 +24,7 @@
 #include "Gzip.FileFormat.h"
 #include "Basic.FileStream.h"
 #include "Basic.SplitStream.h"
+#include "Scrape.Globals.h"
 
 template <typename type>
 void make_immortal(type** pointer, std::shared_ptr<type>* ref)
@@ -103,6 +104,9 @@ namespace Service
         make_immortal<Web::Globals>(&Web::globals, 0);
         Web::globals->Initialize();
 
+        make_immortal<Scrape::Globals>(&Scrape::globals, 0);
+        Scrape::globals->Initialize();
+
         initialize_unicode(&command_stop, "stop");
         command_list.push_back(command_stop);
 
@@ -135,6 +139,12 @@ namespace Service
 
         initialize_unicode(&command_search, "search");
         command_list.push_back(command_search);
+
+		initialize_unicode(&command_amazon, "amazon");
+		command_list.push_back(command_amazon);
+
+		initialize_unicode(&command_netflix, "netflix");
+		command_list.push_back(command_netflix);
 
         initialize_unicode(&root_admin, "admin");
         initialize_unicode(&root_echo, "echo");
@@ -671,59 +681,6 @@ namespace Service
     Tls::Certificates* Globals::Certificates()
     {
         return &this->certificates;
-    }
-
-    void Globals::Store(UnicodeStringRef source, std::shared_ptr<Json::Value> value)
-    {
-        if (value->type == Json::Value::Type::array_value)
-        {
-            Json::Array* array = (Json::Array*)value.get();
-
-            for (Json::ValueList::iterator it = array->elements.begin(); it != array->elements.end(); it++)
-            {
-                Store(source, (*it));
-            }
-        }
-        else if (value->type == Json::Value::Type::object_value)
-        {
-            std::shared_ptr<Json::Object> object = std::static_pointer_cast<Json::Object>(value);
-
-            Json::MemberList::iterator title_it = object->members.find(title_property);
-
-            if (title_it != object->members.end() &&
-                title_it->second->type == Json::Value::Type::string_value)
-            {
-                std::shared_ptr<Json::String> as_of = std::make_shared<Json::String>();
-                as_of->value = std::make_shared<UnicodeString>();
-
-                TextWriter writer(as_of->value.get());
-                writer.WriteTimestamp();
-
-                auto as_of_result = object->members.insert(Json::MemberList::value_type(as_of_property, as_of));
-                if (as_of_result.second == false)
-                    as_of_result.first->second = as_of;
-
-                Json::String* title_string = (Json::String*)title_it->second.get();
-                this->index->Add(title_string->value, object);
-            }
-        }
-    }
-
-    void Globals::Search(UnicodeStringRef query, std::shared_ptr<Json::Array>* results)
-    {
-        std::shared_ptr<Json::Array> list = std::make_shared<Json::Array>();
-
-        uint32 begin;
-        uint32 end;
-
-        this->index->Search(query, &begin, &end);
-
-        for (uint32 i = begin; i != end; i++)
-        {
-            list->elements.push_back(this->index->results[i].value);
-        }
-
-        (*results) = list;
     }
 
     Basic::IStream<Codepoint>* Globals::LogStream()

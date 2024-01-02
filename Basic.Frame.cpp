@@ -91,6 +91,7 @@ namespace Basic
             if (!process->in_progress())
                 return EventResult::event_result_process_inactive;
 
+            // $$$ rename yield to blocked
             if (process->consider_event(event) == event_result_yield)
                 return EventResult::event_result_yield;
         }

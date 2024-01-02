@@ -94,6 +94,8 @@ namespace Service
         Basic::UnicodeStringRef command_render_forms;
         Basic::UnicodeStringRef command_render_nodes;
         Basic::UnicodeStringRef command_search;
+		Basic::UnicodeStringRef command_amazon;
+		Basic::UnicodeStringRef command_netflix;
 
         CommandList command_list;
 
@@ -123,9 +125,6 @@ namespace Service
         bool SendStopSignal();
         bool Thread();
         bool SetThreadCount(uint32 count);
-
-        void Store(UnicodeStringRef source, std::shared_ptr<Json::Value> value);
-        void Search(UnicodeStringRef query, std::shared_ptr<Json::Array>* results);
 
         template <int value_count>        
         void GetFilePath(const char* name, char (&value)[value_count])

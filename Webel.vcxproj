@@ -112,6 +112,10 @@
     <ClInclude Include="Ftp.Server.h" />
     <ClInclude Include="Gzip.Types.h" />
     <ClInclude Include="Basic.SplitStream.h" />
+    <ClInclude Include="Scrape.Amazon.h" />
+    <ClInclude Include="Scrape.Globals.h" />
+    <ClInclude Include="Scrape.Netflix.h" />
+    <ClInclude Include="Scrape.Types.h" />
     <ClInclude Include="Service.Endpoint.h" />
     <ClInclude Include="Service.FtpServerEndpoint.h" />
     <ClInclude Include="Service.HtmlNamedCharacterReferences.h" />
@@ -281,6 +285,10 @@
     <ClCompile Include="Basic.Utf8Encoder.cpp" />
     <ClCompile Include="Ftp.Globals.cpp" />
     <ClCompile Include="Ftp.Server.cpp" />
+    <ClCompile Include="Scrape.Amazon.cpp" />
+    <ClCompile Include="Scrape.Globals.cpp" />
+    <ClCompile Include="Scrape.Netflix.cpp" />
+    <ClCompile Include="Scrape.Types.cpp" />
     <ClCompile Include="Service.AdminProtocol.cpp" />
     <ClCompile Include="Basic.Cng.cpp" />
     <ClCompile Include="Basic.Job.cpp" />
