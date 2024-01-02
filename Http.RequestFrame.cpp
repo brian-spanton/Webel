@@ -20,7 +20,7 @@ namespace Http
         this->resource_string->reserve(0x100);
     }
 
-    ProcessResult RequestFrame::consider_event(IEvent* event)
+    ProcessResult RequestFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

@@ -76,6 +76,6 @@ namespace Scrape
 		Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie);
 
         void start();
-		virtual ProcessResult IProcess::consider_event(IEvent* event);
+		virtual ProcessResult IProcess::process_event(IEvent* event);
 	};
 }

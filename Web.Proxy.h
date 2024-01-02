@@ -32,7 +32,7 @@ namespace Web
 
         void switch_to_state(State state);
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         Proxy(std::shared_ptr<IProcess> completion, ByteStringRef cookie, std::shared_ptr<Uri> server_url);
@@ -46,7 +46,7 @@ namespace Web
     private:
         std::shared_ptr<Proxy> proxy;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         void Initialize(std::shared_ptr<Proxy> proxy);

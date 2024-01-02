@@ -12,7 +12,7 @@ namespace Basic
     {
     }
 
-    ProcessResult NullTerminatedAsciiStringFrame::consider_event(IEvent* event)
+    ProcessResult NullTerminatedAsciiStringFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

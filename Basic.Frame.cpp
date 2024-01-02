@@ -70,7 +70,7 @@ namespace Basic
 
     ProcessResult Frame::process_event_change_state_on_fail(IProcess* process, IEvent* event, uint32 state)
     {
-        ProcessResult result = process_event(process, event);
+        ProcessResult result = Basic::process_event(process, event);
 
         if (process->failed())
         {
@@ -91,7 +91,7 @@ namespace Basic
             if (!process->in_progress())
                 return ProcessResult::process_result_exited;
 
-            if (process->consider_event(event) == process_result_blocked)
+            if (process->process_event(event) == process_result_blocked)
                 return ProcessResult::process_result_blocked;
         }
 

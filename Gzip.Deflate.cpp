@@ -162,7 +162,7 @@ namespace Gzip
         return ProcessResult::process_result_ready;
     }
 
-    ProcessResult Deflate::consider_event(IEvent* event)
+    ProcessResult Deflate::process_event(IEvent* event)
     {
         // RFC1951 https://www.rfc-editor.org/rfc/rfc1951
 

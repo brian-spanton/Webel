@@ -30,7 +30,7 @@ namespace Basic
     // semantics are adequate, consider using IStream.
     __interface IProcess
     {
-        ProcessResult consider_event(IEvent* event);
+        ProcessResult process_event(IEvent* event);
         bool in_progress();
         bool succeeded();
         bool failed();

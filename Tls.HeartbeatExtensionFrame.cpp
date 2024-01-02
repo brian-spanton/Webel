@@ -13,7 +13,7 @@ namespace Tls
     {
     }
 
-    ProcessResult HeartbeatExtensionFrame::consider_event(IEvent* event)
+    ProcessResult HeartbeatExtensionFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

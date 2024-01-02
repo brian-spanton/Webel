@@ -45,7 +45,7 @@ namespace Service
         }
     }
 
-    ProcessResult StandardEncodings::consider_event(IEvent* event)
+    ProcessResult StandardEncodings::process_event(IEvent* event)
     {
         bool found_ascii = false;
 

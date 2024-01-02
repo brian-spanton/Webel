@@ -128,7 +128,7 @@ namespace Tls
 
         void switch_to_state(uint32 state);
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         friend class Tls::HandshakeProtocol;

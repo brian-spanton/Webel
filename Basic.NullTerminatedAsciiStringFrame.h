@@ -21,6 +21,6 @@ namespace Basic
     public:
         NullTerminatedAsciiStringFrame(Basic::IStream<Codepoint>* destination);
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
     };
 }

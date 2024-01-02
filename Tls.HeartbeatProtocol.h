@@ -28,7 +28,7 @@ namespace Tls
         HeartbeatMessage heartbeat_message;
         HeartbeatMessageFrame heartbeat_message_frame;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         HeartbeatProtocol(RecordLayer* session);

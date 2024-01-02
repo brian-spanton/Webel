@@ -69,7 +69,7 @@ namespace Tls
         this->transport = peer;
     }
 
-    ProcessResult RecordLayer::consider_event(IEvent* event)
+    ProcessResult RecordLayer::process_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {

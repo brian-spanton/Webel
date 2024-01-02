@@ -14,7 +14,7 @@ namespace Tls
     {
     }
 
-    ProcessResult RandomFrame::consider_event(IEvent* event)
+    ProcessResult RandomFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

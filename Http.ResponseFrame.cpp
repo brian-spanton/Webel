@@ -24,7 +24,7 @@ namespace Http
     {
     }
 
-    ProcessResult ResponseFrame::consider_event(IEvent* event)
+    ProcessResult ResponseFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

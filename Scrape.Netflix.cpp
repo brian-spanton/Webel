@@ -60,8 +60,7 @@ namespace Scrape
 		HandleError(error);
 	}
 
-	// $$$ rename consider_event to process_event
-	ProcessResult Netflix::consider_event(IEvent* event)
+	ProcessResult Netflix::process_event(IEvent* event)
 	{
 		Hold hold(this->lock);
 

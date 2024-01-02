@@ -53,7 +53,7 @@ namespace Basic
         HandleError("unexpected eof");
     }
 
-    ProcessResult MemoryRange::consider_event(IEvent* event)
+    ProcessResult MemoryRange::process_event(IEvent* event)
     {
         const byte* elements;
         uint32 useable;

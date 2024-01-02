@@ -14,7 +14,7 @@ namespace Tls
     {
     }
 
-    ProcessResult OCSPStatusRequestFrame::consider_event(IEvent* event)
+    ProcessResult OCSPStatusRequestFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

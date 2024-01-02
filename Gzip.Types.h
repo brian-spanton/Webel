@@ -58,18 +58,18 @@ namespace Gzip
 
     struct MemberHeader
     {
-        byte ID1;
-        byte ID2;
-        CompressionMethod CM;
-        Flags FLG;
-        uint32 MTIME;
-        DeflateFlags XFL;
-        OperatingSystems OS;
-        byte XLEN;
-        uint16 CRC16;
+        byte ID1 = 0;
+        byte ID2 = 0;
+        CompressionMethod CM = CompressionMethod::cm_deflate;
+        Flags FLG = { 0 };
+        uint32 MTIME = 0;
+        DeflateFlags XFL = DeflateFlags::df_smallest;
+        OperatingSystems OS = OperatingSystems::os_unknown;
+        byte XLEN = 0;
+        uint16 CRC16 = 0;
         std::shared_ptr<IStream<byte> > output;
-        uint32 CRC32;
-        uint32 ISIZE;
+        uint32 CRC32 = 0;
+        uint32 ISIZE = 0;
         std::vector<Subfield> extra_field;
         String<Codepoint> original_file_name;
         String<Codepoint> file_comment;

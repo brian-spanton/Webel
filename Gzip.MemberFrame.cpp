@@ -22,7 +22,7 @@ namespace Gzip
     {
     }
 
-    ProcessResult MemberFrame::consider_event(IEvent* event)
+    ProcessResult MemberFrame::process_event(IEvent* event)
     {
         // RFC1952 https://www.rfc-editor.org/rfc/rfc1952
 

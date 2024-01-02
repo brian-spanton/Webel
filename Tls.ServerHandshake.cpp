@@ -27,7 +27,7 @@ namespace Tls
     {
     }
 
-    ProcessResult ServerHandshake::consider_event(IEvent* event)
+    ProcessResult ServerHandshake::process_event(IEvent* event)
     {
         switch (get_state())
         {

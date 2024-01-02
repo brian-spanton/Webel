@@ -14,7 +14,7 @@ namespace Tls
     {
     }
 
-    ProcessResult PreMasterSecretFrame::consider_event(IEvent* event)
+    ProcessResult PreMasterSecretFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

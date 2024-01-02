@@ -36,7 +36,7 @@ namespace Ftp
         }
     }
 
-    ProcessResult Server::consider_event(IEvent* event)
+    ProcessResult Server::process_event(IEvent* event)
     {
         switch (get_state())
         {
@@ -71,7 +71,7 @@ namespace Ftp
 
         case State::command_frame_pending_state:
             {
-                ProcessResult result = process_event(&this->command_frame, event);
+                ProcessResult result = Basic::process_event(&this->command_frame, event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

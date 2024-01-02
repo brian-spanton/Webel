@@ -13,7 +13,7 @@ namespace Http
     {
     }
 
-    ProcessResult DisconnectBodyFrame::consider_event(IEvent* event)
+    ProcessResult DisconnectBodyFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

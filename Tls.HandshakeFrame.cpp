@@ -21,7 +21,7 @@ namespace Tls
         this->length_frame.reset();
     }
 
-    ProcessResult HandshakeFrame::consider_event(IEvent* event)
+    ProcessResult HandshakeFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

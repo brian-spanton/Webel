@@ -46,7 +46,7 @@ namespace Http
         std::weak_ptr<IProcess> completion;
         ByteStringRef completion_cookie;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie);

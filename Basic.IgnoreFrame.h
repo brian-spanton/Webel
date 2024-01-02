@@ -20,7 +20,7 @@ namespace Basic
         uint64 expected;
         uint64 received;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::process_event(IEvent* event)
         {
             switch (get_state())
             {

@@ -15,7 +15,7 @@ namespace Tls
     {
     }
 
-    ProcessResult AlertProtocol::consider_event(IEvent* event)
+    ProcessResult AlertProtocol::process_event(IEvent* event)
     {
         switch (get_state())
         {

@@ -14,7 +14,7 @@ namespace Tls
     {
     }
 
-    ProcessResult AlertFrame::consider_event(IEvent* event)
+    ProcessResult AlertFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

@@ -46,7 +46,7 @@ namespace Web
         }
     }
 
-    ProcessResult Server::consider_event(IEvent* event)
+    ProcessResult Server::process_event(IEvent* event)
     {
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {

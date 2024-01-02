@@ -23,7 +23,7 @@ namespace Tls
         this->length_frame.reset();
     }
 
-    ProcessResult RecordFrame::consider_event(IEvent* event)
+    ProcessResult RecordFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

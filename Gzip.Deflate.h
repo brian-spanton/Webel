@@ -105,6 +105,6 @@ namespace Gzip
     public:
         Deflate(std::shared_ptr<IStream<byte> > output_stream);
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
     };
 }

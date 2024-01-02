@@ -462,7 +462,7 @@ namespace Service
         return true;
     }
 
-    ProcessResult Globals::consider_event(IEvent* event)
+    ProcessResult Globals::process_event(IEvent* event)
     {
         switch (get_state())
         {

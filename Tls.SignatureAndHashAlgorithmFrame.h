@@ -26,7 +26,7 @@ namespace Tls
         MemoryRange signature_algorithm_frame;
         MemoryRange hash_algorithm_frame;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         SignatureAndHashAlgorithmFrame(SignatureAndHashAlgorithm* signature_and_hash_algorithm);

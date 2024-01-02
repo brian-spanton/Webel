@@ -36,7 +36,7 @@ namespace Http
         UnicodeStringRef name;
         UnicodeStringRef value;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         HeadersFrame(NameValueCollection* nvc);

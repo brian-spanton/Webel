@@ -15,7 +15,7 @@ namespace Tls
     {
     }
 
-    ProcessResult SignatureAndHashAlgorithmFrame::consider_event(IEvent* event)
+    ProcessResult SignatureAndHashAlgorithmFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

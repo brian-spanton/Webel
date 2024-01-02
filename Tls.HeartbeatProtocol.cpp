@@ -30,7 +30,7 @@ namespace Tls
         }
     }
 
-    ProcessResult HeartbeatProtocol::consider_event(IEvent* event)
+    ProcessResult HeartbeatProtocol::process_event(IEvent* event)
     {
         switch (get_state())
         {

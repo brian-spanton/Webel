@@ -20,7 +20,7 @@ namespace Tls
         this->plaintext_length = plaintext_length;
     }
 
-    ProcessResult HeartbeatMessageFrame::consider_event(IEvent* event)
+    ProcessResult HeartbeatMessageFrame::process_event(IEvent* event)
     {
         ProcessResult result;
 

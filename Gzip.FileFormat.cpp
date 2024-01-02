@@ -10,7 +10,7 @@ namespace Gzip
     {
     }
 
-    ProcessResult FileFormat::consider_event(IEvent* event)
+    ProcessResult FileFormat::process_event(IEvent* event)
     {
         // RFC1952 https://www.rfc-editor.org/rfc/rfc1952
 
@@ -55,7 +55,7 @@ namespace Gzip
             break;
 
         default:
-            throw FatalError("Gzip::FileFormat::consider_event unexpected state");
+            throw FatalError("Gzip::FileFormat::process_event unexpected state");
         }
 
         return ProcessResult::process_result_ready;

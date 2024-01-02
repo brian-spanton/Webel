@@ -32,7 +32,7 @@ namespace Basic
             this->word = std::make_shared<String<element_type> >();
         }
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event)
+        virtual ProcessResult IProcess::process_event(IEvent* event)
         {
             switch (get_state())
             {

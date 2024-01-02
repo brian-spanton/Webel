@@ -52,7 +52,7 @@ namespace Scrape
 		return true;
 	}
 
-	ProcessResult Amazon::consider_event(IEvent* event)
+	ProcessResult Amazon::process_event(IEvent* event)
 	{
 		Hold hold(this->lock);
 

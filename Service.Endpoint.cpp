@@ -21,7 +21,7 @@ namespace Service
         }
     }
 
-    ProcessResult Endpoint::consider_event(IEvent* event)
+    ProcessResult Endpoint::process_event(IEvent* event)
     {
         if (event->get_type() != Http::EventType::accept_complete_event)
         {

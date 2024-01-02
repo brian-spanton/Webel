@@ -61,7 +61,7 @@ namespace Tls
         HeartbeatExtensionFrame heartbeat_extension_frame;
 
         void switch_to_state(IEvent* event, State state);
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         ServerHelloFrame(ServerHello* serverHello);

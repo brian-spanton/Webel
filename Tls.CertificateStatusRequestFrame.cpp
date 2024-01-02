@@ -14,7 +14,7 @@ namespace Tls
     {
     }
 
-    ProcessResult CertificateStatusRequestFrame::consider_event(IEvent* event)
+    ProcessResult CertificateStatusRequestFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

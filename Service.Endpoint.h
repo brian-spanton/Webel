@@ -14,7 +14,7 @@ namespace Service
     protected:
         std::shared_ptr<Basic::ListenSocket> listener;
 
-        virtual ProcessResult IProcess::consider_event(IEvent* event);
+        virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         Endpoint(ListenSocket::Face face, short port);

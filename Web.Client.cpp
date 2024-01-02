@@ -211,7 +211,7 @@ namespace Web
         }
     }
 
-    ProcessResult Client::consider_event(IEvent* event)
+    ProcessResult Client::process_event(IEvent* event)
     {
         Hold hold(this->lock);
 
@@ -276,7 +276,7 @@ namespace Web
             }
             else if (event->get_type() < response_headers_event)
             {
-                ProcessResult result = process_event(this->response_frame.get(), event);
+                ProcessResult result = Basic::process_event(this->response_frame.get(), event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 

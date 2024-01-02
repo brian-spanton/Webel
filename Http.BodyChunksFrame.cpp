@@ -19,7 +19,7 @@ namespace Http
     {
     }
 
-    ProcessResult BodyChunksFrame::consider_event(IEvent* event)
+    ProcessResult BodyChunksFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

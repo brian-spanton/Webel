@@ -32,7 +32,7 @@ namespace Service
         this->command_frame.reset();
     }
 
-    ProcessResult AdminProtocol::consider_event(Basic::IEvent* event)
+    ProcessResult AdminProtocol::process_event(Basic::IEvent* event)
     {
         TextWriter writer(this->peer.get());
 

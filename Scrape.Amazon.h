@@ -77,6 +77,6 @@ namespace Scrape
 		Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie);
 
         void start();
-		virtual ProcessResult IProcess::consider_event(IEvent* event);
+		virtual ProcessResult IProcess::process_event(IEvent* event);
 	};
 }

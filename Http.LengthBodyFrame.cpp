@@ -35,7 +35,7 @@ namespace Http
         }
     }
 
-    ProcessResult LengthBodyFrame::consider_event(IEvent* event)
+    ProcessResult LengthBodyFrame::process_event(IEvent* event)
     {
         switch (get_state())
         {

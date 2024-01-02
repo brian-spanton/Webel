@@ -39,7 +39,7 @@ namespace Service
         }
     }
 
-    ProcessResult HtmlNamedCharacterReferences::consider_event(IEvent* event)
+    ProcessResult HtmlNamedCharacterReferences::process_event(IEvent* event)
     {
         switch (get_state())
         {
