@@ -83,8 +83,8 @@ namespace Tls
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Tls::RecordLayer::process_event unconnected_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 // produce same event but with specific element source so that handshake_protocol can AddObserver

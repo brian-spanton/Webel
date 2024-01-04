@@ -108,43 +108,16 @@ namespace Service
         Scrape::globals->Initialize();
 
         initialize_unicode(&command_stop, "stop");
-        command_list.push_back(command_stop);
-
         initialize_unicode(&command_log, "log");
-        command_list.push_back(command_log);
-
         initialize_unicode(&command_get, "get");
-        command_list.push_back(command_get);
-
         initialize_unicode(&command_follow_link, "link");
-        command_list.push_back(command_follow_link);
-
         initialize_unicode(&command_select_form, "form");
-        command_list.push_back(command_select_form);
-
         initialize_unicode(&command_set_control_value, "control");
-        command_list.push_back(command_set_control_value);
-
         initialize_unicode(&command_submit, "submit");
-        command_list.push_back(command_submit);
-
         initialize_unicode(&command_render_links, "links");
-        command_list.push_back(command_render_links);
-
         initialize_unicode(&command_render_forms, "forms");
-        command_list.push_back(command_render_forms);
-
         initialize_unicode(&command_render_nodes, "nodes");
-        command_list.push_back(command_render_nodes);
-
         initialize_unicode(&command_search, "search");
-        command_list.push_back(command_search);
-
-		initialize_unicode(&command_amazon, "amazon");
-		command_list.push_back(command_amazon);
-
-		initialize_unicode(&command_netflix, "netflix");
-		command_list.push_back(command_netflix);
 
         initialize_unicode(&root_admin, "admin");
         initialize_unicode(&root_echo, "echo");
@@ -186,35 +159,10 @@ namespace Service
         if (!success)
             return false;
 
-        SetThreadCount(1); // 1 is good for debugging, 0 is good for perf (matches CPU count)
+        SetThreadCount(0); // 1 is good for debugging, 0 is good for perf (matches CPU count)
 
-        if (!TestGzip())
-        {
-            if (!ReadCertificate())
-            {
-                if (!InitializeHtmlGlobals())
-                    return false;
-            }
-        }
+        process_event_ignore_failures(this, 0);
 
-        return true;
-    }
-
-    bool Globals::InitializeHtmlGlobals()
-    {
-        if (this->cert == 0)
-        {
-            bool success = CreateSelfSignCert();
-            if (!success)
-                return false;
-        }
-
-        DebugWriter()->WriteLine("initializing html globals");
-
-        std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
-        named_characters->start();
-
-        switch_to_state(State::named_character_references_pending_state);
         return true;
     }
 
@@ -260,8 +208,6 @@ namespace Service
         data->resize(size.LowPart);
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), data);
-
-        switch_to_state(State::test_gzip_state);
 
         success = (bool)ReadFile(this->gzip_test_file, data->address(), data->size(), 0, job.get());
         if (!success)
@@ -317,8 +263,6 @@ namespace Service
         pfx_data->resize(size.LowPart);
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), pfx_data);
-
-        switch_to_state(State::pending_pfx_state);
 
         success = (bool)ReadFile(this->pfx_file, pfx_data->address(), pfx_data->size(), 0, job.get());
         if (!success)
@@ -392,13 +336,6 @@ namespace Service
         this->certificates[0].resize(this->cert->cbCertEncoded);
         CopyMemory(this->certificates[0].address(), this->cert->pbCertEncoded, this->cert->cbCertEncoded);
 
-        DebugWriter()->WriteLine("initializing encodings");
-
-        switch_to_state(State::encodings_pending_state);
-
-        std::shared_ptr<StandardEncodings> standard_encodings = std::make_shared<StandardEncodings>(this->shared_from_this(), ByteStringRef());
-        standard_encodings->start();
-
         return true;
     }
 
@@ -466,10 +403,21 @@ namespace Service
     {
         switch (get_state())
         {
-            case State::test_gzip_state:
+            case State::initialize_test_gzip_state:
+            {
+                switch_to_state(State::pending_test_gzip_completion_state);
+                bool success = TestGzip();
+                if (success)
+                    return ProcessResult::process_result_blocked;
+
+                switch_to_state(State::initialize_read_certificate_state);
+            }
+            break;
+
+        case State::pending_test_gzip_completion_state:
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    return ProcessResult::process_result_blocked;
 
                 CloseHandle(this->gzip_test_file);
                 this->gzip_test_file = INVALID_HANDLE_VALUE;
@@ -495,18 +443,28 @@ namespace Service
 
                 ProcessStream<byte>::write_elements_to_process(gzip, bytes->address(), completion->count);
 
-                bool success = ReadCertificate();
-                if (success)
-                    break;
-
-                switch_to_state(State::initialize_html_globals);
+                switch_to_state(State::initialize_read_certificate_state);
             }
             break;
 
-        case State::pending_pfx_state:
+        case State::initialize_read_certificate_state:
+            {
+                switch_to_state(State::pending_read_certificate_state);
+                bool success = ReadCertificate();
+                if (success)
+                    return ProcessResult::process_result_blocked;
+
+                switch_to_state(State::initialize_self_sign_certificate_state);
+            }
+            break;
+
+        case State::pending_read_certificate_state:
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
-                    return ProcessResult::process_result_blocked; // unexpected event
+                {
+                    StateMachine::HandleUnexpectedEvent("Service::Globals::process_event pending_read_certificate_state", event);
+                    return ProcessResult::process_result_blocked;
+                }
 
                 CloseHandle(this->pfx_file);
                 this->pfx_file = INVALID_HANDLE_VALUE;
@@ -517,39 +475,75 @@ namespace Service
 
                 bool success = ParseCert(bytes.get(), completion->count, completion->error);
                 if (!success)
+                {
                     HandleError("ParseCert", GetLastError());
+                    switch_to_state(State::initialize_self_sign_certificate_state);
+                    return ProcessResult::process_result_ready;
+                }
 
-                switch_to_state(State::initialize_html_globals);
+                switch_to_state(State::initialize_encodings_state);
             }
             break;
 
-        case State::initialize_html_globals:
-            InitializeHtmlGlobals();
+        case State::initialize_self_sign_certificate_state:
+            {
+                bool success = CreateSelfSignCert();
+                if (!success)
+                    HandleError("ParseCert", GetLastError());
+
+                switch_to_state(State::initialize_encodings_state);
+            }
             break;
 
-        case State::encodings_pending_state:
+        case State::initialize_encodings_state:
+            {
+                DebugWriter()->WriteLine("initializing encodings");
+
+                switch_to_state(State::pending_encodings_state);
+
+                std::shared_ptr<StandardEncodings> standard_encodings = std::make_shared<StandardEncodings>(this->shared_from_this(), ByteStringRef());
+                standard_encodings->start();
+
+                return ProcessResult::process_result_blocked;
+            }
+            break;
+
+        case State::pending_encodings_state:
             {
                 if (event->get_type() != Basic::EventType::encodings_complete_event)
                 {
-                    Basic::HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Service::Globals::process_event pending_encodings_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
+                switch_to_state(State::initialize_html_globals_state);
+            }
+            break;
+
+        case State::initialize_html_globals_state:
+            {
                 DebugWriter()->WriteLine("initializing html globals");
+
+                switch_to_state(State::pending_html_globals_state);
 
                 std::shared_ptr<HtmlNamedCharacterReferences> named_characters = std::make_shared<HtmlNamedCharacterReferences>(this->shared_from_this(), ByteStringRef());
                 named_characters->start();
 
-                switch_to_state(State::named_character_references_pending_state);
+                return ProcessResult::process_result_blocked;
             }
             break;
 
-        case State::named_character_references_pending_state:
+        case State::pending_html_globals_state:
             {
                 if (event->get_type() != Service::EventType::characters_complete_event)
-                    return ProcessResult::process_result_blocked; // unexpected event
+                {
+                    StateMachine::HandleUnexpectedEvent("Service::Globals::process_event pending_html_globals_state", event);
+                    return ProcessResult::process_result_blocked;
+                }
 
                 DebugWriter()->WriteLine("initializing endpoints");
+
+                switch_to_state(State::accepts_pending_state);
 
                 this->http_endpoint = std::make_shared<WebServerEndpoint>(Basic::ListenSocket::Face_Default, 81, std::shared_ptr<Tls::ICertificate>());
                 this->http_endpoint->SpawnListeners(20);
@@ -560,7 +554,6 @@ namespace Service
                 this->ftp_control_endpoint = std::make_shared<FtpServerEndpoint>(Basic::ListenSocket::Face_Default, 21);
                 this->ftp_control_endpoint->SpawnListeners(20);
 
-                switch_to_state(State::accepts_pending_state);
                 return ProcessResult::process_result_blocked; // event consumed
             }
             break;
@@ -663,6 +656,9 @@ namespace Service
 
     bool Globals::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult)
     {
+        // $$$ some way to know if private_key is valid by inspection?  otherwise can store a flag from the initiailize routine
+        //if (this->private_key)
+
         SECURITY_STATUS error = NCryptDecrypt(
             this->private_key,
             pbInput,

@@ -15,6 +15,8 @@ namespace Basic
         void switch_to_state(uint32 state);
         void reset();
 
+        void HandleUnexpectedEvent(const char* function, IEvent* event);
+
     public:
         static const uint32 Start_State = 0;
         static const uint32 Succeeded_State = 0x10000;

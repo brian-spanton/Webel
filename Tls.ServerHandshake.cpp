@@ -34,8 +34,8 @@ namespace Tls
         case State::start_state:
             if (event->get_type() != Basic::EventType::can_send_bytes_event)
             {
-                HandleError("unexpected event");
-                return ProcessResult::process_result_blocked; // unexpected event
+                StateMachine::HandleUnexpectedEvent("Tls::ServerHandshake::process_event start_state", event);
+                return ProcessResult::process_result_blocked;
             }
 
             Event::AddObserver<byte>(event, this->handshake_messages);
@@ -338,8 +338,8 @@ namespace Tls
             {
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Tls::ServerHandshake::process_event expecting_cipher_change_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 this->handshake_frame.reset();

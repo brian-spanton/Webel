@@ -60,8 +60,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Server::process_event pending_connection_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");

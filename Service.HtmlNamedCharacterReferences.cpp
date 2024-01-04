@@ -130,12 +130,13 @@ namespace Service
                 break;
 
             default:
-                throw FatalError("Html::Globals::Complete unexpected event");
+                StateMachine::HandleUnexpectedEvent("Service::HtmlNamedCharacterReferences::process_event named_character_reference_state", event);
+                throw FatalError("unexpected event");
             }
             break;
 
         default:
-            throw FatalError("Html::Globals::Complete unexpected state");
+            throw FatalError("Service::HtmlNamedCharacterReferences::process_event unexpected state");
         }
 
         return ProcessResult::process_result_ready;

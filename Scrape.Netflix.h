@@ -67,8 +67,7 @@ namespace Scrape
 		void ScrapeMovies(std::shared_ptr<Uri>* next_page, uint32* next_row);
 		void ScrapeMovie(std::shared_ptr<Html::Node> node);
 		bool set_body_stream();
-		void Error(const char* error);
-		ProcessResult consider_event_throw(IEvent* event);
+		ProcessResult process_event_throw(IEvent* event);
 
 	public:
 		std::shared_ptr<Web::Page> current_page;

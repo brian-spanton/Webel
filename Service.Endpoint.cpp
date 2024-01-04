@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Service.Endpoint.h"
 #include "Http.Types.h"
+#include "Basic.Event.h"
 
 namespace Service
 {
@@ -25,8 +26,8 @@ namespace Service
     {
         if (event->get_type() != Http::EventType::accept_complete_event)
         {
-            HandleError("unexpected event");
-            return ProcessResult::process_result_blocked; // unexpected event
+            StateMachine::HandleUnexpectedEvent("Service::Endpoint::process_event", event);
+            return ProcessResult::process_result_blocked;
         }
 
         SpawnListener();

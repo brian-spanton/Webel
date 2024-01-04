@@ -1351,10 +1351,11 @@ loop:
 
     void TreeConstruction::ParseError(const char* error)
     {
-        char full_error[0x100];
-        sprintf_s(full_error, "parse error=%s", error);
+        // $$$ need a graceful way to control log level
+        //char full_error[0x100];
+        //sprintf_s(full_error, "parse error=%s", error);
 
-        HandleError(full_error);
+        //HandleError(full_error);
     }
 
     void TreeConstruction::ParseError(const Token* token)

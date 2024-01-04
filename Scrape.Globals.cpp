@@ -37,6 +37,9 @@ namespace Scrape
 		initialize_unicode(&netflix_search_path, "Search");
 		initialize_unicode(&netflix_row_param, "row");
 
+		initialize_unicode(&command_amazon, "amazon");
+		initialize_unicode(&command_netflix, "netflix");
+
 		for (Codepoint c = '0'; c <= '9'; c++)
 		{
 			UnicodeStringRef term = std::make_shared<UnicodeString>();

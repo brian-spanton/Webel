@@ -85,6 +85,7 @@ namespace Basic
         initialize_unicode(&utf_16_little_endian_label, "utf-16le");
         initialize_unicode(&utf_8_label, "utf-8");
         initialize_unicode(&us_ascii_label, "us-ascii");
+        initialize_unicode(&us_windows_1252_label, "windows-1252");
 
         initialize_unicode(&CRLF, "\r\n");
         initialize_unicode(&percent_forty, "%40");
@@ -94,6 +95,7 @@ namespace Basic
         initialize_unicode(&dot_dot, "..");
         initialize_unicode(&dot, ".");
 
+        // $$$ should use structured MediaType?
         initialize_unicode(&text_plain_media_type, "text/plain; charset=utf-8");
         initialize_unicode(&text_html_media_type, "text/html; charset=utf-8");
         initialize_unicode(&application_json_media_type, "application/json; charset=utf-8");

@@ -58,7 +58,7 @@ namespace Scrape
 
         try
         {
-            return consider_event_throw(event);
+            return process_event_throw(event);
         }
         catch (State error)
         {
@@ -69,7 +69,7 @@ namespace Scrape
         }
     }
 
-	ProcessResult Amazon::consider_event_throw(IEvent* event)
+	ProcessResult Amazon::process_event_throw(IEvent* event)
 	{
 		switch (this->get_state())
 		{
@@ -295,7 +295,7 @@ namespace Scrape
 			break;
 
 		default:
-			throw FatalError("Amazon::Process unexpected state");
+			throw FatalError("Amazon::process_event unexpected state");
 		}
 
         return ProcessResult::process_result_ready; // event consumed

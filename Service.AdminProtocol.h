@@ -33,6 +33,10 @@ namespace Service
             peer_flush_failed,
         };
 
+        typedef std::vector<Basic::UnicodeStringRef> CommandList;
+
+        CommandList command_list;
+
         std::vector<UnicodeStringRef> command;
         Basic::CommandFrame<Codepoint> command_frame;
         std::shared_ptr<Basic::IStream<Codepoint> > peer;
@@ -43,8 +47,9 @@ namespace Service
         Basic::ByteStringRef get_cookie;
 
 		ByteStringRef amazon_cookie;
-		ByteStringRef netflix_cookie;
 		std::shared_ptr<Scrape::Amazon> amazon_scrape;
+
+		ByteStringRef netflix_cookie;
 		std::shared_ptr<Scrape::Netflix> netflix_scrape;
 
         void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);

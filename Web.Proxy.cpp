@@ -63,8 +63,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Proxy::process_event pending_client_connection_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 Basic::globals->DebugWriter()->WriteLine("accepted");
@@ -103,7 +103,10 @@ namespace Web
         case State::pending_server_connection_state:
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
+                {
+                    StateMachine::HandleUnexpectedEvent("Web::Proxy::process_event pending_server_connection_state", event);
                     throw FatalError("unexpected event");
+                }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 
@@ -120,7 +123,10 @@ namespace Web
         case State::connected_state:
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
+                {
+                    StateMachine::HandleUnexpectedEvent("Web::Proxy::process_event connected_state", event);
                     throw FatalError("unexpected event");
+                }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 
@@ -159,8 +165,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Proxy::process_event pending_server_connection_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 if (this->buffer->size() > 0)
@@ -176,7 +182,10 @@ namespace Web
         case State::connected_state:
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
+                {
+                    StateMachine::HandleUnexpectedEvent("Web::Proxy::process_event connected_state", event);
                     throw FatalError("unexpected event");
+                }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 

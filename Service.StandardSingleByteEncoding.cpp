@@ -50,7 +50,10 @@ namespace Service
         case State::headers_pending_state:
             {
                 if (event->get_type() != Http::EventType::response_headers_event)
+                {
+                    StateMachine::HandleUnexpectedEvent("Service::StandardSingleByteEncoding::process_event headers_pending_state", event);
                     throw new FatalError("unexpected event");
+                }
 
                 if (this->client->transaction->response->code != 200)
                 {

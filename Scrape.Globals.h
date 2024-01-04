@@ -13,6 +13,8 @@ namespace Scrape
     public:
 		UnicodeStringRef streams_namespace;
 
+		Basic::UnicodeStringRef command_amazon;
+		std::shared_ptr<Uri> amazon_url;
 		UnicodeStringRef amazon_title_class;
 		UnicodeStringRef amazon_result_id_prefix;
 		UnicodeStringRef amazon_source_name;
@@ -25,6 +27,9 @@ namespace Scrape
 		UnicodeStringRef amazon_movies_link;
 		UnicodeStringRef amazon_next_page_link;
 
+		Basic::UnicodeStringRef command_netflix;
+		std::shared_ptr<Uri> netflix_url;
+		std::list<UnicodeStringRef> netflix_search_space;
 		UnicodeStringRef netflix_sign_in_link;
 		UnicodeStringRef netflix_movieid_param;
 		UnicodeStringRef netflix_movie_url;
@@ -36,11 +41,6 @@ namespace Scrape
 		UnicodeStringRef netflix_query2_control;
 		UnicodeStringRef netflix_search_path;
 		UnicodeStringRef netflix_row_param;
-
-		std::list<UnicodeStringRef> netflix_search_space;
-
-		std::shared_ptr<Uri> netflix_url;
-		std::shared_ptr<Uri> amazon_url;
 
         UnicodeStringRef title_property;
         UnicodeStringRef as_of_property;

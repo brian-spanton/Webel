@@ -11,6 +11,7 @@ namespace Basic
     {
     public:
         HANDLE file;
+        DWORD position = 0;
 
         FileStream();
         virtual ~FileStream();

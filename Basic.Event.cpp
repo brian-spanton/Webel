@@ -3,17 +3,20 @@
 #include "stdafx.h"
 #include "Basic.Event.h"
 #include "Basic.Frame.h"
+#include "Basic.Globals.h"
 
 namespace Basic
 {
     template <>
     ProcessResult Event::Read(IEvent* event, uint32 count, const byte** out_address, uint32* out_count)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+            return ProcessResult::process_result_blocked;
+
         if (event->get_type() != EventType::received_bytes_event)
         {
-            HandleError("unexpected event");
+            Event::HandleUnexpectedEvent("Basic::Event::Read", event);
             throw FatalError("unexpected event");
-            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
@@ -29,10 +32,13 @@ namespace Basic
     template <>
     ProcessResult Event::ReadNext(IEvent* event, byte* element)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+            return ProcessResult::process_result_blocked;
+
         if (event->get_type() != EventType::received_bytes_event)
         {
-            HandleError("unexpected event");
-            return ProcessResult::process_result_blocked; // unexpected event
+            Event::HandleUnexpectedEvent("Basic::Event::ReadNext", event);
+            throw FatalError("unexpected event");
         }
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
@@ -81,11 +87,13 @@ namespace Basic
     template <>
     ProcessResult Event::Read(IEvent* event, uint32 count, const Codepoint** out_address, uint32* out_count)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+            return ProcessResult::process_result_blocked;
+
         if (event->get_type() != EventType::received_codepoints_event)
         {
-            HandleError("unexpected event");
+            Event::HandleUnexpectedEvent("Basic::Event::Read", event);
             throw FatalError("unexpected event");
-            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
@@ -101,11 +109,13 @@ namespace Basic
     template <>
     ProcessResult Event::ReadNext(IEvent* event, Codepoint* element)
     {
+        if (event->get_type() == EventType::element_stream_ending_event)
+            return ProcessResult::process_result_blocked;
+
         if (event->get_type() != EventType::received_codepoints_event)
         {
-            HandleError("unexpected event");
+            Event::HandleUnexpectedEvent("Basic::Event::ReadNext", event);
             throw FatalError("unexpected event");
-            //return ProcessResult::process_result_blocked; // unexpected event
         }
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
@@ -149,5 +159,12 @@ namespace Basic
         }
 
         throw FatalError("Basic::Event::RemoveObserver");
+    }
+
+    void Event::HandleUnexpectedEvent(const char* function, IEvent* event)
+    {
+        Basic::globals->DebugWriter()->write_literal("ERROR: ");
+        Basic::globals->DebugWriter()->WriteFormat<0x100>("unexpected event %d in %s", event->get_type(), function);
+        Basic::globals->DebugWriter()->WriteLine();
     }
 }

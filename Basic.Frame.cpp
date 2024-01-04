@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "Basic.Frame.h"
+#include "Basic.Globals.h"
 
 namespace Basic
 {
@@ -26,6 +27,14 @@ namespace Basic
     void StateMachine::reset()
     {
         this->state = Start_State;
+    }
+
+        
+    void StateMachine::HandleUnexpectedEvent(const char* function, IEvent* event)
+    {
+        Basic::globals->DebugWriter()->write_literal("ERROR: ");
+        Basic::globals->DebugWriter()->WriteFormat<0x100>("unexpected event %d in %s state %d", event->get_type(), function, get_state());
+        Basic::globals->DebugWriter()->WriteLine();
     }
 
     StateMachine::StateMachine() :

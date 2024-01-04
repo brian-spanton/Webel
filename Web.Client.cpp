@@ -103,91 +103,85 @@ namespace Web
         }
     }
 
-    void Client::switch_to_state(State state)
+    void Client::Completion()
     {
-        __super::switch_to_state(state);
-
-        if (state == State::inactive_state)
+        std::shared_ptr<IProcess> completion = this->completion.lock();
+        if (completion.get() != 0)
         {
-            std::shared_ptr<IProcess> completion = this->completion.lock();
-            if (completion.get() != 0)
-            {
-                ResponseCompleteEvent event;
-                event.cookie = this->completion_cookie;
-                process_event_ignore_failures(completion.get(), &event);
-            }
+            ResponseCompleteEvent event;
+            event.cookie = this->completion_cookie;
+            process_event_ignore_failures(completion.get(), &event);
         }
-        else if (state == State::response_pending_state)
+    }
+
+    void Client::SendRequest()
+    {
+        this->transaction = std::make_shared<Transaction>();
+        this->transaction->request = this->planned_request;
+        this->transaction->response = std::make_shared<Response>();
+        this->transaction->response->Initialize();
+
+        this->history.push_back(transaction);
+        this->response_frame = std::make_shared<ResponseFrame>(this->transaction, this->shared_from_this(), ByteStringRef());
+
+        this->planned_request->protocol = Http::globals->HTTP_1_1;
+
+        if (this->planned_request->request_body.get() == 0)
         {
-            this->transaction = std::make_shared<Transaction>();
-            this->transaction->request = this->planned_request;
-            this->transaction->response = std::make_shared<Response>();
-            this->transaction->response->Initialize();
+            this->planned_request->headers->set_base_10(Http::globals->header_content_length, 0);
+            this->planned_request->headers->erase(Http::globals->header_content_type);
+        }
+        else
+        {
+            CountStream<byte> count_stream;
+            this->planned_request->request_body->write_to_stream(&count_stream);
+            this->planned_request->headers->set_base_10(Http::globals->header_content_length, count_stream.count);
+        }
 
-            this->history.push_back(transaction);
-            this->response_frame = std::make_shared<ResponseFrame>(this->transaction, this->shared_from_this(), ByteStringRef());
+        this->planned_request->headers->set_string(Http::globals->header_te, Http::globals->trailers);
+        this->planned_request->headers->set_string(Http::globals->header_host, planned_request->resource->host);
 
-            this->planned_request->protocol = Http::globals->HTTP_1_1;
+        UnicodeStringRef accept_type_value = std::make_shared<UnicodeString>();
+        accept_type_value->append(*Http::globals->gzip);
+        TextWriter writer(accept_type_value.get());
+        writer.write_literal(", ");
+        accept_type_value->append(*Http::globals->deflate);
+        this->planned_request->headers->set_string(Http::globals->header_accept_type, accept_type_value);
 
-            if (this->planned_request->request_body.get() == 0)
+        UnicodeStringRef cookie_header_value;
+
+        for (CookieList::iterator it = this->http_cookies.begin(); it != this->http_cookies.end(); it++)
+        {
+            if ((*it)->Matches(this->planned_request->resource.get()))
             {
-                this->planned_request->headers->set_base_10(Http::globals->header_content_length, 0);
-                this->planned_request->headers->erase(Http::globals->header_content_type);
-            }
-            else
-            {
-                CountStream<byte> count_stream;
-                this->planned_request->request_body->write_to_stream(&count_stream);
-                this->planned_request->headers->set_base_10(Http::globals->header_content_length, count_stream.count);
-            }
-
-            this->planned_request->headers->set_string(Http::globals->header_te, Http::globals->trailers);
-            this->planned_request->headers->set_string(Http::globals->header_host, planned_request->resource->host);
-
-            UnicodeStringRef accept_type_value = std::make_shared<UnicodeString>();
-            accept_type_value->append(*Http::globals->gzip);
-            TextWriter writer(accept_type_value.get());
-            writer.write_literal(", ");
-            accept_type_value->append(*Http::globals->deflate);
-            this->planned_request->headers->set_string(Http::globals->header_accept_type, accept_type_value);
-
-            UnicodeStringRef cookie_header_value;
-
-            for (CookieList::iterator it = this->http_cookies.begin(); it != this->http_cookies.end(); it++)
-            {
-                if ((*it)->Matches(this->planned_request->resource.get()))
+                if (cookie_header_value.get() == 0)
                 {
-                    if (cookie_header_value.get() == 0)
-                    {
-                        cookie_header_value = std::make_shared<UnicodeString>();
-                        cookie_header_value->reserve(0x400);
-                    }
-                    else
-                    {
-                        TextWriter writer(cookie_header_value.get());
-                        writer.write_literal("; ");
-                    }
-
-                    std::shared_ptr<Cookie> cookie = (*it);
-
-                    cookie_header_value->append(*cookie->name.get());
-                    cookie_header_value->push_back(Http::globals->EQ);
-                    cookie_header_value->append(*cookie->value.get());
+                    cookie_header_value = std::make_shared<UnicodeString>();
+                    cookie_header_value->reserve(0x400);
                 }
+                else
+                {
+                    TextWriter writer(cookie_header_value.get());
+                    writer.write_literal("; ");
+                }
+
+                std::shared_ptr<Cookie> cookie = (*it);
+
+                cookie_header_value->append(*cookie->name.get());
+                cookie_header_value->push_back(Http::globals->EQ);
+                cookie_header_value->append(*cookie->value.get());
             }
-
-            if (cookie_header_value.get() != 0)
-                this->planned_request->headers->set_string(Http::globals->header_cookie, cookie_header_value);
-
-            ByteString request_bytes;
-            Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
-            request_bytes.write_to_stream(this->transport.get());
-
-            render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
-            Basic::globals->DebugWriter()->WriteLine();
-
-            this->planned_request = 0;
         }
+
+        if (cookie_header_value.get() != 0)
+            this->planned_request->headers->set_string(Http::globals->header_cookie, cookie_header_value);
+
+        ByteString request_bytes;
+        Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
+        request_bytes.write_to_stream(this->transport.get());
+
+        render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
+        Basic::globals->DebugWriter()->WriteLine();
     }
 
     void Client::handle_error(const char* error)
@@ -211,7 +205,32 @@ namespace Web
         else
         {
             switch_to_state(State::inactive_state);
+            Completion();
         }
+    }
+
+    bool Client::is_transport_reusable()
+    {
+        if (!this->transport)
+            return false;
+
+        if (!this->transaction)
+            return false;
+
+        std::shared_ptr<Uri> current_url = this->transaction->request->resource;
+        if (!current_url)
+            return false;
+
+        if (!equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()))
+            return false;
+
+        if (!equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()))
+            return false;
+
+        if (this->planned_request->resource->get_port() != current_url->get_port())
+            return false;
+
+        return true;
     }
 
     ProcessResult Client::process_event(IEvent* event)
@@ -277,8 +296,11 @@ namespace Web
                     }
                 }
             }
-            else if (event->get_type() < response_headers_event)
+            else if (event->get_type() == Basic::EventType::received_bytes_event)
             {
+                // we are receiving response bytes - the planned request must have sent successfully
+                this->planned_request = 0;
+
                 ProcessResult result = Basic::process_event(this->response_frame.get(), event);
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
@@ -299,8 +321,17 @@ namespace Web
                 switch_to_state(State::response_complete_state);
                 QueueJob();
             }
+            else if (event->get_type() == Basic::EventType::element_stream_ending_event)
+            {
+                Retry(this->planned_request);
+                QueuePlanned();
+            }
+            else
+            {
+                StateMachine::HandleUnexpectedEvent("Web::Client::process_event response_pending_state", event);
+            }
 
-            return ProcessResult::process_result_blocked; // event consumed, new thread
+            return ProcessResult::process_result_blocked;
         }
 
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
@@ -330,14 +361,15 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event get_pending_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 if (!this->planned_request->resource->is_http_scheme())
                 {
                     handle_error("scheme error");
                     switch_to_state(State::inactive_state);
+                    Completion();
                     return ProcessResult::process_result_blocked; // event consumed
                 }
 
@@ -345,19 +377,16 @@ namespace Web
                 if (this->transaction)
                     current_url = this->transaction->request->resource;
 
-                if (this->transport &&
-                    current_url &&
-                    equals<UnicodeString, false>(this->planned_request->resource->scheme.get(), current_url->scheme.get()) &&
-                    equals<UnicodeString, false>(this->planned_request->resource->host.get(), current_url->host.get()) &&
-                    equals<UnicodeString, true>(this->planned_request->resource->port.get(), current_url->port.get()))
+                if (is_transport_reusable())
                 {
                     // we already have a compatible transport, just go for it
 
                     switch_to_state(State::response_pending_state);
+                    SendRequest();
                 }
                 else
                 {
-                    if (this->transport.get() != 0)
+                    if (this->transport)
                     {
                         this->transport->write_eof();
                         this->transport.reset();
@@ -372,6 +401,7 @@ namespace Web
                     {
                         handle_error("resolve failed");
                         switch_to_state(State::inactive_state);
+                        Completion();
                         return ProcessResult::process_result_blocked; // event consumed
                     }
 
@@ -388,11 +418,12 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event connection_pending_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 switch_to_state(State::response_pending_state);
+                SendRequest();
                 return ProcessResult::process_result_blocked; // event consumed
             }
             break;
@@ -401,8 +432,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    HandleError("unexpected event");
-                    return ProcessResult::process_result_blocked; // unexpected event
+                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event response_complete_state", event);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 std::shared_ptr<Response> response = this->transaction->response;

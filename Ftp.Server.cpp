@@ -59,6 +59,7 @@ namespace Ftp
             }
             else
             {
+                StateMachine::HandleUnexpectedEvent("Ftp::Server::process_event pending_connection_state", event);
                 throw FatalError("unexpected event");
             }
             break;

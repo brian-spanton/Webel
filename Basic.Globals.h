@@ -35,6 +35,7 @@ namespace Basic
         UnicodeStringRef utf_16_little_endian_label;
         UnicodeStringRef utf_8_label;
         UnicodeStringRef us_ascii_label;
+        UnicodeStringRef us_windows_1252_label;
 
         UnicodeStringRef CRLF;
         UnicodeStringRef percent_forty;

@@ -241,6 +241,7 @@ namespace Service
                 break;
 
             default:
+                StateMachine::HandleUnexpectedEvent("Service::StandardEncodings::process_event single_byte_encodings_state", event);
                 throw FatalError("unexpected event");
             }
             break;

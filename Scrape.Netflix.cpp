@@ -20,7 +20,7 @@ namespace Scrape
 
     void Netflix::start()
     {
-        // add a retry because netflix sometimes just arbitrarily declines to serve
+        // add a retry because netflix sometimes just arbitrarily(?) declines to serve
 		this->client->Get(Scrape::globals->netflix_url, 1, this->shared_from_this(), ByteStringRef());
 	}
 
@@ -55,18 +55,13 @@ namespace Scrape
 		return true;
 	}
 
-	void Netflix::Error(const char* error)
-	{
-		HandleError(error);
-	}
-
 	ProcessResult Netflix::process_event(IEvent* event)
 	{
 		Hold hold(this->lock);
 
         try
         {
-            return consider_event_throw(event);
+            return process_event_throw(event);
         }
         catch (State error)
         {
@@ -77,7 +72,7 @@ namespace Scrape
         }
     }
 
-	ProcessResult Netflix::consider_event_throw(IEvent* event)
+	ProcessResult Netflix::process_event_throw(IEvent* event)
 	{
 		switch (this->get_state())
 		{
@@ -298,7 +293,7 @@ namespace Scrape
 		    break;
 
 		default:
-			throw FatalError("Netflix::Process unexpected state");
+			throw FatalError("Netflix::process_event unexpected state");
 		}
 
 		return ProcessResult::process_result_ready;

@@ -24,10 +24,12 @@ namespace Basic
             FILE_SHARE_READ,
             0,
             CREATE_ALWAYS,
-            FILE_FLAG_OVERLAPPED | FILE_FLAG_WRITE_THROUGH,
+            FILE_FLAG_OVERLAPPED,
             0);
         if (this->file == INVALID_HANDLE_VALUE)
             throw FatalError("CreateFileA", GetLastError());
+
+        this->position = 0;
 
         Basic::globals->BindToCompletionQueue(this->file);
     }
@@ -39,8 +41,9 @@ namespace Basic
         bytes->insert(bytes->end(), elements, elements + count);
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
-        job->Offset = 0xffffffff;
-        job->OffsetHigh = 0xffffffff;
+        job->Offset = this->position;
+        job->OffsetHigh = 0;
+        this->position += count;
 
         BOOL success = WriteFile(this->file, bytes->address(), bytes->size(), 0, job.get());
         if (success == FALSE)

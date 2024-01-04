@@ -23,6 +23,19 @@ namespace Service
         command_frame(&this->command), // initialization is in order of declaration in class def
         peer(peer)
     {
+        command_list.push_back(Service::globals->command_stop);
+        command_list.push_back(Service::globals->command_log);
+        command_list.push_back(Service::globals->command_get);
+        command_list.push_back(Service::globals->command_follow_link);
+        command_list.push_back(Service::globals->command_select_form);
+        command_list.push_back(Service::globals->command_set_control_value);
+        command_list.push_back(Service::globals->command_submit);
+        command_list.push_back(Service::globals->command_render_links);
+        command_list.push_back(Service::globals->command_render_forms);
+        command_list.push_back(Service::globals->command_render_nodes);
+        command_list.push_back(Service::globals->command_search);
+		command_list.push_back(Scrape::globals->command_amazon);
+		command_list.push_back(Scrape::globals->command_netflix);
     }
 
     void AdminProtocol::reset(std::shared_ptr<Basic::IStream<Codepoint> > peer)
@@ -109,9 +122,9 @@ namespace Service
 
                 writer.WriteLine("Get completed with html");
             }
-            else 
+            else
             {
-                writer.WriteLine("Get completed without html");
+                writer.WriteLine("Get completed (not html)");
             }
 
             return ProcessResult::process_result_blocked; // event consumed
@@ -325,7 +338,7 @@ namespace Service
 
                     handled = true;
                 }
-				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_amazon.get()))
+				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_amazon.get()))
 				{
 					if (this->amazon_scrape->current_page.get() != 0)
 					{
@@ -339,7 +352,7 @@ namespace Service
 
 					handled = true;
 				}
-				else if (this->command.size() == 3 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_amazon.get()))
+				else if (this->command.size() == 3 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_amazon.get()))
 				{
 					this->amazon_cookie = std::make_shared<ByteString>();
 					this->amazon_scrape = std::make_shared<Scrape::Amazon>(this->command.at(1), this->command.at(2), this->shared_from_this(), this->amazon_cookie);
@@ -347,7 +360,7 @@ namespace Service
 
 					writer.WriteLine("Amazon scrape started");
 				}
-				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_netflix.get()))
+				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_netflix.get()))
 				{
 					if (this->netflix_scrape->current_page.get() != 0)
 					{
@@ -361,7 +374,7 @@ namespace Service
 
 					handled = true;
 				}
-				else if (this->command.size() == 4 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_netflix.get()))
+				else if (this->command.size() == 4 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_netflix.get()))
 				{
 					this->netflix_cookie = std::make_shared<ByteString>();
 					this->netflix_scrape = std::make_shared<Scrape::Netflix>(this->command.at(1), this->command.at(2), this->command.at(3), this->shared_from_this(), this->netflix_cookie);
@@ -376,9 +389,9 @@ namespace Service
                 {
                     writer.WriteLine("commands: ");
 
-                    for (Globals::CommandList::iterator it = Service::globals->command_list.begin(); it != Service::globals->command_list.end(); it++)
+                    for (CommandList::iterator it = this->command_list.begin(); it != this->command_list.end(); it++)
                     {
-                        if (it != Service::globals->command_list.begin())
+                        if (it != this->command_list.begin())
                             writer.write_literal(", ");
 
                         this->peer->write_elements((*it)->address(), (*it)->size());

@@ -30,8 +30,10 @@ namespace Html
 
     bool Parser::ParseError(const char* error)
     {
-        std::string parse_error = "Parse error: ";
-        parse_error += error;
-        return Basic::globals->HandleError(parse_error.c_str(), 0);
+        // $$$ figure out a good log level solution
+        return true;
+        //std::string parse_error = "Parse error: ";
+        //parse_error += error;
+        //return Basic::globals->HandleError(parse_error.c_str(), 0);
     }
 }

@@ -40,12 +40,14 @@ namespace Web
         std::shared_ptr<Request> planned_request;
         Lock lock;
 
-        void switch_to_state(State state);
         void handle_error(const char* error);
         void Redirect(std::shared_ptr<Uri> url);
         void Retry(std::shared_ptr<Request> request);
         void QueuePlanned();
         void QueueJob();
+        void Completion();
+        void SendRequest();
+        bool is_transport_reusable();
 
         virtual ProcessResult IProcess::process_event(IEvent* event);
 

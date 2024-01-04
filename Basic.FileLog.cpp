@@ -68,7 +68,7 @@ namespace Basic
         utf_8_encode(entry.get(), bytes.get());
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
-        job->Offset = 0xffffffff;
+        job->Offset = 0xffffffff; // $$$ writes can be out of order if we aren't specific about position
         job->OffsetHigh = 0xffffffff;
 
         BOOL success = WriteFile(this->file, bytes->address(), bytes->size(), 0, job.get());

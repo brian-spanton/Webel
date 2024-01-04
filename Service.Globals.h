@@ -32,12 +32,15 @@ namespace Service
     private:
         enum State
         {
-            cert_pending_state = Start_State,
-            encodings_pending_state,
-            test_gzip_state,
-            pending_pfx_state,
-            initialize_html_globals,
-            named_character_references_pending_state,
+            initialize_test_gzip_state = Start_State,
+            pending_test_gzip_completion_state,
+            initialize_read_certificate_state,
+            pending_read_certificate_state,
+            initialize_self_sign_certificate_state,
+            initialize_encodings_state,
+            pending_encodings_state,
+            initialize_html_globals_state,
+            pending_html_globals_state,
             accepts_pending_state,
             done_state = Succeeded_State,
         };
@@ -63,13 +66,10 @@ namespace Service
         bool TestHuffman();
         bool TestGzip();
 
-        bool InitializeHtmlGlobals();
-
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
         typedef Basic::StringMapCaseInsensitive<std::shared_ptr<Basic::ListenSocket> > Listeners;
-        typedef std::vector<Basic::UnicodeStringRef> CommandList;
 
         std::shared_ptr<Basic::Console> console;
         std::shared_ptr<Basic::FileLog> file_log;
@@ -94,10 +94,6 @@ namespace Service
         Basic::UnicodeStringRef command_render_forms;
         Basic::UnicodeStringRef command_render_nodes;
         Basic::UnicodeStringRef command_search;
-		Basic::UnicodeStringRef command_amazon;
-		Basic::UnicodeStringRef command_netflix;
-
-        CommandList command_list;
 
         Basic::UnicodeStringRef root_admin;
         Basic::UnicodeStringRef root_echo;

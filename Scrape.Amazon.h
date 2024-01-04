@@ -68,8 +68,7 @@ namespace Scrape
 		void Complete();
 		void Scrape(std::shared_ptr<Html::Node> node);
 		bool set_body_stream();
-		void Error(const char* error);
-		ProcessResult consider_event_throw(IEvent* event);
+		ProcessResult process_event_throw(IEvent* event);
 
 	public:
 		std::shared_ptr<Web::Page> current_page;
