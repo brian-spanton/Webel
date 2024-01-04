@@ -11,7 +11,7 @@ namespace Http
 {
     using namespace Basic;
 
-    RequestFrame::RequestFrame(Request* request) :
+    RequestFrame::RequestFrame(std::shared_ptr<Request> request) :
         request(request),
         resource_string(std::make_shared<UnicodeString>()),
         resource_decoder(Basic::globals->ascii_index, this->resource_string.get()),
@@ -113,11 +113,8 @@ namespace Http
                     return ProcessResult::process_result_blocked;
 
                 std::shared_ptr<CountStream<byte> > count_stream = std::make_shared<CountStream<byte> >();
-                std::shared_ptr<Transaction> transaction = std::make_shared<Transaction>();
 
-                transaction->request = this->request;
-
-                BodyFrame::make_body_frame(count_stream, transaction.get(), &this->body_frame);
+                BodyFrame::make_body_frame(count_stream, this->request->headers.get(), &this->body_frame);
                 if (!this->body_frame)
                 {
                     switch_to_state(State::done_state);

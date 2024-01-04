@@ -45,7 +45,7 @@ namespace Http
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        RequestFrame(Request* request);
+        RequestFrame(std::shared_ptr<Request> request);
     };
 
     void render_request_line(const Request* value, IStream<byte>* stream);

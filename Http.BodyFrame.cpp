@@ -20,29 +20,18 @@ namespace Http
     {
     }
     
-    void BodyFrame::make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, Transaction* transaction, std::shared_ptr<BodyFrame>* output)
+    void BodyFrame::make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, NameValueCollection* headers, std::shared_ptr<BodyFrame>* output)
     {
-        uint16 code = transaction->response->code;
-
-        bool success;
-        bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(transaction->request->method.get(), Http::globals->head_method.get()));
-
-        if (body_expected)
+        UnicodeStringRef contentType;
+        bool success = headers->get_string(Http::globals->header_content_type, &contentType);
+        if (!success)
         {
-            // get the body frame set up first, because the ResponseHeadersEvent completion can recurse into
-            // this class to set the decoded content stream on the body frame
-
-            UnicodeStringRef contentType;
-            success = transaction->response->headers->get_string(Http::globals->header_content_type, &contentType);
-            if (!success)
-            {
-                (*output) = std::shared_ptr<BodyFrame>();
-                return;
-            }
+            (*output) = std::shared_ptr<BodyFrame>();
+            return;
         }
 
         UnicodeStringRef contentEncoding;
-        success = transaction->response->headers->get_string(Http::globals->header_content_encoding, &contentEncoding);
+        success = headers->get_string(Http::globals->header_content_encoding, &contentEncoding);
         if (success)
         {
             if (equals<UnicodeString, false>(contentEncoding.get(), Http::globals->gzip.get()))
@@ -67,12 +56,12 @@ namespace Http
             decoded_content_stream = std::make_shared<IgnoreFrame<byte> >();
 
         UnicodeStringRef transferEncoding;
-        success = transaction->response->headers->get_string(Http::globals->header_transfer_encoding, &transferEncoding);
+        success = headers->get_string(Http::globals->header_transfer_encoding, &transferEncoding);
         if (success)
         {
             if (equals<UnicodeString, false>(transferEncoding.get(), Http::globals->chunked.get()))
             {
-                (*output) = std::make_shared<BodyChunksFrame>(decoded_content_stream, transaction->response->headers);
+                (*output) = std::make_shared<BodyChunksFrame>(decoded_content_stream, headers);
                 return;
             }
 
@@ -85,7 +74,7 @@ namespace Http
 
         // $ why does transfer-length take precedence over content-length? if we have both what should we do?
         uint32 contentLength;
-        success = transaction->response->headers->get_base_10(Http::globals->header_transfer_length, &contentLength);
+        success = headers->get_base_10(Http::globals->header_transfer_length, &contentLength);
         if (success)
         {
             if (contentLength == 0)
@@ -98,7 +87,7 @@ namespace Http
             return;
         }
 
-        success = transaction->response->headers->get_base_10(Http::globals->header_content_length, &contentLength);
+        success = headers->get_base_10(Http::globals->header_content_length, &contentLength);
         if (success)
         {
             if (contentLength == 0)

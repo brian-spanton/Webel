@@ -145,7 +145,18 @@ namespace Http
                 if (!this->decoded_content_stream)
                     this->decoded_content_stream = std::make_shared<IgnoreFrame<byte> >();
 
-                BodyFrame::make_body_frame(this->decoded_content_stream, this->transaction.get(), &this->body_frame);
+                // get the body frame set up first, because the ResponseHeadersEvent completion can recurse into
+                // this class to set the decoded content stream on the body frame
+
+                uint16 code = this->transaction->response->code;
+                bool body_expected = !(code / 100 == 1 || code == 204 || code == 205 || code == 304 || equals<UnicodeString, true>(transaction->request->method.get(), Http::globals->head_method.get()));
+                if (!body_expected)
+                {
+                    switch_to_state(State::done_state);
+                    return ProcessResult::process_result_ready;
+                }
+
+                BodyFrame::make_body_frame(this->decoded_content_stream, this->transaction->response->headers.get(), &this->body_frame);
                 if (!this->body_frame)
                 {
                     switch_to_state(State::done_state);

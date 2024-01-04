@@ -18,6 +18,6 @@ namespace Http
     public:
         BodyFrame(std::shared_ptr<IStream<byte> > decoded_content_stream);
 
-        static void make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, Transaction* transaction, std::shared_ptr<BodyFrame>* output);
+        static void make_body_frame(std::shared_ptr<IStream<byte> > decoded_content_stream, NameValueCollection* headers, std::shared_ptr<BodyFrame>* output);
     };
 }

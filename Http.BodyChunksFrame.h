@@ -40,6 +40,6 @@ namespace Http
         ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, std::shared_ptr<NameValueCollection> headers);
+        BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, NameValueCollection* headers);
     };
 }

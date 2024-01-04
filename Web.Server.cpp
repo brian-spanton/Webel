@@ -84,7 +84,7 @@ namespace Web
                 this->request = std::make_shared<Request>();
                 this->request->Initialize();
 
-                this->request_frame = std::make_shared<RequestFrame>(this->request.get());
+                this->request_frame = std::make_shared<RequestFrame>(this->request);
 
                 switch_to_state(State::request_frame_pending_state);
             }

@@ -10,12 +10,12 @@ namespace Http
 {
     using namespace Basic;
 
-    BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, std::shared_ptr<NameValueCollection> headers) :
+    BodyChunksFrame::BodyChunksFrame(std::shared_ptr<IStream<byte> > body_stream, NameValueCollection* headers) :
         BodyFrame(body_stream),
         size(0),
         size_stream(&this->size), // initialization is in order of declaration in class def
         chunk_frame(body_stream),
-        headers_frame(headers.get())
+        headers_frame(headers)
     {
     }
 

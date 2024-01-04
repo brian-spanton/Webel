@@ -994,7 +994,10 @@ namespace Basic
                     output->write_element('@');
                 }
 
-                this->host->write_to_stream(output);
+                if (!is_null_or_empty(this->host.get()))
+                {
+                    this->host->write_to_stream(output);
+                }
 
                 if (!is_null_or_empty(this->port.get()))
                 {
