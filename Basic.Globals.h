@@ -2,19 +2,19 @@
 
 #pragma once
 
-#include "Basic.IErrorHandler.h"
+#include "Basic.ILogger.h"
 #include "Basic.ICompletionQueue.h"
 
 namespace Basic
 {
     class SingleByteEncodingIndex;
 
-    class Globals : public IErrorHandler, public ICompletionQueue
+    class Globals : public ILogger, public ICompletionQueue
     {
     public:
         Globals();
 
-        void Initialize(std::shared_ptr<IErrorHandler> error_handler, std::shared_ptr<ICompletionQueue> completion_queue);
+        void Initialize(std::shared_ptr<ILogger> error_handler, std::shared_ptr<ICompletionQueue> completion_queue);
         void InitializeSocketApi();
 
         byte utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
@@ -65,7 +65,7 @@ namespace Basic
 
         bool sanitizer_white_space[0x100] = { 0 };
 
-        std::shared_ptr<IErrorHandler> error_handler;
+        std::shared_ptr<ILogger> error_handler;
         std::shared_ptr<ICompletionQueue> completion_queue;
 
         LPFN_CONNECTEX ConnectEx = 0;
@@ -73,7 +73,7 @@ namespace Basic
         void GetEncoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IEncoder>* encoder);
         void GetDecoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IDecoder>* decoder);
 
-        virtual bool IErrorHandler::Log(LogLevel level, const char* component, const char* context, uint32 code);
+        virtual void ILogger::Log(LogLevel level, const char* component, const char* context, uint32 code);
         virtual Basic::IStream<Codepoint>* LogStream();
         virtual Basic::TextWriter* DebugWriter();
 

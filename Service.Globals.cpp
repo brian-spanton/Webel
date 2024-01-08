@@ -174,7 +174,7 @@ namespace Service
             Gzip::HuffmanAlphabet<byte>::make_alphabet((uint16)lengths.size(), lengths, &root);
             return true;
         }
-        catch (...)
+        catch (...) // $$$ remove use of exceptions
         {
             return false;
         }
@@ -227,7 +227,7 @@ namespace Service
 
             return true;
         }
-        catch (...)
+        catch (...) // $$$ remove use of exceptions
         {
             return false;
         }
@@ -742,7 +742,7 @@ namespace Service
         return debug_writer;
     }
 
-    bool Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
+    void Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
     {
         switch (level)
         {
@@ -774,8 +774,6 @@ namespace Service
         }
 
         DebugWriter()->WriteLine();
-
-        return false;
     }
 }
 

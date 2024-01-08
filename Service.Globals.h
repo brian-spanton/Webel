@@ -27,7 +27,7 @@ namespace Service
 {
     using namespace Basic;
 
-    class Globals : public Frame, public ICompleter, public IErrorHandler, public ICompletionQueue, public Tls::ICertificate, public std::enable_shared_from_this<Globals>
+    class Globals : public Frame, public ICompleter, public ILogger, public ICompletionQueue, public Tls::ICertificate, public std::enable_shared_from_this<Globals>
     {
     private:
         enum State
@@ -141,9 +141,9 @@ namespace Service
             strcat_s(value, name);
         }
 
-        virtual bool IErrorHandler::Log(LogLevel level, const char* component, const char* context, uint32 code);
-        virtual Basic::IStream<Codepoint>* IErrorHandler::LogStream();
-        virtual Basic::TextWriter* IErrorHandler::DebugWriter();
+        virtual void ILogger::Log(LogLevel level, const char* component, const char* context, uint32 code);
+        virtual Basic::IStream<Codepoint>* ILogger::LogStream();
+        virtual Basic::TextWriter* ILogger::DebugWriter();
 
         virtual void ICompletionQueue::BindToCompletionQueue(HANDLE handle);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);

@@ -346,7 +346,7 @@
     <ClInclude Include="Tls.ServerHandshake.h">
       <Filter>Tls</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.IErrorHandler.h">
+    <ClInclude Include="Basic.ILogger.h">
       <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Http.MediaTypeStream.h">

@@ -15,12 +15,12 @@ namespace Basic
     {
     }
 
-    bool Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
+    void Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
     {
         if (this->error_handler.get() == 0)
-            return false;
+            return;
 
-        return this->error_handler->Log(level, component, context, code);
+        this->error_handler->Log(level, component, context, code);
     }
 
     Basic::IStream<Codepoint>* Globals::LogStream()
@@ -63,7 +63,7 @@ namespace Basic
         it->second->CreateDecoder(decoder);
     }
 
-    void Globals::Initialize(std::shared_ptr<IErrorHandler> error_handler, std::shared_ptr<ICompletionQueue> completion_queue)
+    void Globals::Initialize(std::shared_ptr<ILogger> error_handler, std::shared_ptr<ICompletionQueue> completion_queue)
     {
         this->error_handler = error_handler;
         this->completion_queue = completion_queue;

@@ -14,9 +14,9 @@ namespace Basic
         Critical,
     };
 
-    __interface IErrorHandler
+    __interface ILogger
     {
-        bool Log(LogLevel level, const char* component, const char* context, uint32 code);
+        void Log(LogLevel level, const char* component, const char* context, uint32 code);
         Basic::IStream<Codepoint>* LogStream();
         Basic::TextWriter* DebugWriter();
     };

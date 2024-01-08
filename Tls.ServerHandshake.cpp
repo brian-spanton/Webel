@@ -458,7 +458,10 @@ namespace Tls
                 //fails, the PreMasterSecret SHOULD be randomized as described below.
 
                 if (pre_master_secret.client_version != this->clientHello.client_version)
-                    return Basic::globals->Log(LogLevel::Warning, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
+                {
+                    Basic::globals->Log(LogLevel::Warning, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
+                    return false;
+                }
             }
             break;
 

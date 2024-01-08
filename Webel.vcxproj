@@ -136,7 +136,7 @@
     <ClInclude Include="Basic.IDecoder.h" />
     <ClInclude Include="Basic.IEncoder.h" />
     <ClInclude Include="Basic.IEncoderFactory.h" />
-    <ClInclude Include="Basic.IErrorHandler.h" />
+    <ClInclude Include="Basic.ILogger.h" />
     <ClInclude Include="Basic.IEvent.h" />
     <ClInclude Include="Basic.INumberStream.h" />
     <ClInclude Include="Basic.ISingleByteEncodingIndex.h" />
