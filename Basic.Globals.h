@@ -15,7 +15,7 @@ namespace Basic
         Globals();
 
         void Initialize(std::shared_ptr<IErrorHandler> error_handler, std::shared_ptr<ICompletionQueue> completion_queue);
-        bool InitializeSocketApi();
+        void InitializeSocketApi();
 
         byte utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
         byte utf_16_little_endian_bom[2] = { 0xFF, 0xFE };
@@ -73,7 +73,7 @@ namespace Basic
         void GetEncoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IEncoder>* encoder);
         void GetDecoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IDecoder>* decoder);
 
-        virtual bool IErrorHandler::HandleError(const char* context, uint32 error);
+        virtual bool IErrorHandler::Log(LogLevel level, const char* component, const char* context, uint32 code);
         virtual Basic::IStream<Codepoint>* LogStream();
         virtual Basic::TextWriter* DebugWriter();
 

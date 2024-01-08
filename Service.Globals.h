@@ -115,12 +115,12 @@ namespace Service
 
         virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 
-        bool Initialize();
+        void Initialize();
         void WaitForStopSignal();
         void Cleanup();
-        bool SendStopSignal();
+        void SendStopSignal();
         bool Thread();
-        bool SetThreadCount(uint32 count);
+        void SetThreadCount(uint32 count);
 
         template <int value_count>        
         void GetFilePath(const char* name, char (&value)[value_count])
@@ -129,7 +129,7 @@ namespace Service
 
             DWORD exe_path_count = GetModuleFileNameA(0, exe_path, sizeof(exe_path));
             if (exe_path_count == sizeof(exe_path))
-                throw FatalError("GetModuleFileNameA", GetLastError());
+                throw FatalError("Service", "Globals::GetFilePath GetModuleFileNameA { exe_path_count == sizeof(exe_path) } failed", GetLastError());
 
             char drive[MAX_PATH + 0x100];
             char directory[MAX_PATH + 0x100];
@@ -141,7 +141,7 @@ namespace Service
             strcat_s(value, name);
         }
 
-        virtual bool IErrorHandler::HandleError(const char* context, uint32 error);
+        virtual bool IErrorHandler::Log(LogLevel level, const char* component, const char* context, uint32 code);
         virtual Basic::IStream<Codepoint>* IErrorHandler::LogStream();
         virtual Basic::TextWriter* IErrorHandler::DebugWriter();
 

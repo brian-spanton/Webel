@@ -33,6 +33,7 @@ namespace Service
             codepoint_pending_error,
             connection_lost_error,
             malformed_content_error,
+            unexpected_event_error,
         };
 
         std::shared_ptr<StandardSingleByteEncoding> self;

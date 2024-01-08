@@ -45,7 +45,7 @@ namespace Basic
             (*this->value) = this->best_complete_match_so_far;
         }
 
-        virtual void IStream<Codepoint>::write_element(Codepoint c)
+        virtual void IStream<Codepoint>::write_element(Codepoint codepoint)
         {
             switch (get_state())
             {
@@ -55,7 +55,7 @@ namespace Basic
                     {
                         for (Dictionary::iterator it = this->dictionary->begin(); it != this->dictionary->end(); it++)
                         {
-                            if (it->first->at(this->matched_chars) == c)
+                            if (it->first->at(this->matched_chars) == codepoint)
                             {
                                 if (this->matched_chars + 1 == it->first->size())
                                 {
@@ -73,7 +73,7 @@ namespace Basic
                     {
                         for (MatchList::iterator it = this->remaining_possible_matches.begin(); it != this->remaining_possible_matches.end(); )
                         {
-                            if ((*it)->first->at(this->matched_chars) == c)
+                            if ((*it)->first->at(this->matched_chars) == codepoint)
                             {
                                 if (this->matched_chars + 1 == (*it)->first->size())
                                 {
@@ -103,7 +103,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic::MatchFrame::handle_event unexpected state");
+                throw FatalError("Basic", "MatchFrame::process_event unhandled state");
             }
         }
     };

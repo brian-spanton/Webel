@@ -15,7 +15,7 @@ namespace Basic
         socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
     {
         if (this->socket == INVALID_SOCKET)
-            throw Basic::FatalError("socket", WSAGetLastError());
+            throw Basic::FatalError("Basic", "Socket::Socket socket failed", WSAGetLastError());
 
         Basic::globals->BindToCompletionQueue(reinterpret_cast<HANDLE>(this->socket));
     }

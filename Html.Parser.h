@@ -32,7 +32,7 @@ namespace Html
         std::shared_ptr<InputStreamPreprocessor> preprocessor; // init 3rd
         std::shared_ptr<ByteStreamDecoder> decoder; // init 4th
 
-        bool ParseError(const char* error);
+        void ParseError(const char* error);
 
     public:
         Parser(std::shared_ptr<Uri> url, UnicodeStringRef charset);

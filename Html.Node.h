@@ -43,7 +43,7 @@ namespace Html
         Node(NodeType type);
 
     public:
-        void Insert(Codepoint c);
+        void Insert(Codepoint codepoint);
         virtual void Append(std::shared_ptr<Node> node);
         void Remove(std::shared_ptr<Node> node);
 

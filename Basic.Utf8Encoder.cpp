@@ -26,9 +26,9 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "Utf8Encoder::EncoderError codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("sprintf_s");
+            throw FatalError("Basic", "Utf8Encoder::EncodeError { sprintf_s }");
 
-        HandleError(error);
+        Basic::LogDebug("Basic", error);
     }
 
     void Utf8Encoder::write_elements(const Codepoint* elements, uint32 count)
@@ -55,7 +55,7 @@ namespace Basic
 
         if (codepoint == EOF)
         {
-            HandleError("unexpected eof");
+            Basic::LogDebug("Basic", "Utf8Encoder::write_element { codepoint == EOF } unexpected eof");
             return;
         }
 
@@ -106,8 +106,8 @@ namespace Basic
 
     void Utf8Encoder::write_eof()
     {
-        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
-        // because it might not at all be the last thing sent to the destination
+        // write_eof means "you will not receive any more calls to IStream interface".
+        // It should not propagate to the destination, because destination might be composite
     }
 
     void Utf8Encoder::Emit(byte b)

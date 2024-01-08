@@ -15,18 +15,18 @@ namespace Basic
     {
     }
 
-    bool Globals::HandleError(const char* context, uint32 error)
+    bool Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
     {
         if (this->error_handler.get() == 0)
             return false;
 
-        return this->error_handler->HandleError(context, error);
+        return this->error_handler->Log(level, component, context, code);
     }
 
     Basic::IStream<Codepoint>* Globals::LogStream()
     {
         if (this->error_handler.get() == 0)
-            throw FatalError("no error handler set");
+            throw FatalError("Basic", "Globals::LogStream { this->error_handler.get() == 0 }");
 
         return this->error_handler->LogStream();
     }
@@ -34,7 +34,7 @@ namespace Basic
     Basic::TextWriter* Globals::DebugWriter()
     {
         if (this->error_handler.get() == 0)
-            throw FatalError("no error handler set");
+            throw FatalError("Basic", "Globals::DebugWriter { this->error_handler.get() == 0 }");
 
         return this->error_handler->DebugWriter();
     }
@@ -95,7 +95,7 @@ namespace Basic
         initialize_unicode(&dot_dot, "..");
         initialize_unicode(&dot, ".");
 
-        // $$$ should use structured MediaType?
+        // $$ should use structured MediaType?
         initialize_unicode(&text_plain_media_type, "text/plain; charset=utf-8");
         initialize_unicode(&text_html_media_type, "text/html; charset=utf-8");
         initialize_unicode(&application_json_media_type, "application/json; charset=utf-8");
@@ -103,8 +103,8 @@ namespace Basic
 
         ZeroMemory(this->simple_encode_anti_set, sizeof(this->simple_encode_anti_set));
 
-        for (Codepoint c = 0x0020; c <= 0x007E; c++)
-            this->simple_encode_anti_set[c] = true;
+        for (Codepoint codepoint = 0x0020; codepoint <= 0x007E; codepoint++)
+            this->simple_encode_anti_set[codepoint] = true;
 
         CopyMemory(this->default_encode_anti_set, this->simple_encode_anti_set, sizeof(this->default_encode_anti_set));
 
@@ -163,16 +163,16 @@ namespace Basic
         this->encoder_map.insert(EncoderMap::value_type(utf_8_label, utf_8_encoder_factory));
     }
 
-    bool Globals::InitializeSocketApi()
+    void Globals::InitializeSocketApi()
     {
         WSADATA wsaData;
         int error = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (error != 0)
-            return HandleError("WSAStartup", error);
+            throw FatalError("Basic", "Globals::InitializeSocketApi WSAStartup", error);
 
         SOCKET tempSocket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (tempSocket == INVALID_SOCKET)
-            return HandleError("socket", WSAGetLastError());
+            throw FatalError("Basic", "Globals::InitializeSocketApi ::socket", WSAGetLastError());
 
         uint32 count;
 
@@ -188,17 +188,15 @@ namespace Basic
             0,
             0);
         if (error == SOCKET_ERROR)
-            return HandleError("socket", WSAGetLastError());
+            throw FatalError("Basic", "Globals::InitializeSocketApi WSAIoctl", WSAGetLastError());
 
         closesocket(tempSocket);
-
-        return true;
     }
 
     void Globals::QueueJob(std::shared_ptr<Job> job)
     {
         if (this->completion_queue.get() == 0)
-            throw FatalError("no error handler set");
+            throw FatalError("Basic", "Globals::QueueJob { this->completion_queue.get() == 0 }");
 
         return this->completion_queue->QueueJob(job);
     }
@@ -206,7 +204,7 @@ namespace Basic
     void Globals::BindToCompletionQueue(HANDLE handle)
     {
         if (this->completion_queue.get() == 0)
-            throw FatalError("no error handler set");
+            throw FatalError("Basic", "Globals::BindToCompletionQueue { this->completion_queue.get() == 0 }");
 
         return this->completion_queue->BindToCompletionQueue(handle);
     }

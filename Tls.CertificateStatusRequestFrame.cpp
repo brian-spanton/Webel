@@ -48,7 +48,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("CertificateStatusRequestFrame::handle_event unexpected state");
+            throw FatalError("Tls", "CertificateStatusRequestFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

@@ -63,10 +63,10 @@ namespace Scrape
         {
             return process_event_throw(event);
         }
-        catch (State error)
+        catch (State error_state)
         {
-		    Basic::globals->HandleError("Netflix", error);
-		    switch_to_state(error);
+		    Basic::LogDebug("Scrape", "Netflix::process_event", error_state);
+		    switch_to_state(error_state);
 		    Complete();
 			return ProcessResult::process_result_exited;
         }
@@ -248,7 +248,7 @@ namespace Scrape
 				{
 					switch_to_state(State::search_paging_headers_state);
 					this->client->Get(this->next_page, 0, this->shared_from_this(), ByteStringRef());
-					return ProcessResult::process_result_blocked; // event consumed
+					return ProcessResult::process_result_blocked;
 				}
 
 				UnicodeStringRef movie_id = this->movies.back();
@@ -261,7 +261,7 @@ namespace Scrape
 				this->client->Get(movie_url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::movie_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -293,7 +293,7 @@ namespace Scrape
 		    break;
 
 		default:
-			throw FatalError("Netflix::process_event unexpected state");
+			throw FatalError("Scrape", "Netflix::process_event_throw unhandled state");
 		}
 
 		return ProcessResult::process_result_ready;

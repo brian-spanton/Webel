@@ -26,7 +26,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::HeartbeatProtocol::SetPlaintextLength unexpected state");
+            throw FatalError("Tls", "HeartbeatProtocol::SetPlaintextLength switch (get_state()) default");
         }
     }
 
@@ -51,7 +51,7 @@ namespace Tls
                         this->heartbeat_message.padding.resize(16);
                         NTSTATUS error = BCryptGenRandom(0, this->heartbeat_message.padding.address(), this->heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                         if (error != 0)
-                            throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
+                            throw FatalError("Tls", "HeartbeatProtocol::process_event BCryptGenRandom failed", error);
 
                         ByteString heartbeat_bytes;
                         serialize<HeartbeatMessage>()(&this->heartbeat_message, &heartbeat_bytes);
@@ -71,7 +71,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::HeartbeatProtocol::handle_event unexpected state");
+            throw FatalError("Tls", "HeartbeatProtocol::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

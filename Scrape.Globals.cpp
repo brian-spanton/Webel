@@ -40,17 +40,17 @@ namespace Scrape
 		initialize_unicode(&command_amazon, "amazon");
 		initialize_unicode(&command_netflix, "netflix");
 
-		for (Codepoint c = '0'; c <= '9'; c++)
+		for (Codepoint codepoint = '0'; codepoint <= '9'; codepoint++)
 		{
 			UnicodeStringRef term = std::make_shared<UnicodeString>();
-			term->push_back(c);
+			term->push_back(codepoint);
 			netflix_search_space.push_back(term);
 		}
 
-		for (Codepoint c = 'a'; c <= 'z'; c++)
+		for (Codepoint codepoint = 'a'; codepoint <= 'z'; codepoint++)
 		{
 			UnicodeStringRef term = std::make_shared<UnicodeString>();
-			term->push_back(c);
+			term->push_back(codepoint);
 			netflix_search_space.push_back(term);
 		}
 

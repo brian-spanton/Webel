@@ -28,12 +28,10 @@ namespace Html
         this->decoder->write_element(b);
     }
 
-    bool Parser::ParseError(const char* error)
+    void Parser::ParseError(const char* error)
     {
-        // $$$ figure out a good log level solution
-        return true;
-        //std::string parse_error = "Parse error: ";
-        //parse_error += error;
-        //return Basic::globals->HandleError(parse_error.c_str(), 0);
+        std::string parse_error = "Parse error: ";
+        parse_error += error;
+        Basic::LogDebug("Html", parse_error.c_str());
     }
 }

@@ -51,8 +51,9 @@ namespace Service
             {
                 if (event->get_type() != Http::EventType::response_headers_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Service::StandardSingleByteEncoding::process_event headers_pending_state", event);
-                    throw new FatalError("unexpected event");
+                    StateMachine::LogUnexpectedEvent("Service", "StandardSingleByteEncoding::process_event", event);
+                    switch_to_state(State::unexpected_event_error);
+                    return ProcessResult::process_result_blocked;
                 }
 
                 if (this->client->transaction->response->code != 200)
@@ -69,7 +70,7 @@ namespace Service
             break;
 
         default:
-            throw FatalError("Basic::StandardSingleByteEncoding::Complete unexpected state");
+            throw FatalError("Service", "StandardSingleByteEncoding::process_event unhandled state");
         }
     }
 
@@ -191,7 +192,7 @@ namespace Service
             break;
 
         default:
-            throw FatalError("Basic::StandardSingleByteEncoding::Complete unexpected state");
+            throw FatalError("Service", "StandardSingleByteEncoding::write_element switch (get_state()) default");
         }
     }
 

@@ -42,13 +42,13 @@ namespace Html
 
         void Emit(TokenRef token);
         void EmitCurrentTagToken();
-        void EmitCharacter(Codepoint c);
+        void EmitCharacter(Codepoint codepoint);
         bool IsAppropriate(Token* token);
         void SwitchToState(TokenizerState state);
         void InsertAttribute();
-        void ParseError(Codepoint c);
+        void ParseError(Codepoint codepoint);
         void ParseError(const char* error);
-        void ParseError(Codepoint c, const char* error);
+        void ParseError(Codepoint codepoint, const char* error);
         void consume_leftovers();
 
     public:

@@ -60,7 +60,7 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Web::Server::process_event pending_connection_state", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Server::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -151,7 +151,7 @@ namespace Web
             break;
 
         default:
-            throw FatalError("Web::Server::handle_event unexpected state");
+            throw FatalError("Web", "Server::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

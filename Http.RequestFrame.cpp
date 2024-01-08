@@ -136,7 +136,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http::RequestFrame::handle_event unexpected state");
+            throw FatalError("Http", "RequestFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

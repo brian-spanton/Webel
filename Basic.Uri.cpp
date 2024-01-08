@@ -23,12 +23,14 @@ namespace Basic
     {
         bool success = Parse(input, 0, UnicodeStringRef(), State::scheme_start_state, false);
         if (!success)
-            throw FatalError("Uri::Initialize Parse failed");
+            throw FatalError("Basic", "Uri::Initialize Parse failed");
     }
 
-    void Uri::parse_error(Codepoint c)
+    void Uri::parse_error(Codepoint codepoint)
     {
-        HandleError("Uri::parse_error");
+        char error[0x100];
+        sprintf_s(error, "Uri::parse_error codepoint=%04X", codepoint);
+        Basic::LogDebug("Basic", error);
     }
 
     bool Uri::Parse(UnicodeString* input, Uri* base)
@@ -57,14 +59,14 @@ namespace Basic
 
         for (uint32 pointer = 0; pointer <= (int)input->size(); pointer++)
         {
-            Codepoint c = EOF;
+            Codepoint codepoint = EOF;
             uint32 remaining_size = 0;
             Codepoint remaining_0 = 0xfffffffe;
             Codepoint remaining_1 = 0xfffffffe;
             
             if (pointer < input->size())
             {
-                c = input->at(pointer);
+                codepoint = input->at(pointer);
 
                 uint32 remaining_size = input->size() - pointer - 1;
 
@@ -79,9 +81,9 @@ namespace Basic
             {
             case State::scheme_start_state:
                 {
-                    if (is_ascii_alpha(c))
+                    if (is_ascii_alpha(codepoint))
                     {
-                        buffer->push_back(lower_case(c));
+                        buffer->push_back(lower_case(codepoint));
                         state = State::scheme_state;
                     }
                     else if (!state_override_is_given)
@@ -91,7 +93,7 @@ namespace Basic
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         return true;
                     }
                 }
@@ -99,11 +101,11 @@ namespace Basic
 
             case State::scheme_state:
                 {
-                    if (is_ascii_alphanumeric(c) || c == '+' || c == '-' || c == '.')
+                    if (is_ascii_alphanumeric(codepoint) || codepoint == '+' || codepoint == '-' || codepoint == '.')
                     {
-                        buffer->push_back(lower_case(c));
+                        buffer->push_back(lower_case(codepoint));
                     }
-                    else if (c == ':')
+                    else if (codepoint == ':')
                     {
                         this->scheme = buffer;
                         buffer = std::make_shared<UnicodeString>();
@@ -142,13 +144,13 @@ namespace Basic
                         state = State::no_scheme_state;
                         pointer = -1;
                     }
-                    else if (c == EOF)
+                    else if (codepoint == EOF)
                     {
                         return true;
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         return true;
                     }
                 }
@@ -156,14 +158,14 @@ namespace Basic
 
             case State::scheme_data_state:
                 {
-                    if (c == '?')
+                    if (codepoint == '?')
                     {
                         this->query = std::make_shared<UnicodeString>();
                         this->query->reserve(0x100);
 
                         state = State::query_state;
                     }
-                    else if (c == '#')
+                    else if (codepoint == '#')
                     {
                         this->fragment = std::make_shared<UnicodeString>();
                         this->fragment->reserve(0x40);
@@ -171,17 +173,17 @@ namespace Basic
                     }
                     else
                     {
-                        if (c != EOF && is_url_codepoint(c) == false && c != '%')
+                        if (codepoint != EOF && is_url_codepoint(codepoint) == false && codepoint != '%')
                         {
-                            parse_error(c);
+                            parse_error(codepoint);
                         }
-                        else if (c == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
+                        else if (codepoint == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
                         {
-                            parse_error(c);
+                            parse_error(codepoint);
                         }
-                        else if (!(c == EOF || c == 0x0009 || c == 0x000A || c == 0x000D))
+                        else if (!(codepoint == EOF || codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D))
                         {
-                            utf_8_percent_encode(c, Basic::globals->simple_encode_anti_set, this->scheme_data);
+                            utf_8_percent_encode(codepoint, Basic::globals->simple_encode_anti_set, this->scheme_data);
                         }
                     }
                 }
@@ -191,7 +193,7 @@ namespace Basic
                 {
                     if (base == 0 || !is_relative_scheme(base->scheme))
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         return false;
                     }
                     else
@@ -204,14 +206,14 @@ namespace Basic
 
             case State::relative_or_authority_state:
                 {
-                    if (c == '/' && remaining_0 == '/')
+                    if (codepoint == '/' && remaining_0 == '/')
                     {
                         state = authority_ignore_slashes_state;
                         pointer += 1;
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         state = State::relative_state;
                         pointer -= 1;
                     }
@@ -225,7 +227,7 @@ namespace Basic
                     if (!equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                         this->scheme = base->scheme;
 
-                    switch(c)
+                    switch(codepoint)
                     {
                     case EOF:
                         this->host = base->host;
@@ -239,7 +241,7 @@ namespace Basic
                         break;
 
                     case '\\':
-                        parse_error(c);
+                        parse_error(codepoint);
                         state = State::relative_slash_state;
                         break;
 
@@ -262,11 +264,11 @@ namespace Basic
 
                     default:
                         {
-                            if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()) == false || !is_ascii_alpha(c)
+                            if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()) == false || !is_ascii_alpha(codepoint)
                                 || !(remaining_0 == ':' || remaining_0 == '|') || remaining_size != 1
                                 || !(remaining_1 == '/' || remaining_1 == '\\' || remaining_1 == '?' || remaining_1 == '#'))
                             {
-                                // 1. If url's scheme is not "file", or c is not an ASCII alpha, or remaining does not start with
+                                // 1. If url's scheme is not "file", or codepoint is not an ASCII alpha, or remaining does not start with
                                 //    either ":" or "|", or remaining does not consist of one code point, or remaining's second code
                                 //    point is not one of "/", "\", "?", and "#", then set url's host to base's host, url's port to
                                 //    base's port, url's path to base's path, and then pop url's path.  
@@ -289,10 +291,10 @@ namespace Basic
 
             case State::relative_slash_state:
                 {
-                    if (c == '/' || c == '\\')
+                    if (codepoint == '/' || codepoint == '\\')
                     {
-                        if (c == '\\')
-                            parse_error(c);
+                        if (codepoint == '\\')
+                            parse_error(codepoint);
 
                         if (equals<UnicodeString, true>(this->scheme.get(), Basic::globals->file_scheme.get()))
                             state = State::file_host_state;
@@ -315,13 +317,13 @@ namespace Basic
 
             case State::authority_first_slash_state:
                 {
-                    if (c == '/')
+                    if (codepoint == '/')
                     {
                         state = State::authority_second_slash_state;
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         state = State::authority_ignore_slashes_state;
                         pointer -= 1;
                     }
@@ -330,13 +332,13 @@ namespace Basic
 
             case State::authority_second_slash_state:
                 {
-                    if (c == '/')
+                    if (codepoint == '/')
                     {
                         state = State::authority_ignore_slashes_state;
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         state = State::authority_ignore_slashes_state;
                         pointer -= 1;
                     }
@@ -345,25 +347,25 @@ namespace Basic
 
             case State::authority_ignore_slashes_state:
                 {
-                    if (c != '/' && c != '\\')
+                    if (codepoint != '/' && codepoint != '\\')
                     {
                         state = State::authority_state;
                         pointer -= 1;
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                 }
                 break;
 
             case State::authority_state:
                 {
-                    if (c == '@')
+                    if (codepoint == '@')
                     {
                         if (at_flag)
                         {
-                            parse_error(c);
+                            parse_error(codepoint);
                             buffer->insert(buffer->begin(), Basic::globals->percent_forty->begin(), Basic::globals->percent_forty->end());
                         }
 
@@ -407,7 +409,7 @@ namespace Basic
 
                         buffer = std::make_shared<UnicodeString>();
                     }
-                    else if (c == EOF || c == '/' || c == '\\' || c == '?' || c == '#')
+                    else if (codepoint == EOF || codepoint == '/' || codepoint == '\\' || codepoint == '?' || codepoint == '#')
                     {
                         pointer -= (buffer->size() + 1);
                         buffer = std::make_shared<UnicodeString>();
@@ -415,14 +417,14 @@ namespace Basic
                     }
                     else
                     {
-                        buffer->push_back(c);
+                        buffer->push_back(codepoint);
                     }
                 }
                 break;
 
             case State::file_host_state:
                 {
-                    if (c == EOF || c == '/' || c == '\\' || c == '?' || c == '#')
+                    if (codepoint == EOF || codepoint == '/' || codepoint == '\\' || codepoint == '?' || codepoint == '#')
                     {
                         pointer -= 1;
 
@@ -447,13 +449,13 @@ namespace Basic
                             state = State::relative_path_start_state;
                         }
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        buffer->push_back(c);
+                        buffer->push_back(codepoint);
                     }
                 }
                 break;
@@ -461,7 +463,7 @@ namespace Basic
             case State::host_state:
             case State::hostname_state:
                 {
-                    if (c == ':' && brackets_flag == false)
+                    if (codepoint == ':' && brackets_flag == false)
                     {
                         UnicodeStringRef host = std::make_shared<UnicodeString>();
                         bool success = host_parse(buffer, host);
@@ -475,7 +477,7 @@ namespace Basic
                         if (state_override_is_given && state_override == State::hostname_state)
                             return true;
                     }
-                    else if (c == EOF || c == '\\' || c == '/' || c == '?' || c == '#')
+                    else if (codepoint == EOF || codepoint == '\\' || codepoint == '/' || codepoint == '?' || codepoint == '#')
                     {
                         pointer -= 1;
 
@@ -491,29 +493,29 @@ namespace Basic
                         if (state_override_is_given)
                             return true;
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        if (c == '[')
+                        if (codepoint == '[')
                             brackets_flag = true;
-                        else if (c == ']')
+                        else if (codepoint == ']')
                             brackets_flag = false;
 
-                        buffer->push_back(c);
+                        buffer->push_back(codepoint);
                     }
                 }
                 break;
 
             case State::port_state:
                 {
-                    if (is_ascii_digit(c))
+                    if (is_ascii_digit(codepoint))
                     {
-                        buffer->push_back(c);
+                        buffer->push_back(codepoint);
                     }
-                    else if (c == EOF || c == '/' || c == '\\' || c == '?' || c == '#' || state_override_is_given)
+                    else if (codepoint == EOF || codepoint == '/' || codepoint == '\\' || codepoint == '?' || codepoint == '#' || state_override_is_given)
                     {
                         while (buffer->size() > 1 && buffer->at(0) == 0x0030)
                             buffer->erase(0);
@@ -534,13 +536,13 @@ namespace Basic
                         state = State::relative_path_start_state;
                         pointer -= 1;
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                         return false;
                     }
                 }
@@ -548,23 +550,23 @@ namespace Basic
 
             case State::relative_path_start_state:
                 {
-                    if (c == '\\')
-                        parse_error(c);
+                    if (codepoint == '\\')
+                        parse_error(codepoint);
 
                     state = State::relative_path_state;
 
-                    if (c != '/' && c != '\\')
+                    if (codepoint != '/' && codepoint != '\\')
                         pointer -= 1;
                 }
                 break;
 
             case State::relative_path_state:
                 {
-                    if (c == EOF || c == '/' || c == '\\'
-                        || (state_override_is_given == false && (c == '?' || c == '#')))
+                    if (codepoint == EOF || codepoint == '/' || codepoint == '\\'
+                        || (state_override_is_given == false && (codepoint == '?' || codepoint == '#')))
                     {
-                        if (c == '\\')
-                            parse_error(c);
+                        if (codepoint == '\\')
+                            parse_error(codepoint);
 
                         if (equals<UnicodeString, false>(buffer.get(), Basic::globals->percent_two_e.get()))
                             buffer = Basic::globals->dot;
@@ -580,10 +582,10 @@ namespace Basic
                             if (this->path.size() > 0)
                                 this->path.pop_back();
 
-                            if (c != '/' && c != '\\')
+                            if (codepoint != '/' && codepoint != '\\')
                                 this->path.push_back(std::make_shared<UnicodeString>());
                         }
-                        else if (equals<UnicodeString, true>(buffer.get(), Basic::globals->dot.get()) && c != '/' && c != '\\')
+                        else if (equals<UnicodeString, true>(buffer.get(), Basic::globals->dot.get()) && codepoint != '/' && codepoint != '\\')
                         {
                             this->path.push_back(std::make_shared<UnicodeString>());
                         }
@@ -602,38 +604,38 @@ namespace Basic
 
                         buffer = std::make_shared<UnicodeString>();
 
-                        if (c == '?')
+                        if (codepoint == '?')
                         {
                             this->query = std::make_shared<UnicodeString>();
                             state = State::query_state;
                         }
 
-                        if (c == '#')
+                        if (codepoint == '#')
                         {
                             this->fragment = std::make_shared<UnicodeString>();
                             state = State::fragment_state;
                         }
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        if (!is_url_codepoint(c) && c != '%')
-                            parse_error(c);
+                        if (!is_url_codepoint(codepoint) && codepoint != '%')
+                            parse_error(codepoint);
 
-                        if (c == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
-                            parse_error(c);
+                        if (codepoint == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
+                            parse_error(codepoint);
 
-                        utf_8_percent_encode(c, Basic::globals->default_encode_anti_set, buffer);
+                        utf_8_percent_encode(codepoint, Basic::globals->default_encode_anti_set, buffer);
                     }
                 }
                 break;
 
             case State::query_state:
                 {
-                    if (c == EOF || (state_override_is_given == false && c == '#'))
+                    if (codepoint == EOF || (state_override_is_given == false && codepoint == '#'))
                     {
                         if (this->relative_flag == true)
                             encoding_override = Basic::globals->utf_8_label;
@@ -671,55 +673,55 @@ namespace Basic
                         // 4. Set buffer to the empty string. 
                         buffer = std::make_shared<UnicodeString>();
 
-                        // 5. If c is "#", set url's fragment to the empty string, and state to fragment state. 
-                        if (c == '#')
+                        // 5. If codepoint is "#", set url's fragment to the empty string, and state to fragment state. 
+                        if (codepoint == '#')
                         {
                             this->fragment = std::make_shared<UnicodeString>();
                             state = State::fragment_state;
                         }
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        if (!is_url_codepoint(c) && c != '%')
-                            parse_error(c);
+                        if (!is_url_codepoint(codepoint) && codepoint != '%')
+                            parse_error(codepoint);
 
-                        if (c == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
-                            parse_error(c);
+                        if (codepoint == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
+                            parse_error(codepoint);
 
-                        buffer->push_back(c);
+                        buffer->push_back(codepoint);
                     }
                 }
                 break;
 
             case State::fragment_state:
                 {
-                    if (c == EOF)
+                    if (codepoint == EOF)
                     {
                         // Do nothing.
                     }
-                    else if (c == 0x0009 || c == 0x000A || c == 0x000D)
+                    else if (codepoint == 0x0009 || codepoint == 0x000A || codepoint == 0x000D)
                     {
-                        parse_error(c);
+                        parse_error(codepoint);
                     }
                     else
                     {
-                        if (!is_url_codepoint(c) && c != '%')
-                            parse_error(c);
+                        if (!is_url_codepoint(codepoint) && codepoint != '%')
+                            parse_error(codepoint);
 
-                        if (c == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
-                            parse_error(c);
+                        if (codepoint == '%' && !(is_ascii_hex_digit(remaining_0) && is_ascii_hex_digit(remaining_1)))
+                            parse_error(codepoint);
 
-                        utf_8_percent_encode(c, Basic::globals->simple_encode_anti_set, this->fragment);
+                        utf_8_percent_encode(codepoint, Basic::globals->simple_encode_anti_set, this->fragment);
                     }
                 }
                 break;
 
             default:
-                throw FatalError("Http::UriStream::handle_event unexpected state");
+                throw FatalError("Basic", "Uri::Parse unhandled state");
             }
         }
 
@@ -736,114 +738,114 @@ namespace Basic
         return is_secure_scheme(this->scheme);
     }
 
-    bool Uri::is_ascii_alpha(Codepoint c)
+    bool Uri::is_ascii_alpha(Codepoint codepoint)
     {
-        if (c >= 0x0041 && c <= 0x005A)
+        if (codepoint >= 0x0041 && codepoint <= 0x005A)
             return true;
 
-        if (c >= 0x0061 && c <= 0x007A)
+        if (codepoint >= 0x0061 && codepoint <= 0x007A)
             return true;
 
         return false;
     }
 
-    bool Uri::is_ascii_alphanumeric(Codepoint c)
+    bool Uri::is_ascii_alphanumeric(Codepoint codepoint)
     {
-        if (is_ascii_alpha(c))
+        if (is_ascii_alpha(codepoint))
             return true;
 
-        if (is_ascii_digit(c))
+        if (is_ascii_digit(codepoint))
             return true;
 
         return false;
     }
 
-    bool Uri::is_ascii_digit(Codepoint c)
+    bool Uri::is_ascii_digit(Codepoint codepoint)
     {
-        if (c >= 0x0030 && c <= 0x0039)
+        if (codepoint >= 0x0030 && codepoint <= 0x0039)
             return true;
 
         return false;
     }
 
-    bool Uri::is_ascii_hex_digit(Codepoint c)
+    bool Uri::is_ascii_hex_digit(Codepoint codepoint)
     {
-        if (is_ascii_digit(c))
+        if (is_ascii_digit(codepoint))
             return true;
 
-        if (c >= 0x0041 && c <= 0x0046)
+        if (codepoint >= 0x0041 && codepoint <= 0x0046)
             return true;
 
-        if (c >= 0x0061 && c <= 0x0066)
+        if (codepoint >= 0x0061 && codepoint <= 0x0066)
             return true;
 
         return false;
     }
 
-    bool Uri::is_url_codepoint(Codepoint c)
+    bool Uri::is_url_codepoint(Codepoint codepoint)
     {
-        if (is_ascii_alphanumeric(c))
+        if (is_ascii_alphanumeric(codepoint))
             return true;
 
-        if (c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' || c == '*' || c == '+' || c == ','
-            || c == '-' || c == '.' || c == '/' || c == ':' || c == ';' || c == '=' || c == '?' || c == '@' || c == '_' || c == '~')
+        if (codepoint == '!' || codepoint == '$' || codepoint == '&' || codepoint == '\'' || codepoint == '(' || codepoint == ')' || codepoint == '*' || codepoint == '+' || codepoint == ','
+            || codepoint == '-' || codepoint == '.' || codepoint == '/' || codepoint == ':' || codepoint == ';' || codepoint == '=' || codepoint == '?' || codepoint == '@' || codepoint == '_' || codepoint == '~')
             return true;
         
-        if (c >= 0x00A0 && c <= 0xD7FF)
+        if (codepoint >= 0x00A0 && codepoint <= 0xD7FF)
             return true;
         
-        if (c >= 0xE000 && c <= 0xFDCF)
+        if (codepoint >= 0xE000 && codepoint <= 0xFDCF)
             return true;
         
-        if (c >= 0xFDF0 && c <= 0xFFEF)
+        if (codepoint >= 0xFDF0 && codepoint <= 0xFFEF)
             return true;
         
-        if (c >= 0x10000 && c <= 0x1FFFD)
+        if (codepoint >= 0x10000 && codepoint <= 0x1FFFD)
             return true;
         
-        if (c >= 0x20000 && c <= 0x2FFFD)
+        if (codepoint >= 0x20000 && codepoint <= 0x2FFFD)
             return true;
         
-        if (c >= 0x30000 && c <= 0x3FFFD)
+        if (codepoint >= 0x30000 && codepoint <= 0x3FFFD)
             return true;
         
-        if (c >= 0x40000 && c <= 0x4FFFD)
+        if (codepoint >= 0x40000 && codepoint <= 0x4FFFD)
             return true;
         
-        if (c >= 0x50000 && c <= 0x5FFFD)
+        if (codepoint >= 0x50000 && codepoint <= 0x5FFFD)
             return true;
         
-        if (c >= 0x60000 && c <= 0x6FFFD)
+        if (codepoint >= 0x60000 && codepoint <= 0x6FFFD)
             return true;
         
-        if (c >= 0x70000 && c <= 0x7FFFD)
+        if (codepoint >= 0x70000 && codepoint <= 0x7FFFD)
             return true;
         
-        if (c >= 0x80000 && c <= 0x8FFFD)
+        if (codepoint >= 0x80000 && codepoint <= 0x8FFFD)
             return true;
         
-        if (c >= 0x90000 && c <= 0x9FFFD)
+        if (codepoint >= 0x90000 && codepoint <= 0x9FFFD)
             return true;
         
-        if (c >= 0xA0000 && c <= 0xAFFFD)
+        if (codepoint >= 0xA0000 && codepoint <= 0xAFFFD)
             return true;
         
-        if (c >= 0xB0000 && c <= 0xBFFFD)
+        if (codepoint >= 0xB0000 && codepoint <= 0xBFFFD)
             return true;
         
-        if (c >= 0xC0000 && c <= 0xCFFFD)
+        if (codepoint >= 0xC0000 && codepoint <= 0xCFFFD)
             return true;
         
-        if (c >= 0xD0000 && c <= 0xDFFFD)
+        if (codepoint >= 0xD0000 && codepoint <= 0xDFFFD)
             return true;
         
-        if (c >= 0xE1000 && c <= 0xEFFFD)
+        if (codepoint >= 0xE1000 && codepoint <= 0xEFFFD)
             return true;
         
-        if (c >= 0xF0000 && c <= 0xFFFFD)
+        if (codepoint >= 0xF0000 && codepoint <= 0xFFFFD)
             return true;
         
-        if (c >= 0x100000 && c <= 0x10FFFD)
+        if (codepoint >= 0x100000 && codepoint <= 0x10FFFD)
             return true;
         
         return false;
@@ -903,9 +905,9 @@ namespace Basic
     {
         for (uint32 pointer = 0; pointer != string->size(); pointer++)
         {
-            Codepoint c = string->at(pointer);
+            Codepoint codepoint = string->at(pointer);
 
-            if (c == '%' && (string->size() - pointer) >= 3)
+            if (codepoint == '%' && (string->size() - pointer) >= 3)
             {
                 UnicodeString remaining;
                 remaining.insert(remaining.end(), string->begin() + pointer + 1, string->begin() + pointer + 3);
@@ -921,7 +923,7 @@ namespace Basic
                 }
             }
 
-            bytes->write_element((byte)c);
+            bytes->write_element((byte)codepoint);
         }
     }
 

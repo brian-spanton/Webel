@@ -47,7 +47,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::AlertProtocol::handle_event unexpected state");
+            throw FatalError("Tls", "AlertProtocol::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

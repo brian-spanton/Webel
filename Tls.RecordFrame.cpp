@@ -67,7 +67,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::RecordFrame::handle_event unexpected state");
+            throw FatalError("Tls", "RecordFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

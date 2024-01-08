@@ -37,7 +37,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::RandomFrame unexpected state");
+            throw FatalError("Tls", "RandomFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

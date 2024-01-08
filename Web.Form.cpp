@@ -550,7 +550,7 @@ namespace Web
         //10. Let action be the resulting absolute URL.
         //11. Let action components be the resulting parsed URL.
         //12. Let scheme be the scheme of the resulting parsed URL.
-        // brian: these come from Uri class
+        // these come from Uri class
 
         //13. Let enctype be the submitter element's enctype.
         UnicodeStringRef enctype;
@@ -568,7 +568,7 @@ namespace Web
         //    browsing context be that browsing context. Otherwise, apply the rules for choosing a browsing context given
         //    a browsing context name using target as the name and form browsing context as the context in which the
         //    algorithm is executed, and let target browsing context be the resulting browsing context.
-        // brian: this is the "client" input parameter
+        // this is the "client" input parameter
 
         //17. If target browsing context was created in the previous step, or, alternatively, if the form document has not
         //yet completely loaded and the submitted from construct_request() method is set, then let replace be true. Otherwise, let it be false.
@@ -624,9 +624,7 @@ namespace Web
         }
 
         if (!handled)
-        {
-            throw FatalError("unhandled form submission type");
-        }
+            throw FatalError("Web", "Form::construct_request unhandled form submission type");
 
         return true;
     }

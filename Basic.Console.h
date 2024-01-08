@@ -19,7 +19,6 @@ namespace Basic
         ElementSource<Codepoint> protocol_element_source;
 
         static DWORD WINAPI Thread(void* param);
-        bool TryInitialize(std::shared_ptr<IProcess> protocol, HANDLE* createdThread);
 
     public:
         Console();

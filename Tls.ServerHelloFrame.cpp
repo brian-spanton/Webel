@@ -186,7 +186,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("ServerHelloFrame::handle_event unexpected state");
+            throw FatalError("Tls", "ServerHelloFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

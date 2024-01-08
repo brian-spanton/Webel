@@ -86,7 +86,8 @@ namespace Tls
             break;
 
         default:
-            return Basic::globals->HandleError("Tls::SecurityParameters::Initialize unsupported cipher_suite", 0);
+            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported cipher_suite");
+            return false;
         }
 
         switch (version)
@@ -104,7 +105,8 @@ namespace Tls
             break;
 
         default:
-            return Basic::globals->HandleError("Tls::SecurityParameters::Initialize unsupported version", 0);
+            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported version");
+            return false;
         }
 
         //                        Key      IV   Block
@@ -154,7 +156,8 @@ namespace Tls
             break;
 
         default:
-            return Basic::globals->HandleError("Tls::SecurityParameters::Initialize unsupported interim_cipher", 0);
+            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported interim_cipher");
+            return false;
         }
 
         // MAC       Algorithm    mac_length  mac_key_length
@@ -187,7 +190,8 @@ namespace Tls
             break;
 
         default:
-            return Basic::globals->HandleError("Tls::SecurityParameters::Initialize unsupported mac_algorithm", 0);
+            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported mac_algorithm");
+            return false;
         }
 
         return true;

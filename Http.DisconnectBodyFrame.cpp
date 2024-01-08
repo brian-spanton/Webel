@@ -38,7 +38,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http::DisconnectBodyFrame::handle_event unexpected state");
+            throw FatalError("Http", "DisconnectBodyFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

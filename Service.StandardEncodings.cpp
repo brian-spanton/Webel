@@ -76,7 +76,11 @@ namespace Service
             case Http::EventType::response_complete_event:
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::array_value)
-                        throw FatalError("was Yield... expecting the json body to be an array type");
+                    {
+                        Basic::LogDebug("Service", "StandardEncodings::process_event { this->json_parser->text->value->type != Json::Value::Type::array_value }");
+                        switch_to_state(State::unexpected_json_error);
+                        return ProcessResult::process_result_blocked;
+                    }
 
                     std::shared_ptr<Json::Array> root = std::static_pointer_cast<Json::Array>(this->json_parser->text->value);
 
@@ -168,7 +172,7 @@ namespace Service
 
                                 bool success = index_url->Parse(file_name.get(), current_url.get());
                                 if (!success)
-                                    throw FatalError("url parse failed");
+                                    throw FatalError("Service", "StandardEncodings::process_event { index_url->Parse failed }");
 
                                 Json::MemberList::iterator labels_it = encoding->members.find(Name_labels);
                                 if (labels_it == encoding->members.end())
@@ -224,7 +228,7 @@ namespace Service
                     }
 
                     if (found_ascii == false)
-                        throw FatalError("didn't find us-ascii encoding");
+                        throw FatalError("Service", "StandardEncodings::process_event didn't find us-ascii encoding");
 
                     Service::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d encodings\n", Basic::globals->decoder_map.size());
 
@@ -241,13 +245,14 @@ namespace Service
                 break;
 
             default:
-                StateMachine::HandleUnexpectedEvent("Service::StandardEncodings::process_event single_byte_encodings_state", event);
-                throw FatalError("unexpected event");
+                StateMachine::LogUnexpectedEvent("Service", "StandardEncodings::process_event", event);
+                switch_to_state(State::unexpected_event_error);
+                return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Globals::Complete unexpected state");
+            throw FatalError("Service", "StandardEncodings::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

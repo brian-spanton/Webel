@@ -66,7 +66,7 @@ namespace Basic
                 for (int i = 0; i < overflow; i++)
                 {
                     if (value_bytes[most_significant - i] != 0)
-                        throw FatalError("Tls::NumberFrame::write_to_stream overflow");
+                        throw FatalError("Basic", "NumberFrame::operator() { value_bytes[most_significant - i] != 0 }");
                 }
             }
             else
@@ -149,7 +149,7 @@ namespace Basic
             break;
 
             default:
-                throw FatalError("Tls::NumberFrame::handle_event unexpected state");
+                throw FatalError("Tls", "NumberFrame::process_event unhandled state");
             }
 
             return ProcessResult::process_result_ready;

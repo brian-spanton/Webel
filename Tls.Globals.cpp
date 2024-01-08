@@ -157,7 +157,8 @@ namespace Tls
             }
         }
 
-        return Basic::globals->HandleError("Tls::SelectCipherSuite no match", 0);
+        Basic::LogDebug("Tls", "Globals::SelectCipherSuite no match");
+        return false;
     }
 
     void Globals::Partition(ByteString* source, uint16 length, IStream<byte>* destination)
@@ -165,7 +166,7 @@ namespace Tls
         if (length > 0)
         {
             if (length > source->size())
-                throw FatalError("Tls::Partition length > source.size()", 0);
+                throw FatalError("Tls", "Globals::Partition { length > source.size() }", 0);
 
             destination->write_elements(source->address(), length);
             source->erase(source->begin(), source->begin() + length);

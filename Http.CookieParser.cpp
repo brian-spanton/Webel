@@ -321,13 +321,16 @@ namespace Http
             break;
 
         default:
-            throw FatalError("CookieParser::handle_event unexpected state");
+            throw FatalError("Http", "CookieParser::process_event unhandled state");
         }
     }
 
     void CookieParser::ParseError(Codepoint codepoint)
     {
-        HandleError("Cookie parse error");
+        char error[0x100];
+        sprintf_s(error, "CookieParser::ParseError codepoint=%04X", codepoint);
+        Basic::LogDebug("Http", error);
+
         this->state = State::parse_error;
     }
 

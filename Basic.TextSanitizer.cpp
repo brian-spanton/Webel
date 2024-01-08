@@ -6,12 +6,12 @@
 
 namespace Basic
 {
-    bool TextSanitizer::white_space(Codepoint c)
+    bool TextSanitizer::white_space(Codepoint codepoint)
     {
-        if (c >= 0x100)
+        if (codepoint >= 0x100)
             return false;
 
-        if (Basic::globals->sanitizer_white_space[c])
+        if (Basic::globals->sanitizer_white_space[codepoint])
             return true;
 
         return false;
@@ -23,34 +23,34 @@ namespace Basic
         this->destination = destination;
     }
 
-    void TextSanitizer::write_element(Codepoint c)
+    void TextSanitizer::write_element(Codepoint codepoint)
     {
         switch (this->state)
         {
         case State::before_first_word_state:
-            if (!white_space(c))
+            if (!white_space(codepoint))
             {
-                this->destination->write_element(c);
+                this->destination->write_element(codepoint);
                 this->state = State::in_word_state;
             }
             break;
 
         case State::in_word_state:
-            if (white_space(c))
+            if (white_space(codepoint))
             {
                 this->state = State::before_next_word_state;
             }
             else
             {
-                this->destination->write_element(c);
+                this->destination->write_element(codepoint);
             }
             break;
 
         case State::before_next_word_state:
-            if (!white_space(c))
+            if (!white_space(codepoint))
             {
                 this->destination->write_element(0x0020);
-                this->destination->write_element(c);
+                this->destination->write_element(codepoint);
                 this->state = State::in_word_state;
             }
             break;

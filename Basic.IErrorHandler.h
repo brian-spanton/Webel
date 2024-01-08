@@ -7,9 +7,16 @@
 
 namespace Basic
 {
+    enum LogLevel
+    {
+        Debug,
+        Warning,
+        Critical,
+    };
+
     __interface IErrorHandler
     {
-        bool HandleError(const char* context, uint32 error);
+        bool Log(LogLevel level, const char* component, const char* context, uint32 code);
         Basic::IStream<Codepoint>* LogStream();
         Basic::TextWriter* DebugWriter();
     };

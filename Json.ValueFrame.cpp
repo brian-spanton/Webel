@@ -175,7 +175,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json::ValueFrame::handle_event unexpected state");
+            throw FatalError("Json", "ValueFrame::write_element unhandled state");
         }
     }
 }

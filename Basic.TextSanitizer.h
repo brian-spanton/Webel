@@ -19,7 +19,7 @@ namespace Basic
         State state = State::before_first_word_state;
         IStream<Codepoint>* destination = 0;
 
-        bool white_space(Codepoint c);
+        bool white_space(Codepoint codepoint);
 
     public:
         void Initialize(IStream<Codepoint>* destination);

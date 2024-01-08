@@ -17,7 +17,7 @@ namespace Basic
     {
         if (is_null_or_empty(host.get()))
         {
-            Basic::globals->HandleError("host is empty", 0);
+            Basic::LogDebug("Basic", "ClientSocket::Resolve { is_null_or_empty(host.get()) }");
             return false;
         }
 
@@ -35,7 +35,7 @@ namespace Basic
         int error = GetAddrInfoExA((char*)ascii_host.c_str(), 0, NS_DNS, 0, &hints, &results, 0, 0, 0, 0);
         if (error != NO_ERROR)
         {
-            Basic::globals->HandleError("ClientSocket::Resolve WSAIoctl", WSAGetLastError());
+            Basic::LogDebug("Basic", "ClientSocket::Resolve GetAddrInfoExA failed", WSAGetLastError());
             return false;
         }
 
@@ -57,7 +57,7 @@ namespace Basic
     void ClientSocket::StartConnect(sockaddr_in remoteAddress)
     {
         if (this->state != State::new_state)
-            throw FatalError("ClientSocket::StartConnect this->state != State::new_state");
+            throw FatalError("Basic", "ClientSocket::StartConnect { this->state != State::new_state }");
 
         sockaddr_in localAddress;
         localAddress.sin_family = AF_INET;
@@ -66,7 +66,7 @@ namespace Basic
 
         int error = bind(this->socket, reinterpret_cast<const sockaddr*>(&localAddress), sizeof(localAddress));
         if (error == SOCKET_ERROR)
-            throw FatalError("ClientSocket::StartConnect bind", WSAGetLastError());
+            throw FatalError("Basic", "ClientSocket::StartConnect bind failed", WSAGetLastError());
 
         this->state = State::bound_state;
 
@@ -92,7 +92,7 @@ namespace Basic
     void ClientSocket::write_elements(const byte* elements, uint32 count)
     {
         if (count == 0)
-            throw FatalError("ClientSocket::write_elements count == 0");
+            throw FatalError("Basic", "ClientSocket::write_elements { count == 0 }");
 
         if (this->state == State::receiving_state)
         {
@@ -149,7 +149,7 @@ namespace Basic
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED)
-                Basic::globals->HandleError("ConnectedSocket::CompleteSend", error);
+                Basic::LogDebug("Basic", "ConnectedSocket::CompleteSend { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED }", error);
 
             DisconnectAndNotifyProtocol();
         }
@@ -177,7 +177,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("ClientSocket::CompleteSend unexpected state");
+                throw FatalError("Basic", "ClientSocket::CompleteSend unhandled state");
             }
         }
     }

@@ -60,13 +60,13 @@ namespace Html
     {
         if (this->current_attribute_name.get() == 0 || this->current_attribute_name->size() == 0)
         {
-            Basic::globals->HandleError("Tokenizer::InsertAttribute 1", 0);
+            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { this->current_attribute_name.get() == 0 || this->current_attribute_name->size() == 0 }");
             return;
         }
 
         if (this->current_tag_token.get() == 0)
         {
-            Basic::globals->HandleError("Tokenizer::InsertAttribute 2", 0);
+            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { this->current_tag_token.get() == 0 }");
             return;
         }
 
@@ -93,10 +93,10 @@ namespace Html
         return true;
     }
 
-    void Tokenizer::EmitCharacter(Codepoint c)
+    void Tokenizer::EmitCharacter(Codepoint codepoint)
     {
         std::shared_ptr<CharacterToken> token = std::make_shared<CharacterToken>();
-        token->data = c;
+        token->data = codepoint;
 
         Emit(token);
     }
@@ -104,7 +104,7 @@ namespace Html
     void Tokenizer::EmitCurrentTagToken()
     {
         if (this->current_tag_token.get() == 0)
-            throw FatalError("Tokenizer::EmitCurrentTagToken should have valid this->current_tag_token");
+            throw FatalError("Html", "Tokenizer::EmitCurrentTagToken { this->current_tag_token.get() == 0 }");
 
         if (this->get_state() == attribute_name_state)
             InsertAttribute();
@@ -159,13 +159,13 @@ namespace Html
         write_element(EOF);
     }
 
-    void Tokenizer::write_element(Codepoint c)
+    void Tokenizer::write_element(Codepoint codepoint)
     {
         switch (this->get_state())
         {
         case data_state:
             {
-                switch(c)
+                switch(codepoint)
                 {
                 case 0x0026:
                     this->character_reference = std::make_shared<UnicodeString>();
@@ -180,7 +180,7 @@ namespace Html
 
                 case 0x0000:
                     ParseError("data_state received character 0");
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
 
                 case EOF:
@@ -188,7 +188,7 @@ namespace Html
                     break;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -196,7 +196,7 @@ namespace Html
 
         case character_reference_in_data_state:
             {
-                this->char_ref_frame.write_element(c);
+                this->char_ref_frame.write_element(codepoint);
 
                 if (this->char_ref_frame.in_progress())
                     break;
@@ -220,7 +220,7 @@ namespace Html
 
         case RCDATA_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0026:
                     this->character_reference = std::make_shared<UnicodeString>();
@@ -243,7 +243,7 @@ namespace Html
                     break;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -251,7 +251,7 @@ namespace Html
 
         case character_reference_in_RCDATA_state:
             {
-                this->char_ref_frame.write_element(c);
+                this->char_ref_frame.write_element(codepoint);
 
                 if (this->char_ref_frame.in_progress())
                     break;
@@ -275,14 +275,14 @@ namespace Html
 
         case RAWTEXT_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003C:
                     SwitchToState(RAWTEXT_less_than_sign_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     EmitCharacter(0xFFFD);
                     break;
 
@@ -291,7 +291,7 @@ namespace Html
                     break;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -299,14 +299,14 @@ namespace Html
 
         case script_data_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003C:
                     SwitchToState(script_data_less_than_sign_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     EmitCharacter(0xFFFD);
                     break;
 
@@ -315,7 +315,7 @@ namespace Html
                     break;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -323,10 +323,10 @@ namespace Html
 
         case PLAINTEXT_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     EmitCharacter(0xFFFD);
                     break;
 
@@ -335,7 +335,7 @@ namespace Html
                     break;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -343,19 +343,19 @@ namespace Html
 
         case tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<StartTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
                     SwitchToState(tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<StartTagToken>();
-                    this->current_tag_token->name->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
                     SwitchToState(tag_name_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0021:
                     this->markup_declaration_open->clear();
@@ -368,7 +368,7 @@ namespace Html
                     break;
 
                 case 0x003F:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(bogus_comment_state);
 
                     this->comment_token = std::make_shared<CommentToken>();
@@ -376,12 +376,12 @@ namespace Html
                     break;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
 
                     EmitCharacter(0x003C);
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -389,41 +389,41 @@ namespace Html
 
         case end_tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
                     SwitchToState(tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
                     SwitchToState(tag_name_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
 
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(bogus_comment_state);
 
                     this->comment_token = std::make_shared<CommentToken>();
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     break;
                 }
             }
@@ -431,11 +431,11 @@ namespace Html
 
         case tag_name_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_tag_token->name->push_back(c + 0x0020);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -454,18 +454,18 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_tag_token->name->push_back(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->current_tag_token->name->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
                     break;
                 }
             }
@@ -473,7 +473,7 @@ namespace Html
 
         case RCDATA_less_than_sign_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002F:
                     this->temporary_buffer->clear();
@@ -483,7 +483,7 @@ namespace Html
                 default:
                     SwitchToState(RCDATA_state);
                     EmitCharacter(0x003C);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -491,18 +491,18 @@ namespace Html
 
         case RCDATA_end_tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(RCDATA_end_tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(RCDATA_end_tag_name_state);
                 }
                 else
@@ -510,7 +510,7 @@ namespace Html
                     SwitchToState(RCDATA_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -520,19 +520,19 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                 }
                 else if (IsAppropriate(this->current_tag_token.get()))
                 {
-                    switch (c)
+                    switch (codepoint)
                     {
                     case 0x0009:
                     case 0x000A:
@@ -571,7 +571,7 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -579,7 +579,7 @@ namespace Html
 
         case RAWTEXT_less_than_sign_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002F:
                     this->temporary_buffer->clear();
@@ -589,7 +589,7 @@ namespace Html
                 default:
                     SwitchToState(RAWTEXT_state);
                     EmitCharacter(0x003C);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -597,18 +597,18 @@ namespace Html
 
         case RAWTEXT_end_tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(RAWTEXT_end_tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(RAWTEXT_end_tag_name_state);
                 }
                 else
@@ -616,7 +616,7 @@ namespace Html
                     SwitchToState(RAWTEXT_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -626,19 +626,19 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                 }
                 else if (IsAppropriate(this->current_tag_token.get()))
                 {
-                    switch (c)
+                    switch (codepoint)
                     {
                     case 0x0009:
                     case 0x000A:
@@ -677,7 +677,7 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -685,7 +685,7 @@ namespace Html
 
         case script_data_less_than_sign_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002F:
                     this->temporary_buffer->clear();
@@ -701,7 +701,7 @@ namespace Html
                 default:
                     SwitchToState(script_data_state);
                     EmitCharacter(0x003C);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -709,18 +709,18 @@ namespace Html
 
         case script_data_end_tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(script_data_end_tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                     SwitchToState(script_data_end_tag_name_state);
                 }
                 else
@@ -728,7 +728,7 @@ namespace Html
                     SwitchToState(script_data_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -738,19 +738,19 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                 }
                 else if (IsAppropriate(this->current_tag_token.get()))
                 {
-                    switch (c)
+                    switch (codepoint)
                     {
                     case 0x0009:
                     case 0x000A:
@@ -789,7 +789,7 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -797,7 +797,7 @@ namespace Html
 
         case script_data_escape_start_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_escape_start_dash_state);
@@ -806,7 +806,7 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -814,7 +814,7 @@ namespace Html
 
         case script_data_escape_start_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_escaped_dash_dash_state);
@@ -823,7 +823,7 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -831,7 +831,7 @@ namespace Html
 
         case script_data_escaped_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_escaped_dash_state);
@@ -843,18 +843,18 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
                     SwitchToState(data_state);
-                    ParseError(c);
-                    write_element(c);
+                    ParseError(codepoint);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -862,7 +862,7 @@ namespace Html
 
         case script_data_escaped_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_escaped_dash_dash_state);
@@ -874,20 +874,20 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     SwitchToState(script_data_escaped_state);
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -895,7 +895,7 @@ namespace Html
 
         case script_data_escaped_dash_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     EmitCharacter(0x002D);
@@ -911,20 +911,20 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     SwitchToState(script_data_escaped_state);
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -932,25 +932,25 @@ namespace Html
 
         case script_data_escaped_less_than_sign_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->temporary_buffer->clear();
-                    this->temporary_buffer->push_back(c + 0x0020);
+                    this->temporary_buffer->push_back(codepoint + 0x0020);
 
                     SwitchToState(script_data_double_escape_start_state);
                     EmitCharacter(0x003C);
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->temporary_buffer->clear();
-                    this->temporary_buffer->push_back(c);
+                    this->temporary_buffer->push_back(codepoint);
 
                     SwitchToState(script_data_double_escape_start_state);
                     EmitCharacter(0x003C);
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x002D:
                     this->temporary_buffer->clear();
@@ -960,7 +960,7 @@ namespace Html
                 default:
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0x003C);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -968,21 +968,21 @@ namespace Html
 
         case script_data_escaped_end_tag_open_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c + 0x0020);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
 
-                    this->temporary_buffer->push_back(c);
+                    this->temporary_buffer->push_back(codepoint);
 
                     SwitchToState(script_data_escaped_end_tag_name_state);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
                     this->current_tag_token = std::make_shared<EndTagToken>();
-                    this->current_tag_token->name->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
 
-                    this->temporary_buffer->push_back(c);
+                    this->temporary_buffer->push_back(codepoint);
 
                     SwitchToState(script_data_escaped_end_tag_name_state);
                 }
@@ -991,7 +991,7 @@ namespace Html
                     SwitchToState(script_data_escaped_state);
                     EmitCharacter(0x003C);
                     EmitCharacter(0x002F);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1001,19 +1001,19 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_tag_token->name->push_back(c + 0x0020);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint + 0x0020);
+                    this->temporary_buffer->push_back(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->current_tag_token->name->push_back(c);
-                    this->temporary_buffer->push_back(c);
+                    this->current_tag_token->name->push_back(codepoint);
+                    this->temporary_buffer->push_back(codepoint);
                 }
                 else if (IsAppropriate(this->current_tag_token.get()))
                 {
-                    switch (c)
+                    switch (codepoint)
                     {
                     case 0x0009:
                     case 0x000A:
@@ -1052,7 +1052,7 @@ namespace Html
                         EmitCharacter(*it);
                     }
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1060,17 +1060,17 @@ namespace Html
 
         case script_data_double_escape_start_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->temporary_buffer->push_back(c + 0x0020);
-                    EmitCharacter(c);
+                    this->temporary_buffer->push_back(codepoint + 0x0020);
+                    EmitCharacter(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->temporary_buffer->push_back(c);
-                    EmitCharacter(c);
+                    this->temporary_buffer->push_back(codepoint);
+                    EmitCharacter(codepoint);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1084,13 +1084,13 @@ namespace Html
                         else
                             SwitchToState(script_data_escaped_state);
 
-                        EmitCharacter(c);
+                        EmitCharacter(codepoint);
                     }
                     break;
 
                 default:
                     SwitchToState(script_data_escaped_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1098,7 +1098,7 @@ namespace Html
 
         case script_data_double_escaped_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_double_escaped_dash_state);
@@ -1111,18 +1111,18 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -1130,7 +1130,7 @@ namespace Html
 
         case script_data_double_escaped_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(script_data_double_escaped_dash_dash_state);
@@ -1143,15 +1143,15 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(script_data_double_escaped_state);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1163,7 +1163,7 @@ namespace Html
 
         case script_data_double_escaped_dash_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     EmitCharacter(0x002D);
@@ -1180,20 +1180,20 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(script_data_double_escaped_state);
                     EmitCharacter(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -1201,7 +1201,7 @@ namespace Html
 
         case script_data_double_escaped_less_than_sign_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002F:
                     this->temporary_buffer->clear();
@@ -1211,7 +1211,7 @@ namespace Html
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1219,17 +1219,17 @@ namespace Html
 
         case script_data_double_escape_end_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->temporary_buffer->push_back(c + 0x0020);
-                    EmitCharacter(c);
+                    this->temporary_buffer->push_back(codepoint + 0x0020);
+                    EmitCharacter(codepoint);
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (codepoint >= 'a' && codepoint <= 'z')
                 {
-                    this->temporary_buffer->push_back(c);
-                    EmitCharacter(c);
+                    this->temporary_buffer->push_back(codepoint);
+                    EmitCharacter(codepoint);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1243,13 +1243,13 @@ namespace Html
                         else
                             SwitchToState(script_data_double_escaped_state);
 
-                        EmitCharacter(c);
+                        EmitCharacter(codepoint);
                     }
                     break;
 
                 default:
                     SwitchToState(script_data_double_escaped_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1259,13 +1259,13 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_attribute_name = std::make_shared<UnicodeString>();
-                    this->current_attribute_name->push_back(c + 0x0020);
+                    this->current_attribute_name->push_back(codepoint + 0x0020);
                     SwitchToState(attribute_name_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1283,7 +1283,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(0xFFFD);
                     SwitchToState(attribute_name_state);
@@ -1293,14 +1293,14 @@ namespace Html
                 case 0x0027:
                 case 0x003C:
                 case 0x003D:
-                    ParseError(c);
+                    ParseError(codepoint);
                     anything_else = true;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1311,7 +1311,7 @@ namespace Html
                 if (anything_else)
                 {
                     this->current_attribute_name = std::make_shared<UnicodeString>();
-                    this->current_attribute_name->push_back(c);
+                    this->current_attribute_name->push_back(codepoint);
                     SwitchToState(attribute_name_state);
                 }
             }
@@ -1321,11 +1321,11 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->current_attribute_name->push_back(c + 0x0020);
+                    this->current_attribute_name->push_back(codepoint + 0x0020);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1348,21 +1348,21 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute_name->push_back(0xFFFD);
                     break;
 
                 case 0x0022:
                 case 0x0027:
                 case 0x003C:
-                    ParseError(c);
+                    ParseError(codepoint);
                     anything_else = true;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1371,7 +1371,7 @@ namespace Html
                 }
 
                 if (anything_else)
-                    this->current_attribute_name->push_back(c);
+                    this->current_attribute_name->push_back(codepoint);
             }
             break;
 
@@ -1379,13 +1379,13 @@ namespace Html
             {
                 bool anything_else = false;
 
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->current_attribute_name = std::make_shared<UnicodeString>();
-                    this->current_attribute_name->push_back(c + 0x0020);
+                    this->current_attribute_name->push_back(codepoint + 0x0020);
                     SwitchToState(attribute_name_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1407,7 +1407,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute_name = std::make_shared<UnicodeString>();
                     this->current_attribute_name->push_back(0xFFFD);
                     SwitchToState(attribute_name_state);
@@ -1416,14 +1416,14 @@ namespace Html
                 case 0x0022:
                 case 0x0027:
                 case 0x003C:
-                    ParseError(c);
+                    ParseError(codepoint);
                     anything_else = true;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1434,7 +1434,7 @@ namespace Html
                 if (anything_else)
                 {
                     this->current_attribute_name = std::make_shared<UnicodeString>();
-                    this->current_attribute_name->push_back(c);
+                    this->current_attribute_name->push_back(codepoint);
                     SwitchToState(attribute_name_state);
                 }
             }
@@ -1444,7 +1444,7 @@ namespace Html
             {
                 bool anything_else = false;
 
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1458,7 +1458,7 @@ namespace Html
 
                 case 0x0026:
                     SwitchToState(attribute_value_unquoted_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 case 0x0027:
@@ -1466,13 +1466,13 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute->second->push_back(0xFFFD);
                     SwitchToState(attribute_value_unquoted_state);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     EmitCurrentTagToken();
                     break;
@@ -1480,14 +1480,14 @@ namespace Html
                 case 0x003C:
                 case 0x003D:
                 case 0x0060:
-                    ParseError(c);
+                    ParseError(codepoint);
                     anything_else = true;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1497,7 +1497,7 @@ namespace Html
 
                 if (anything_else)
                 {
-                    this->current_attribute->second->push_back(c);
+                    this->current_attribute->second->push_back(codepoint);
                     SwitchToState(attribute_value_unquoted_state);
                 }
             }
@@ -1505,7 +1505,7 @@ namespace Html
 
         case attribute_value_double_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0022:
                     SwitchToState(after_attribute_value_quoted_state);
@@ -1518,18 +1518,18 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute->second->push_back(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->current_attribute->second->push_back(c);
+                    this->current_attribute->second->push_back(codepoint);
                     break;
                 }
             }
@@ -1537,7 +1537,7 @@ namespace Html
 
         case attribute_value_single_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0027:
                     SwitchToState(after_attribute_value_quoted_state);
@@ -1550,18 +1550,18 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute->second->push_back(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->current_attribute->second->push_back(c);
+                    this->current_attribute->second->push_back(codepoint);
                     break;
                 }
             }
@@ -1571,7 +1571,7 @@ namespace Html
             {
                 bool anything_else = false;
 
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1592,7 +1592,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->current_attribute->second->push_back(0xFFFD);
                     break;
 
@@ -1601,14 +1601,14 @@ namespace Html
                 case 0x003C:
                 case 0x003D:
                 case 0x0060:
-                    ParseError(c);
+                    ParseError(codepoint);
                     anything_else = true;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -1618,14 +1618,14 @@ namespace Html
 
                 if (anything_else)
                 {
-                    this->current_attribute->second->push_back(c);
+                    this->current_attribute->second->push_back(codepoint);
                 }
             }
             break;
 
         case character_reference_in_attribute_value_state:
             {
-                this->char_ref_frame.write_element(c);
+                this->char_ref_frame.write_element(codepoint);
 
                 if (this->char_ref_frame.in_progress())
                     break;
@@ -1649,7 +1649,7 @@ namespace Html
 
         case after_attribute_value_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -1668,15 +1668,15 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(before_attribute_name_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1684,7 +1684,7 @@ namespace Html
 
         case self_closing_start_tag_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003E:
                     this->current_tag_token->self_closing = true;
@@ -1693,15 +1693,15 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(before_attribute_name_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -1709,7 +1709,7 @@ namespace Html
 
         case bogus_comment_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003E:
                     Emit(this->comment_token);
@@ -1721,7 +1721,7 @@ namespace Html
                     Emit(this->comment_token);
                     this->comment_token = 0;
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 case 0x0000:
@@ -1729,7 +1729,7 @@ namespace Html
                     break;
 
                 default:
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     break;
                 }
 
@@ -1740,7 +1740,7 @@ namespace Html
 
         case markup_declaration_open_state:
             {
-                this->markup_declaration_open->write_element(c);
+                this->markup_declaration_open->write_element(codepoint);
 
                 if (this->markup_declaration_open->size() != 2)
                     break;
@@ -1759,7 +1759,7 @@ namespace Html
 
         case markup_declaration_open_2_state:
             {
-                this->markup_declaration_open->write_element(c);
+                this->markup_declaration_open->write_element(codepoint);
 
                 if (this->markup_declaration_open->size() != 7)
                     break;
@@ -1792,35 +1792,35 @@ namespace Html
 
         case comment_start_state_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(comment_start_dash_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0xFFFD);
                     SwitchToState(comment_state);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     SwitchToState(comment_state);
                     break;
                 }
@@ -1829,37 +1829,37 @@ namespace Html
 
         case comment_start_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(comment_end_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0xFFFD);
                     SwitchToState(comment_state);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     this->comment_token->data->push_back(0x002D);
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     SwitchToState(comment_state);
                     break;
                 }
@@ -1868,27 +1868,27 @@ namespace Html
 
         case comment_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(comment_end_dash_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     break;
                 }
             }
@@ -1896,30 +1896,30 @@ namespace Html
 
         case comment_end_dash_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     SwitchToState(comment_end_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0xFFFD);
                     SwitchToState(comment_state);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     this->comment_token->data->push_back(0x002D);
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     SwitchToState(comment_state);
                     break;
                 }
@@ -1928,7 +1928,7 @@ namespace Html
 
         case comment_end_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003E:
                     SwitchToState(data_state);
@@ -1937,7 +1937,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0xFFFD);
@@ -1945,28 +1945,28 @@ namespace Html
                     break;
 
                 case 0x0021:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(comment_end_bang_state);
                     break;
 
                 case 0x002D:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x002D);
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     SwitchToState(comment_state);
                     break;
                 }
@@ -1975,7 +1975,7 @@ namespace Html
 
         case comment_end_bang_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x002D:
                     this->comment_token->data->push_back(0x002D);
@@ -1991,7 +1991,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x0021);
@@ -1999,19 +1999,19 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     Emit(this->comment_token);
                     this->comment_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x002D);
                     this->comment_token->data->push_back(0x0021);
-                    this->comment_token->data->push_back(c);
+                    this->comment_token->data->push_back(codepoint);
                     SwitchToState(comment_state);
                     break;
                 }
@@ -2020,7 +2020,7 @@ namespace Html
 
         case doctype_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2030,7 +2030,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
 
                     this->doctype_token = std::make_shared<DocTypeToken>();
@@ -2038,13 +2038,13 @@ namespace Html
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
 
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(before_doctype_name_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -2052,15 +2052,15 @@ namespace Html
 
         case before_doctype_name_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
                     this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->name = std::make_shared<UnicodeString>();
-                    this->doctype_token->name->push_back(c + 0x0020);
+                    this->doctype_token->name->push_back(codepoint + 0x0020);
 
                     SwitchToState(doctype_name_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2069,7 +2069,7 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
 
                     this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->name = std::make_shared<UnicodeString>();
@@ -2079,7 +2079,7 @@ namespace Html
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
 
                     this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->force_quirks = true;
@@ -2090,7 +2090,7 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
 
                     this->doctype_token = std::make_shared<DocTypeToken>();
@@ -2098,13 +2098,13 @@ namespace Html
 
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     this->doctype_token = std::make_shared<DocTypeToken>();
                     this->doctype_token->name = std::make_shared<UnicodeString>();
-                    this->doctype_token->name->push_back(c);
+                    this->doctype_token->name->push_back(codepoint);
                     SwitchToState(doctype_name_state);
                     break;
                 }
@@ -2113,11 +2113,11 @@ namespace Html
 
         case doctype_name_state:
             {
-                if (c >= 'A' && c <= 'Z')
+                if (codepoint >= 'A' && codepoint <= 'Z')
                 {
-                    this->doctype_token->name->push_back(c + 0x0020);
+                    this->doctype_token->name->push_back(codepoint + 0x0020);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2133,21 +2133,21 @@ namespace Html
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->name->push_back(0xFFFD);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->doctype_token->name->push_back(c);
+                    this->doctype_token->name->push_back(codepoint);
                     break;
                 }
             }
@@ -2155,7 +2155,7 @@ namespace Html
 
         case after_doctype_name_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2170,19 +2170,19 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
                     {
                         this->after_doctype_name->clear();
                         this->after_doctype_name->reserve(6);
-                        this->after_doctype_name->push_back(c);
+                        this->after_doctype_name->push_back(codepoint);
 
                         SwitchToState(after_doctype_name_2_state);
                     }
@@ -2193,7 +2193,7 @@ namespace Html
 
         case after_doctype_name_2_state:
             {
-                this->after_doctype_name->write_element(c);
+                this->after_doctype_name->write_element(codepoint);
 
                 if (this->after_doctype_name->size() != 6)
                     break;
@@ -2222,7 +2222,7 @@ namespace Html
 
         case after_doctype_public_keyword_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2232,19 +2232,19 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2252,16 +2252,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2271,7 +2271,7 @@ namespace Html
 
         case before_doctype_public_identifier_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2290,7 +2290,7 @@ namespace Html
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2298,16 +2298,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2317,19 +2317,19 @@ namespace Html
 
         case doctype_public_identifier_double_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0022:
                     SwitchToState(after_doctype_public_identifier_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier->push_back(0xFFFD);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2337,16 +2337,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->doctype_token->public_identifier->push_back(c);
+                    this->doctype_token->public_identifier->push_back(codepoint);
                     break;
                 }
             }
@@ -2354,19 +2354,19 @@ namespace Html
 
         case doctype_public_identifier_single_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0027:
                     SwitchToState(after_doctype_public_identifier_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier->push_back(0xFFFD);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2374,16 +2374,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->doctype_token->public_identifier->push_back(c);
+                    this->doctype_token->public_identifier->push_back(codepoint);
                     break;
                 }
             }
@@ -2391,7 +2391,7 @@ namespace Html
 
         case after_doctype_public_identifier_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2407,28 +2407,28 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->public_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_public_identifier_single_quoted_state);
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2438,7 +2438,7 @@ namespace Html
 
         case between_doctype_public_and_system_identifiers_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2463,16 +2463,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2482,7 +2482,7 @@ namespace Html
 
         case after_doctype_system_keyword_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2492,19 +2492,19 @@ namespace Html
                     break;
 
                 case 0x0022:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_double_quoted_state);
                     break;
 
                 case 0x0027:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->system_identifier = std::make_shared<UnicodeString>();
                     SwitchToState(doctype_system_identifier_single_quoted_state);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2512,16 +2512,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2531,7 +2531,7 @@ namespace Html
 
         case before_doctype_system_identifier_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2550,7 +2550,7 @@ namespace Html
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2558,16 +2558,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(bogus_doctype_state);
                     break;
@@ -2577,19 +2577,19 @@ namespace Html
 
         case doctype_system_identifier_double_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0022:
                     SwitchToState(after_doctype_system_identifier_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->system_identifier->push_back(0xFFFD);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2597,16 +2597,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->doctype_token->system_identifier->push_back(c);
+                    this->doctype_token->system_identifier->push_back(codepoint);
                     break;
                 }
             }
@@ -2614,19 +2614,19 @@ namespace Html
 
         case doctype_system_identifier_single_quoted_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0027:
                     SwitchToState(after_doctype_system_identifier_state);
                     break;
 
                 case 0x0000:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->system_identifier->push_back(0xFFFD);
                     break;
 
                 case 0x003E:
-                    ParseError(c);
+                    ParseError(codepoint);
                     this->doctype_token->force_quirks = true;
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
@@ -2634,16 +2634,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    this->doctype_token->system_identifier->push_back(c);
+                    this->doctype_token->system_identifier->push_back(codepoint);
                     break;
                 }
             }
@@ -2651,7 +2651,7 @@ namespace Html
 
         case after_doctype_system_identifier_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -2666,16 +2666,16 @@ namespace Html
                     break;
 
                 case EOF:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(data_state);
                     this->doctype_token->force_quirks = true;
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    ParseError(c);
+                    ParseError(codepoint);
                     SwitchToState(bogus_doctype_state);
                     break;
                 }
@@ -2684,7 +2684,7 @@ namespace Html
 
         case bogus_doctype_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003E:
                     SwitchToState(data_state);
@@ -2696,7 +2696,7 @@ namespace Html
                     SwitchToState(data_state);
                     Emit(this->doctype_token);
                     this->doctype_token = 0;
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
@@ -2707,7 +2707,7 @@ namespace Html
 
         case cdata_section_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x005D:
                     SwitchToState(cdata_section_2_state);
@@ -2715,11 +2715,11 @@ namespace Html
 
                 case EOF:
                     SwitchToState(data_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
 
                 default:
-                    EmitCharacter(c);
+                    EmitCharacter(codepoint);
                     break;
                 }
             }
@@ -2727,7 +2727,7 @@ namespace Html
 
         case cdata_section_2_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x005D:
                     SwitchToState(cdata_section_3_state);
@@ -2736,7 +2736,7 @@ namespace Html
                 default:
                     EmitCharacter(0x005D);
                     SwitchToState(cdata_section_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -2744,7 +2744,7 @@ namespace Html
 
         case cdata_section_3_state:
             {
-                switch (c)
+                switch (codepoint)
                 {
                 case 0x003E:
                     SwitchToState(data_state);
@@ -2754,21 +2754,21 @@ namespace Html
                     EmitCharacter(0x005D);
                     EmitCharacter(0x005D);
                     SwitchToState(cdata_section_state);
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
             break;
 
         default:
-            throw FatalError("Tokenizer::write_element unexpected state");
+            throw FatalError("Html", "Tokenizer::write_element unhandled state");
         }
     }
 
-    void Tokenizer::ParseError(Codepoint c)
+    void Tokenizer::ParseError(Codepoint codepoint)
     {
         char error[0x100];
-        sprintf_s(error, "codepoint: 0x%04X '%c'", c, c);
+        sprintf_s(error, "codepoint: 0x%04X '%c'", codepoint, codepoint);
 
         ParseError(error);
     }
@@ -2870,10 +2870,10 @@ namespace Html
         this->parser->ParseError(full_error);
     }
 
-    void Tokenizer::ParseError(Codepoint c, const char* error)
+    void Tokenizer::ParseError(Codepoint codepoint, const char* error)
     {
         char full_error[0x100];
-        sprintf_s(full_error, "codepoint: 0x%04X '%c', %s", c, c, error);
+        sprintf_s(full_error, "codepoint: 0x%04X '%c', %s", codepoint, codepoint, error);
 
         ParseError(full_error);
     }

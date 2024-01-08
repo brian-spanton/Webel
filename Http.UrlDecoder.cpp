@@ -76,12 +76,13 @@ namespace Http
             break;
 
         default:
-            throw FatalError("UrlDecoder::write_element unexpected state");
+            throw FatalError("Http", "UrlDecoder::write_element unhandled state");
         }
     }
 
     void UrlDecoder::write_eof()
     {
-        HandleError("unexpected eof");
+        if (this->state != State::normal_state)
+            Basic::LogDebug("Http", "UrlDecoder::write_eof { this->state != State::normal_state }");
     }
 }

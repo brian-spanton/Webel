@@ -80,16 +80,16 @@ namespace Http
 
         for (uint32 i = 0; i < url->host->size(); i++)
         {
-            Codepoint c = url->host->at(i);
+            Codepoint codepoint = url->host->at(i);
 
-            if (c == '.')
+            if (codepoint == '.')
             {
                 host_path.insert(host_path.begin(), node);
                 node = std::make_shared<UnicodeString>();
             }
             else
             {
-                node->push_back(c);
+                node->push_back(codepoint);
             }
         }
 

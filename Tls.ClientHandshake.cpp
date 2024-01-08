@@ -33,7 +33,7 @@ namespace Tls
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Tls::ClientHandshake::process_event start_state", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -43,7 +43,7 @@ namespace Tls
 
                 NTSTATUS error = BCryptGenRandom(0, this->security_parameters->client_random.random_bytes, sizeof(this->security_parameters->client_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                 if (error != 0)
-                    throw FatalError("ClientHandshake::ProcessConnect BCryptGenRandom", error);
+                    throw FatalError("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
 
                 ClientHello clientHello;
                 clientHello.client_version = this->session->version_high;
@@ -223,7 +223,7 @@ namespace Tls
                     NTSTATUS error = BCryptGenRandom(0, pre_master_secret.random, sizeof(pre_master_secret.random), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::globals->HandleError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
+                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
                         switch_to_state(State::BCryptGenRandom_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -248,7 +248,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::globals->HandleError("ClientHandshake::handle_event BCryptEncrypt", error);
+                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
                         switch_to_state(State::BCryptEncrypt_1_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -269,7 +269,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::globals->HandleError("ClientHandshake::handle_event BCryptEncrypt", error);
+                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
                         switch_to_state(State::BCryptEncrypt_2_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -325,7 +325,7 @@ namespace Tls
             {
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Tls::ClientHandshake::process_event expecting_cipher_change_state", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -384,7 +384,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::ClientHandshake::handle_event unexpected state");
+            throw FatalError("Tls", "ClientHandshake::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

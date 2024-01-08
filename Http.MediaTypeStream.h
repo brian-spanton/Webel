@@ -32,7 +32,7 @@ namespace Http
         UnicodeStringRef name;
         UnicodeStringRef value;
 
-        void ParseError(Codepoint c);
+        void ParseError(Codepoint codepoint);
 
     public:
         void Initialize(MediaType* mediaType);

@@ -40,7 +40,6 @@ namespace Web
         std::shared_ptr<Request> planned_request;
         Lock lock;
 
-        void handle_error(const char* error);
         void Redirect(std::shared_ptr<Uri> url);
         void Retry(std::shared_ptr<Request> request);
         void QueuePlanned();

@@ -38,12 +38,7 @@ namespace Basic
     void Utf32LittleEndianDecoder::write_eof()
     {
         if (this->received != 0)
-        {
-            HandleError("end of stream with received != 0");
-        }
-
-        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
-        // because it might not at all be the last thing sent to the destination
+            Basic::LogDebug("Basic", "Utf32LittleEndianDecoder::write_eof { this->received != 0 } eof mid-character");
     }
 
     void Utf32LittleEndianDecoder::Emit(Codepoint codepoint)

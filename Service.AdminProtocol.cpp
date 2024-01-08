@@ -71,7 +71,7 @@ namespace Service
 			}
 			else
 			{
-                throw FatalError("unexpected completion");
+                throw FatalError("Service", "AdminProtocol::process_event unexpected completion");
             }
         }
         else if (event->get_type() == Http::EventType::response_headers_event)
@@ -114,7 +114,7 @@ namespace Service
             Http::ResponseHeadersEvent* cookie_event = (Http::ResponseHeadersEvent*)event;
 
             if (cookie_event->cookie.get() != this->get_cookie.get())
-                throw FatalError("unexpected completion");
+                throw FatalError("Service", "AdminProtocol::process_event { cookie_event->cookie.get() != this->get_cookie.get() }");
 
             if (this->html_parser.get() != 0)
             {
@@ -403,7 +403,7 @@ namespace Service
             break;
 
         default:
-            throw Basic::FatalError("AdminProtocol::handle_event unexpected state");
+            throw Basic::FatalError("Service", "AdminProtocol::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

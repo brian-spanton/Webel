@@ -644,7 +644,7 @@ step_8:
     {
         ParseError(token);
 
-        // handle_event the token using the rules for the "in body" insertion mode, except that whenever a node would be 
+        // process the token using the rules for the "in body" insertion mode, except that whenever a node would be 
         // inserted into the current node when the current node is a table, tbody, tfoot, thead, or tr element, then it 
         // must instead be foster parented.
         //apply_the_rules_for(InsertionMode::in_body_insertion_mode, token, 0);
@@ -1346,16 +1346,15 @@ loop:
         char full_error[0x100];
         sprintf_s(full_error, "stack=%s; insertion_mode=%s; %s", StackString().c_str(), mode_string, error);
 
-        Basic::globals->HandleError(full_error, 0);
+        Basic::LogDebug("Html", full_error);
     }
 
     void TreeConstruction::ParseError(const char* error)
     {
-        // $$$ need a graceful way to control log level
-        //char full_error[0x100];
-        //sprintf_s(full_error, "parse error=%s", error);
+        char full_error[0x100];
+        sprintf_s(full_error, "parse error=%s", error);
 
-        //HandleError(full_error);
+        HandleError(full_error);
     }
 
     void TreeConstruction::ParseError(const Token* token)

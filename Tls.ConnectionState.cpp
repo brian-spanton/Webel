@@ -40,7 +40,8 @@ namespace Tls
             break;
 
         default:
-            return Basic::globals->HandleError("Tls::ConnectionState::Initialize unsupported cipher_suite", 0);
+            Basic::LogDebug("Tls", "ConnectionState::Initialize switch(security_parameters->bulk_cipher_algorithm) default: unsupported cipher_suite");
+            return false;
         }
 
         if (algorithm != 0)
@@ -49,7 +50,10 @@ namespace Tls
 
             NTSTATUS error = BCryptOpenAlgorithmProvider(&bulk_cipher_algorithm_handle, algorithm, 0, 0);
             if (error != 0)
-                throw FatalError("BCryptOpenAlgorithmProvider", error);
+            {
+                Basic::LogDebug("Tls", "ConnectionState::Initialize BCryptOpenAlgorithmProvider failed", error);
+                return false;
+            }
 
             ByteString key_blob;
             key_blob.reserve(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + this->encryption_key.size());
@@ -63,7 +67,10 @@ namespace Tls
 
             error = BCryptImportKey(bulk_cipher_algorithm_handle, 0, BCRYPT_KEY_DATA_BLOB, &this->key_handle, 0, 0, key_blob.address(), key_blob.size(), 0);
             if (error != 0)
-                return Basic::globals->HandleError("BCryptImportKey", error);
+            {
+                Basic::LogDebug("Tls", "ConnectionState::Initialize BCryptImportKey failed", error);
+                return false;
+            }
         }
 
         this->security_parameters = security_parameters;

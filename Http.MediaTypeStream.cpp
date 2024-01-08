@@ -12,9 +12,11 @@ namespace Http
         this->state = State::type_state;
     }
 
-    void MediaTypeStream::ParseError(Codepoint c)
+    void MediaTypeStream::ParseError(Codepoint codepoint)
     {
-        HandleError("MediaTypeStream::ParseError");
+        char error[0x100];
+        sprintf_s(error, "MediaTypeStream::ParseError codepoint=%04X", codepoint),
+        Basic::LogDebug("Http", error);
         this->state = State::parse_error;
     }
 
@@ -249,7 +251,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http::MediaTypeStream::handle_event unexpected state");
+            throw FatalError("Http", "MediaTypeStream::write_element unhandled state");
         }
     }
 
@@ -257,6 +259,7 @@ namespace Http
     {
         if (this->state == State::value_state)
         {
+            // complete the final in progress name-value pair
             NameValueCollection::value_type nv(this->name, this->value);
             this->mediaType->parameters->insert(nv);
             this->name = 0;

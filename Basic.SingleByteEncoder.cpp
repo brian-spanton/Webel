@@ -37,9 +37,9 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("sprintf_s");
+            throw FatalError("Basic", "SingleByteEncoder::EncodeError { sprintf_s }");
 
-        HandleError(error);
+        Basic::LogDebug("Basic", error);
     }
 
     void SingleByteEncoder::write_elements(const Codepoint* elements, uint32 count)
@@ -84,8 +84,6 @@ namespace Basic
 
     void SingleByteEncoder::write_eof()
     {
-        // I think eof is for the end of the bytes to encode, and should not propagate to the destination
-        // because it might not at all be the last thing sent to the destination
     }
 
     void SingleByteEncoder::Emit(byte b)

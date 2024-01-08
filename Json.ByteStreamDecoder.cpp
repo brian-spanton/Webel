@@ -104,7 +104,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json::ByteStreamDecoder::handle_event unexpected state");
+            throw FatalError("Json", "ByteStreamDecoder::write_element unhandled state");
         }
     }
 }

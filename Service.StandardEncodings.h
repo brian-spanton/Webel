@@ -17,6 +17,8 @@ namespace Service
         {
             single_byte_encodings_state = Start_State,
             done_state = Succeeded_State,
+            unexpected_json_error,
+            unexpected_event_error,
         };
 
         std::shared_ptr<StandardEncodings> self;

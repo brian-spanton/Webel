@@ -26,7 +26,7 @@ namespace Html
         std::shared_ptr<IStream<Codepoint> > output;
         Parser* parser;
 
-        bool IsValid(Codepoint c);
+        bool IsValid(Codepoint codepoint);
 
     public:
         InputStreamPreprocessor(Parser* parser, std::shared_ptr<IStream<Codepoint> > output);

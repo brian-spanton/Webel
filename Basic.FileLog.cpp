@@ -29,14 +29,14 @@ namespace Basic
             FILE_FLAG_OVERLAPPED | FILE_FLAG_WRITE_THROUGH,
             0);
         if (this->file == INVALID_HANDLE_VALUE)
-            throw FatalError("CreateFileA", GetLastError());
+            throw FatalError("Basic", "FileLog::Initialize CreateFileA failed", GetLastError());
 
         Basic::globals->BindToCompletionQueue(this->file);
 
         LARGE_INTEGER size;
         BOOL success = GetFileSizeEx(this->file, &size);
         if (success == FALSE)
-            throw FatalError("GetFileSizeEx", GetLastError());
+            throw FatalError("Basic", "FileLog::Initialize GetFileSizeEx failed", GetLastError());
 
         if (size.QuadPart == 0)
         {
@@ -68,8 +68,9 @@ namespace Basic
         utf_8_encode(entry.get(), bytes.get());
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
-        job->Offset = 0xffffffff; // $$$ writes can be out of order if we aren't specific about position
-        job->OffsetHigh = 0xffffffff;
+        job->Offset = this->position;
+        job->OffsetHigh = 0;
+        this->position += bytes->size();
 
         BOOL success = WriteFile(this->file, bytes->address(), bytes->size(), 0, job.get());
         if (success == FALSE)
@@ -96,7 +97,7 @@ namespace Basic
         {
             close_file();
 
-            Basic::globals->HandleError("FileLog::CompleteAsync", error);
+            Basic::LogDebug("Basic", "FileLog::complete { error != ERROR_SUCCESS }", error);
         }
     }
 }

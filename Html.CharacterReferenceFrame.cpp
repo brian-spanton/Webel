@@ -34,23 +34,23 @@ namespace Html
         this->leftovers->reserve(0x100);
     }
 
-    void CharacterReferenceFrame::write_element(Codepoint c)
+    void CharacterReferenceFrame::write_element(Codepoint codepoint)
     {
-        this->leftovers->write_element(c);
-        WriteUnobserved(c);
+        this->leftovers->write_element(codepoint);
+        WriteUnobserved(codepoint);
     }
 
-    void CharacterReferenceFrame::WriteUnobserved(Codepoint c)
+    void CharacterReferenceFrame::WriteUnobserved(Codepoint codepoint)
     {
         switch (get_state())
         {
         case State::start_state:
             {
-                if (this->use_additional_allowed_character && c == this->additional_allowed_character)
+                if (this->use_additional_allowed_character && codepoint == this->additional_allowed_character)
                 {
                     switch_to_state(State::done_state);
                 }
-                else switch (c)
+                else switch (codepoint)
                 {
                 case 0x0009:
                 case 0x000A:
@@ -68,7 +68,7 @@ namespace Html
 
                 default:
                     switch_to_state(State::matching_name_state);
-                    WriteUnobserved(c);
+                    WriteUnobserved(codepoint);
                     return;
                 }
             }
@@ -76,7 +76,7 @@ namespace Html
 
         case State::number_started_state:
             {
-                switch(c)
+                switch(codepoint)
                 {
                 case 0x0078:
                 case 0x0058:
@@ -91,7 +91,7 @@ namespace Html
                         this->number_stream = std::make_shared<DecNumberStream<Codepoint, Codepoint> >(&this->number);
                         switch_to_state(State::receiving_number_state);
 
-                        WriteUnobserved(c);
+                        WriteUnobserved(codepoint);
                         return;
                     }
                     break;
@@ -101,7 +101,7 @@ namespace Html
 
         case State::receiving_number_state:
             {
-                bool success = this->number_stream->WriteDigit(c);
+                bool success = this->number_stream->WriteDigit(codepoint);
                 if (!success)
                 {
                     if (this->number_stream->get_digit_count() > 0)
@@ -109,12 +109,12 @@ namespace Html
                         TranslationMap::iterator it = Html::globals->number_character_references_table.find(this->number);
                         if (it != Html::globals->number_character_references_table.end())
                         {
-                            this->parser->ParseError("Html::CharacterReferenceFrame::handle_event character number reference not allowed");
+                            this->parser->ParseError("CharacterReferenceFrame::WriteUnobserved character number reference not allowed");
                             this->number = it->second;
                         }
                         else if ((this->number >= 0xD800 && this->number <= 0xDFFF) || this->number > 0x10FFFF)
                         {
-                            this->parser->ParseError("Html::CharacterReferenceFrame::handle_event character number reference out of range");
+                            this->parser->ParseError("CharacterReferenceFrame::WriteUnobserved character number reference out of range");
                             this->number = 0xFFFD;
                         }
                         else if ((this->number >= 0x0001 && this->number <= 0x0008) ||
@@ -157,22 +157,22 @@ namespace Html
                             this->number == 0x10FFFE ||
                             this->number == 0x10FFFF)
                         {
-                            this->parser->ParseError("Html::CharacterReferenceFrame::handle_event character number reference out of range");
+                            this->parser->ParseError("CharacterReferenceFrame::WriteUnobserved character number reference out of range");
                         }
 
                         this->value->push_back(this->number);
                     }
                     else
                     {
-                        this->parser->ParseError("Html::CharacterReferenceFrame::handle_event bad character number reference");
+                        this->parser->ParseError("CharacterReferenceFrame::WriteUnobserved bad character number reference");
                     }
 
                     this->leftovers->clear();
 
-                    if (c != 0x003B)
+                    if (codepoint != 0x003B)
                     {
-                        this->parser->ParseError("character reference does not end with ;");
-                        this->leftovers->push_back(c);
+                        this->parser->ParseError("CharacterReferenceFrame::WriteUnobserved character reference does not end with ;");
+                        this->leftovers->push_back(codepoint);
                     }
 
                     switch_to_state(State::done_state);
@@ -182,7 +182,7 @@ namespace Html
 
         case State::matching_name_state:
             {
-                this->match_frame.write_element(c);
+                this->match_frame.write_element(codepoint);
 
                 if (this->match_frame.in_progress())
                     break;
@@ -219,7 +219,7 @@ namespace Html
             break;
 
         default:
-            throw FatalError("Html::CharacterReferenceFrame::handle_event unexpected state");
+            throw FatalError("Html", "CharacterReferenceFrame::process_event unhandled state");
         }
     }
 

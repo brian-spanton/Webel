@@ -45,7 +45,7 @@ namespace Http
         uint8 matched = 0;
         UnicodeStringRef node;
 
-        void ParseError(Codepoint c);
+        void ParseError(Codepoint codepoint);
 
     public:
         static void InitializeStatics();

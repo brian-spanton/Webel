@@ -19,6 +19,7 @@ namespace Basic
 
         case Face_External:
             {
+#pragma warning (suppress: 6387)
                 hostent* host = gethostbyname(0);
                 endpoint.sin_addr = *reinterpret_cast<in_addr*>(host->h_addr_list[0]);
             }
@@ -31,11 +32,11 @@ namespace Basic
 
         int error = bind(socket, reinterpret_cast<const sockaddr*>(&endpoint), sizeof(endpoint));
         if (error == SOCKET_ERROR)
-            throw FatalError("bind", WSAGetLastError());
+            throw FatalError("Basic", "ListenSocket::ListenSocket bind failed", WSAGetLastError());
 
         error = listen(socket, SOMAXCONN);
         if (error == SOCKET_ERROR)
-            throw FatalError("listen", WSAGetLastError());
+            throw FatalError("Basic", "ListenSocket::ListenSocket listen failed", WSAGetLastError());
 
         Basic::globals->DebugWriter()->WriteFormat<0x40>("listening on port %d", port);
         Basic::globals->DebugWriter()->WriteLine();
@@ -86,7 +87,7 @@ namespace Basic
         if (error != ERROR_SUCCESS)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CANCELLED)
-                throw FatalError("ListenSocket::CompleteRead", error);
+                throw FatalError("Basic", "ListenSocket::CompleteAccept { error != ERROR_SUCCESS }", error);
         }
         else
         {
@@ -97,7 +98,7 @@ namespace Basic
                 reinterpret_cast<char*>(&this->socket),
                 sizeof(this->socket));
             if (error == SOCKET_ERROR)
-                throw FatalError("ListenSocket::CompleteRead setsockopt", WSAGetLastError());
+                throw FatalError("Basic", "ListenSocket::CompleteRead setsockopt failed", WSAGetLastError());
 
             server_socket->CompleteAccept(bytes, count);
         }

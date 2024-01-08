@@ -179,7 +179,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("ResponseFrame::handle_event unexpected state");
+            throw FatalError("Http", "ResponseFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

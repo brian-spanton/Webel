@@ -55,7 +55,7 @@ namespace Gzip
             break;
 
         default:
-            throw FatalError("Gzip::FileFormat::process_event unexpected state");
+            throw FatalError("Gzip", "FileFormat::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

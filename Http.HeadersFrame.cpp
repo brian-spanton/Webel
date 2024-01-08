@@ -214,7 +214,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("HeadersFrame::handle_event unexpected state");
+            throw FatalError("Http", "HeadersFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

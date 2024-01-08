@@ -203,7 +203,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json::ArrayFrame::handle_event unexpected state");
+            throw FatalError("Json", "ArrayFrame::WriteUnobserved unhandled state");
         }
     }
 }

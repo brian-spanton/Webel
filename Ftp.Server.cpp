@@ -59,8 +59,8 @@ namespace Ftp
             }
             else
             {
-                StateMachine::HandleUnexpectedEvent("Ftp::Server::process_event pending_connection_state", event);
-                throw FatalError("unexpected event");
+                StateMachine::LogUnexpectedEvent("Ftp", "Server::process_event", event);
+                throw FatalError("Ftp", "Server::process_Event unexpected event");
             }
             break;
 
@@ -92,7 +92,7 @@ namespace Ftp
             break;
 
         default:
-            throw FatalError("Ftp::Server::handle_event unexpected state");
+            throw FatalError("Ftp", "Server::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

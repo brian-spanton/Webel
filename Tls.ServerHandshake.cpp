@@ -34,7 +34,7 @@ namespace Tls
         case State::start_state:
             if (event->get_type() != Basic::EventType::can_send_bytes_event)
             {
-                StateMachine::HandleUnexpectedEvent("Tls::ServerHandshake::process_event start_state", event);
+                StateMachine::LogUnexpectedEvent("Tls", "ServerHandshake::process_event", event);
                 return ProcessResult::process_result_blocked;
             }
 
@@ -138,7 +138,7 @@ namespace Tls
                 NTSTATUS error = BCryptGenRandom(0, this->security_parameters->server_random.random_bytes, sizeof(this->security_parameters->server_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                 if (error != 0)
                 {
-                    Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
+                    Basic::LogDebug("Tls", "ServerHandshake::process_event BCryptGenRandom", error);
                     switch_to_state(State::BCryptGenRandom_1_failed);
                     return ProcessResult::process_result_ready;
                 }
@@ -315,7 +315,7 @@ namespace Tls
                     NTSTATUS error = BCryptGenRandom(0, this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::globals->HandleError("ServerHandshake::handle_event BCryptGenRandom", error);
+                        Basic::LogDebug("Tls", "ServerHandshake::process_event BCryptGenRandom failed", error);
                         switch_to_state(State::BCryptGenRandom_2_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -338,7 +338,7 @@ namespace Tls
             {
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Tls::ServerHandshake::process_event expecting_cipher_change_state", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "ServerHandshake::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -407,7 +407,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::ServerHandshake::handle_event unexpected state");
+            throw FatalError("Tls", "ServerHandshake::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;
@@ -458,7 +458,7 @@ namespace Tls
                 //fails, the PreMasterSecret SHOULD be randomized as described below.
 
                 if (pre_master_secret.client_version != this->clientHello.client_version)
-                    return Basic::globals->HandleError("Could be version roll-back attack.", 0);
+                    return Basic::globals->Log(LogLevel::Warning, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
             }
             break;
 
@@ -467,7 +467,8 @@ namespace Tls
         //    break;
 
         default:
-            return Basic::globals->HandleError("ServerHandshake::ProcessClientKeyExchange unexpected key_exchange_algorithm", 0);
+            Basic::LogDebug("Tls", "ServerHandshake::ProcessClientKeyExchange unexpected key_exchange_algorithm");
+            return false;
         }
 
         return true;

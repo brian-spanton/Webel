@@ -18,7 +18,7 @@ namespace Html
     {
     }
 
-    void Node::Insert(Codepoint c)
+    void Node::Insert(Codepoint codepoint)
     {
         if (this->children.size() == 0 || this->children.back()->type != TEXT_NODE)
         {
@@ -27,7 +27,7 @@ namespace Html
         }
 
         TextNode* text_node = static_cast<TextNode*>(this->children.back().get());
-        text_node->data->push_back(c);
+        text_node->data->push_back(codepoint);
     }
 
     void Node::Append(std::shared_ptr<Node> node)

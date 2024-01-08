@@ -23,9 +23,9 @@ namespace Basic
         char full_error[0x100];
         int result = sprintf_s(full_error, "Utf8Decoder::EmitDecoderError needed=%d seen=%d %hs", this->needed, this->seen, error);
         if (result == -1)
-            throw FatalError("sprintf_s");
+            throw FatalError("Basic", "Utf8Decoder::EmitDecoderError sprintf_s failed");
 
-        HandleError(full_error);
+        Basic::LogDebug("Basic", full_error);
 
         Emit(0xFFFD);
     }
@@ -142,8 +142,8 @@ namespace Basic
             EmitDecoderError("end of stream with needed != 0");
         }
 
-        // I think eof is for the end of the encoded bytes, and should not propagate to the destination
-        // because it might not at all be the last thing sent to the destination
+        // write_eof means "you will not receive any more calls to IStream interface".
+        // It should not propagate to the destination, because destination might be composite
     }
 
     void Utf8Decoder::Emit(Codepoint codepoint)

@@ -105,9 +105,7 @@ namespace Basic
             serialize<Tls::CompressionMethods>()(&value->compression_methods, stream);
 
             if (count_stream.count > 0xffff)
-            {
-                throw FatalError("ClientHello extensions too large");
-            }
+                throw FatalError("Tls", "serialize<Tls::ClientHello>::operator() { count_stream.count > 0xffff }");
 
             uint16 extensions_length = (uint16)count_stream.count;
 

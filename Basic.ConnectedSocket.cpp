@@ -56,7 +56,7 @@ namespace Basic
                 process_event_ignore_failures(protocol.get(), &event);
 
                 if (!this->protocol_element_source.Exhausted() && !protocol->failed())
-                    throw FatalError("Basic::ConnectedSocket::Received { !this->protocol_element_source.Exhausted() && !protocol->failed() }");
+                    throw FatalError("Basic", "ConnectedSocket::Received { !this->protocol_element_source.Exhausted() && !protocol->failed() }");
             }
         }
     }
@@ -144,7 +144,7 @@ namespace Basic
     void ConnectedSocket::Send(ByteStringRef bytes)
     {
         if (bytes->size() == 0)
-            throw FatalError("ConnectedSocket::Send 0 bytes");
+            throw FatalError("Basic", "ConnectedSocket::Send { bytes->size() == 0 }");
 
         uint32 count;
         DWORD flags = 0;
@@ -180,7 +180,7 @@ namespace Basic
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
-                Basic::globals->HandleError("ConnectedSocket::CompleteReceive", error);
+                Basic::LogDebug("Basic", "ConnectedSocket::CompleteReceive { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED }", error);
 
             DisconnectAndNotifyProtocol();
         }

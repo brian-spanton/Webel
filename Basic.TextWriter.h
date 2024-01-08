@@ -43,7 +43,7 @@ namespace Basic
             char temp[max + 1];
             uint32 count = vsprintf_s(temp, format, args);
             if (count < 0)
-                throw FatalError("WriteFormat failed");
+                throw FatalError("Basic", "TextWriter::WriteFormat failed");
 
             return write_elements(temp, count);
         }

@@ -32,7 +32,7 @@ namespace Json
 #undef CASE
 
         default:
-            throw FatalError("Token::GetDebugString unhandled token type");
+            throw FatalError("Json", "Token::GetDebugString unhandled token type");
         }
     }
 

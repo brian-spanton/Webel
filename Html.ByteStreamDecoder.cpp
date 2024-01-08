@@ -93,7 +93,7 @@ namespace Html
             break;
 
         default:
-            throw FatalError("Html::ByteStreamDecoder::handle_event unexpected state");
+            throw FatalError("Html", "ByteStreamDecoder::process_event unhandled state");
         }
     }
 }

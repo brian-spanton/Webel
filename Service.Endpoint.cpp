@@ -26,7 +26,7 @@ namespace Service
     {
         if (event->get_type() != Http::EventType::accept_complete_event)
         {
-            StateMachine::HandleUnexpectedEvent("Service::Endpoint::process_event", event);
+            StateMachine::LogUnexpectedEvent("Service", "Endpoint::process_event", event);
             return ProcessResult::process_result_blocked;
         }
 

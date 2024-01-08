@@ -10,6 +10,11 @@ namespace Basic
     {
         void write_element(element_type element);
         void write_elements(const element_type* elements, uint32 count);
+
+        // write_eof is named ambiguously - it does NOT mean "you must stop processing and terminate output",
+        // NOR does it quite mean "the caller has encountered an EOF condition"... it should be taken by
+        // implementing classes to mean "you will not receive any more calls to IStream interface after this one,
+        // and handled accordingly for the class' intended use.
         void write_eof();
     };
 

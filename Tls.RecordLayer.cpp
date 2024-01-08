@@ -35,7 +35,7 @@ namespace Tls
 
         NTSTATUS error = BCryptGenRandom(0, this->session_id.address(), this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (error != 0)
-            throw FatalError("BCryptGenRandom", error);
+            throw FatalError("Tls", "RecordLayer::RecordLayer BCryptGenRandom failed", error);
 
         if (server)
         {
@@ -83,7 +83,7 @@ namespace Tls
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Tls::RecordLayer::process_event unconnected_state", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "RecordLayer::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -131,7 +131,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::RecordLayer::handle_event unexpected state");
+            throw FatalError("Tls", "RecordLayer::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;
@@ -196,12 +196,12 @@ namespace Tls
             heartbeat_message.payload.resize(16);
             NTSTATUS error = BCryptGenRandom(0, heartbeat_message.payload.address(), heartbeat_message.payload.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
+                throw FatalError("Tls", "RecordLayer::ConnectApplication BCryptGenRandom failed", error);
 
             heartbeat_message.padding.resize(16);
             error = BCryptGenRandom(0, heartbeat_message.padding.address(), heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
+                throw FatalError("Tls", "RecordLayer::ConnectApplication BCryptGenRandom failed", error);
 
             ByteString heartbeat_bytes;
             serialize<HeartbeatMessage>()(&heartbeat_message, &heartbeat_bytes);
@@ -255,7 +255,7 @@ namespace Tls
         // From RFC2246 section 6.2.1:
         //     The length (in bytes) of the following TLSPlaintext.fragment.
         //     The length should not exceed 2^14 (0x4000).
-        // brian: since it is only _should_, and I see some records in real life come back at 0x4020, let's
+        // since it is only _should_, and I see some records in real life come back at 0x4020, let's
         // give it double.
         if (record->length > 0x8000)
             throw State::receive_record_length_too_large_error;
@@ -542,7 +542,7 @@ namespace Tls
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw FatalError("BCryptEncrypt", error);
+                    throw FatalError("Tls", "RecordLayer::EncryptStream BCryptEncrypt failed", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_stream_output_overflow_error;
@@ -593,7 +593,7 @@ namespace Tls
 
                     NTSTATUS error = BCryptGenRandom(0, mask->address(), mask->size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
-                        throw FatalError("Tls::ClientHandshake::handle_event BCryptGenRandom failed", error);
+                        throw FatalError("Tls", "RecordLayer::EncryptBlock BCryptGenRandom failed", error);
                 }
 
                 payload.insert(payload.end(), compressed->fragment->begin(), compressed->fragment->end());
@@ -634,7 +634,7 @@ namespace Tls
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw FatalError("BCryptEncrypt", error);
+                    throw FatalError("Tls", "RecordLayer::EncryptBlock BCryptEncrypt failed", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_block_output_overflow_error;
@@ -723,7 +723,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::globals->HandleError("BCryptDecrypt", error);
+                    Basic::LogDebug("Tls", "RecordLayer::DecryptStream BCryptDecrypt failed", error);
                     throw State::decrypt_stream_decryption_failed;
                 }
 
@@ -805,7 +805,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::globals->HandleError("BCryptDecrypt", error);
+                    Basic::LogDebug("Tls", "RecordLayer::DecryptBlock BCryptDecrypt failed", error);
                     throw State::decrypt_block_decryption_failed;
                 }
 

@@ -47,7 +47,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic::IgnoreFrame::handle_event unexpected state");
+                throw FatalError("Basic", "IgnoreFrame::process_event unhandled state");
             }
 
             return ProcessResult::process_result_ready;
@@ -79,7 +79,6 @@ namespace Basic
 
         virtual void IStream<element_type>::write_eof()
         {
-            // ignore (by definition)
         }
     };
 }

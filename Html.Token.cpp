@@ -34,7 +34,7 @@ namespace Html
 
         default:
             sprintf_s(debug_string, count, "%d", this->type);
-            Basic::globals->HandleError("Token::GetDebugString", 0);
+            Basic::LogDebug("Html", "Token::GetDebugString unexpected type");
             break;
         }
     }

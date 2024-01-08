@@ -60,10 +60,10 @@ namespace Scrape
         {
             return process_event_throw(event);
         }
-        catch (State error)
+        catch (State error_state)
         {
-		    Basic::globals->HandleError("Amazon", error);
-		    switch_to_state(error);
+		    Basic::LogDebug("Scrape", "Amazon::process_event", error_state);
+		    switch_to_state(error_state);
 		    Complete();
 			return ProcessResult::process_result_exited;
         }
@@ -295,7 +295,7 @@ namespace Scrape
 			break;
 
 		default:
-			throw FatalError("Amazon::process_event unexpected state");
+			throw FatalError("Scrape", "Amazon::process_event_throw unhandled state");
 		}
 
         return ProcessResult::process_result_ready; // event consumed

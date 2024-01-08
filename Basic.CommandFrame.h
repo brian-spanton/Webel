@@ -64,7 +64,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("CommandFrame::handle_event unexpected state");
+                throw FatalError("Basic", "CommandFrame::process_event unhandled state");
             }
 
             return ProcessResult::process_result_ready;

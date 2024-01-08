@@ -173,7 +173,7 @@ namespace Gzip
             break;
 
         default:
-            throw FatalError("ServerHelloFrame::handle_event unexpected state");
+            throw FatalError("Gzip", "MemberFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

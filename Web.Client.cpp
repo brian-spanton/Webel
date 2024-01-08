@@ -35,7 +35,7 @@ namespace Web
         Hold hold(this->lock);
 
         if (get_state() != State::inactive_state)
-            throw FatalError("Client::Get get_state() != State::inactive_state");
+            throw FatalError("Web", "Client::Get get_state() != State::inactive_state");
 
         this->retries = 0;
         this->redirects = 0;
@@ -59,7 +59,7 @@ namespace Web
     {
         if (this->redirects == 5)
         {
-            handle_error("redirect error");
+            Basic::LogDebug("Web", "Client::Redirect { this->redirects == 5 } too many redirects");
             this->planned_request = 0;
         }
         else
@@ -93,7 +93,7 @@ namespace Web
     {
         if (this->retries == this->max_retries)
         {
-            handle_error("retry error");
+            Basic::LogDebug("Web", "Client::Retry { this->retries == this->max_retries } too many retries");
             this->planned_request = 0;
         }
         else
@@ -182,11 +182,6 @@ namespace Web
 
         render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
         Basic::globals->DebugWriter()->WriteLine();
-    }
-
-    void Client::handle_error(const char* error)
-    {
-        HandleError(error);
     }
 
     void Client::QueueJob()
@@ -328,7 +323,7 @@ namespace Web
             }
             else
             {
-                StateMachine::HandleUnexpectedEvent("Web::Client::process_event response_pending_state", event);
+                StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
             }
 
             return ProcessResult::process_result_blocked;
@@ -349,7 +344,7 @@ namespace Web
                 break;
 
             default:
-                throw FatalError("Web::Client::handle_event unexpected state");
+                throw FatalError("Web", "Client::process_event element_stream_ending_event unhandled state");
             }
 
             return ProcessResult::process_result_blocked; // event consumed
@@ -361,13 +356,13 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event get_pending_state", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
                 if (!this->planned_request->resource->is_http_scheme())
                 {
-                    handle_error("scheme error");
+                    Basic::LogDebug("Web", "Client::process_event { !this->planned_request->resource->is_http_scheme() } not an http url");
                     switch_to_state(State::inactive_state);
                     Completion();
                     return ProcessResult::process_result_blocked; // event consumed
@@ -399,7 +394,7 @@ namespace Web
                     bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);
                     if (!success)
                     {
-                        handle_error("resolve failed");
+                        Basic::LogDebug("Web", "Client::process_event client_socket->Resolve(this->planned_request->resource->host, ...) failed");
                         switch_to_state(State::inactive_state);
                         Completion();
                         return ProcessResult::process_result_blocked; // event consumed
@@ -418,7 +413,7 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event connection_pending_state", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -432,7 +427,7 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    StateMachine::HandleUnexpectedEvent("Web::Client::process_event response_complete_state", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -478,7 +473,7 @@ namespace Web
             break;
 
         default:
-            throw FatalError("Web::Client::handle_event unexpected state");
+            throw FatalError("Web", "Client::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

@@ -9,18 +9,18 @@ namespace Basic
     void StateMachine::switch_to_state(uint32 state)
     {
         if (this->state == state)
-            throw FatalError("unexpected switch to current state");
+            throw FatalError("Basic", "StateMachine::switch_to_state { this->state == state }");
 
         if (!in_progress())
-            throw FatalError("unexpected switch from completed state");
+            throw FatalError("Basic", "StateMachine::switch_to_state { !in_progress() }");
 
         this->state = state;
 
         if (failed())
         {
-            char state_string[0x40];
-            sprintf_s(state_string, "state=%X", this->state);
-            HandleError(state_string);
+            char state_string[0x100];
+            sprintf_s(state_string, "StateMachine::switch_to_state { failed() } state=%X", this->state);
+            Basic::LogDebug("Basic", state_string);
         }
     }
 
@@ -30,11 +30,11 @@ namespace Basic
     }
 
         
-    void StateMachine::HandleUnexpectedEvent(const char* function, IEvent* event)
+    void StateMachine::LogUnexpectedEvent(const char* component, const char* function, IEvent* event)
     {
-        Basic::globals->DebugWriter()->write_literal("ERROR: ");
-        Basic::globals->DebugWriter()->WriteFormat<0x100>("unexpected event %d in %s state %d", event->get_type(), function, get_state());
-        Basic::globals->DebugWriter()->WriteLine();
+        char message[0x100];
+        sprintf_s(message, "%s unexpected event %d in state %d", function, event->get_type(), get_state());
+        Basic::LogDebug(component, message);
     }
 
     StateMachine::StateMachine() :
@@ -104,7 +104,7 @@ namespace Basic
                 return ProcessResult::process_result_blocked;
         }
 
-        throw FatalError("runaway frame?");
+        throw FatalError("Basic", "Frame::process_event runaway frame?");
     }
 
     ProcessResult process_event_throw_error_on_fail(IProcess* process, IEvent* event)
@@ -112,7 +112,7 @@ namespace Basic
         ProcessResult result = process_event(process, event);
 
         if (process->failed())
-            throw FatalError("Basic::Frame::process_event_throw_error_on_fail { process->failed() }");
+            throw FatalError("Basic", "Frame::process_event_throw_error_on_fail { process->failed() }");
 
         return result;
     }
@@ -122,6 +122,6 @@ namespace Basic
     {
         ProcessResult result = process_event(process, event);
         if (result == ProcessResult::process_result_ready)
-            throw FatalError("Basic::Frame::process_event_ignore_failures { result == ProcessResult::process_result_ready }");
+            throw FatalError("Basic", "Frame::process_event_ignore_failures { result == ProcessResult::process_result_ready }");
     }
 }

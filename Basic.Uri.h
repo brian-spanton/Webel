@@ -8,14 +8,14 @@ namespace Basic
     class Uri
     {
     private:
-        void parse_error(Codepoint c);
+        void parse_error(Codepoint codepoint);
 
     public:
-        static bool is_ascii_alpha(Codepoint c);
-        static bool is_ascii_alphanumeric(Codepoint c);
-        static bool is_ascii_digit(Codepoint c);
-        static bool is_ascii_hex_digit(Codepoint c);
-        static bool is_url_codepoint(Codepoint c);
+        static bool is_ascii_alpha(Codepoint codepoint);
+        static bool is_ascii_alphanumeric(Codepoint codepoint);
+        static bool is_ascii_digit(Codepoint codepoint);
+        static bool is_ascii_hex_digit(Codepoint codepoint);
+        static bool is_url_codepoint(Codepoint codepoint);
         static bool is_relative_scheme(UnicodeStringRef scheme);
         static bool is_secure_scheme(UnicodeStringRef scheme);
         static bool is_http_scheme(UnicodeStringRef scheme);

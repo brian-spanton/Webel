@@ -33,7 +33,7 @@ namespace Basic
     {
         uint32 remaining = this->count - this->received;
         if (received > remaining)
-            throw FatalError("MemoryRange::write_elements received > remaining");
+            throw FatalError("Basic", "MemoryRange::write_elements { received > remaining }");
 
         CopyMemory(this->bytes + this->received, elements, received);
         this->received += received;
@@ -42,7 +42,7 @@ namespace Basic
     void MemoryRange::write_element(byte element)
     {
         if (this->count == this->received)
-            throw FatalError("MemoryRange::write_elements this->count == this->received");
+            throw FatalError("Basic", "MemoryRange::write_elements { this->count == this->received }");
 
         this->bytes[this->received] = element;
         this->received += 1;
@@ -50,7 +50,8 @@ namespace Basic
 
     void MemoryRange::write_eof()
     {
-        HandleError("unexpected eof");
+        if (this->count < this->received)
+            throw FatalError("Basic", "MemoryRange::write_eof { this->count < this->received }");
     }
 
     ProcessResult MemoryRange::process_event(IEvent* event)

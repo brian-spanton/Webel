@@ -26,11 +26,11 @@ namespace Basic
     void SingleByteDecoder::EmitDecoderError(const char* error)
     {
         char full_error[0x100];
-        int result = sprintf_s(full_error, "decoder error(%s)", error);
+        int result = sprintf_s(full_error, "SingleByteDecoder::EmitDecoderError %s", error);
         if (result == -1)
-            throw FatalError("SingleByteDecoder::EmitDecoderError");
+            throw FatalError("Basic", "SingleByteDecoder::EmitDecoderError sprintf_s failed");
 
-        HandleError(full_error);
+        Basic::LogDebug("Basic", full_error);
 
         Emit(0xFFFD);
     }
@@ -40,7 +40,7 @@ namespace Basic
         char error[0x100];
         int result = sprintf_s(error, "byte=0x%02X", b);
         if (result == -1)
-            throw FatalError("SingleByteDecoder::EmitDecoderError");
+            throw FatalError("Basic", "SingleByteDecoder::EmitDecoderError sprintf_s failed");
 
         EmitDecoderError(error);
     }
@@ -55,6 +55,8 @@ namespace Basic
 
     void SingleByteDecoder::write_element(byte b)
     {
+        // http://encoding.spec.whatwg.org/#legacy-single-byte-encodings
+
         // From http://encoding.spec.whatwg.org/#encodings
         // A decoder algorithm takes a byte stream and emits a code point stream. The byte pointer is initially zero,
         // pointing to the first byte in the stream. It cannot be negative. It can be increased and decreased to point
@@ -63,9 +65,7 @@ namespace Basic
         // the byte stream is handled in its entirety. A decoder error indicates an error in the byte stream. Unless 
         // stated otherwise, emitting a decoder error must emit code point U+FFFD. A decoder must be invoked again when 
         // the word continue is used, when one or more code points are emitted of which none is the EOF code point, or 
-        // when a decoder error is emitted. 
-    
-        // http://encoding.spec.whatwg.org/#legacy-single-byte-encodings
+        // when a decoder error is emitted.
 
         if (b >= 0 && b <= 0x7F)
         {
@@ -86,8 +86,6 @@ namespace Basic
 
     void SingleByteDecoder::write_eof()
     {
-        // I think eof is for the end of the encoded bytes, and should not propagate to the destination
-        // because it might not at all be the last thing sent to the destination
     }
 
     void SingleByteDecoder::Emit(Codepoint codepoint)

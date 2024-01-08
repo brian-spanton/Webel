@@ -14,6 +14,7 @@ namespace Basic
 
     public:
         HANDLE file;
+        DWORD position = 0;
 
         FileLog();
         virtual ~FileLog();

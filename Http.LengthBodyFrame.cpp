@@ -62,7 +62,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http::LengthBodyFrame::handle_event unexpected state");
+            throw FatalError("Http", "LengthBodyFrame::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

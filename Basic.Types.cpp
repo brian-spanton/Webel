@@ -7,19 +7,24 @@
 
 namespace Basic
 {
-    FatalError::FatalError(const char* context)
+    FatalError::FatalError(const char* component, const char* context)
     {
-        Basic::globals->HandleError(context, 0);
+        Basic::globals->Log(LogLevel::Critical, component, context, 0);
     }
 
-    FatalError::FatalError(const char* context, uint32 error)
+    FatalError::FatalError(const char* component, const char* context, uint32 code)
     {
-        Basic::globals->HandleError(context, error);
+        Basic::globals->Log(LogLevel::Critical, component, context, code);
     }
 
-    bool HandleError(const char* context)
+    void LogDebug(const char* component, const char* context)
     {
-        return Basic::globals->HandleError(context, 0);
+        Basic::globals->Log(LogLevel::Debug, component, context, 0);
+    }
+
+    void LogDebug(const char* component, const char* context, uint32 code)
+    {
+        Basic::globals->Log(LogLevel::Debug, component, context, code);
     }
 
     IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :

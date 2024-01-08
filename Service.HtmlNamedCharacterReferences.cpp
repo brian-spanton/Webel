@@ -61,14 +61,18 @@ namespace Service
 
                     this->client->set_decoded_content_stream(this->json_parser);
 
-                    return ProcessResult::process_result_blocked; // event consumed
+                    return ProcessResult::process_result_blocked;
                 }
                 break;
 
             case Http::EventType::response_complete_event:
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::object_value)
-                        throw FatalError("was Yield... expecting the json body to be an object type");
+                    {
+                        Basic::LogDebug("Service", "HtmlNamedCharacterReferences::process_event { this->json_parser->text->value->type != Json::Value::Type::object_value } unexpected json structure");
+                        switch_to_state(State::unexpected_json_error);
+                        return ProcessResult::process_result_blocked;
+                    }
 
                     std::shared_ptr<Json::Object> root = std::static_pointer_cast<Json::Object>(this->json_parser->text->value);
 
@@ -130,13 +134,14 @@ namespace Service
                 break;
 
             default:
-                StateMachine::HandleUnexpectedEvent("Service::HtmlNamedCharacterReferences::process_event named_character_reference_state", event);
-                throw FatalError("unexpected event");
+                StateMachine::LogUnexpectedEvent("Service", "HtmlNamedCharacterReferences::process_event", event);
+                switch_to_state(State::unexpected_event_error);
+                return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Service::HtmlNamedCharacterReferences::process_event unexpected state");
+            throw FatalError("Service", "HtmlNamedCharacterReferences::process_event unhandled state");
         }
 
         return ProcessResult::process_result_ready;

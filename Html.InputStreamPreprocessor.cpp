@@ -21,7 +21,7 @@ namespace Html
     {
     }
 
-    void InputStreamPreprocessor::write_element(Codepoint c)
+    void InputStreamPreprocessor::write_element(Codepoint codepoint)
     {
         switch (this->state)
         {
@@ -29,9 +29,9 @@ namespace Html
             {
                 this->state = State::normal_state;
 
-                if (c != 0xFEFF)
+                if (codepoint != 0xFEFF)
                 {
-                    write_element(c);
+                    write_element(codepoint);
                     return;
                 }
             }
@@ -39,32 +39,32 @@ namespace Html
 
         case State::normal_state:
             {
-                if (!IsValid(c))
+                if (!IsValid(codepoint))
                     this->parser->ParseError("invalid char in input stream");
 
-                if (c == 0x000D)
-                    c = 0x000A;
+                if (codepoint == 0x000D)
+                    codepoint = 0x000A;
 
-                if (c == 0x000A)
+                if (codepoint == 0x000A)
                     this->state = State::ignore_lf_state;
 
-                this->output->write_element(c);
+                this->output->write_element(codepoint);
             }
             break;
 
         case State::ignore_lf_state:
             {
-                if (!IsValid(c))
+                if (!IsValid(codepoint))
                     this->parser->ParseError("invalid char in input stream");
 
-                if (c == 0x000D)
-                    c = 0x000A;
+                if (codepoint == 0x000D)
+                    codepoint = 0x000A;
 
-                if (c != 0x000A)
+                if (codepoint != 0x000A)
                 {
                     this->state = State::normal_state;
 
-                    this->output->write_element(c);
+                    this->output->write_element(codepoint);
                 }
             }
             break;
@@ -74,21 +74,21 @@ namespace Html
         }
     }
 
-    bool InputStreamPreprocessor::IsValid(Codepoint c)
+    bool InputStreamPreprocessor::IsValid(Codepoint codepoint)
     {
-        if (c >= 0x0001 && c <= 0x0008)
+        if (codepoint >= 0x0001 && codepoint <= 0x0008)
             return false;
 
-        if (c >= 0x000E && c <= 0x001F)
+        if (codepoint >= 0x000E && codepoint <= 0x001F)
             return false;
 
-        if (c >= 0x007F && c <= 0x009F)
+        if (codepoint >= 0x007F && codepoint <= 0x009F)
             return false;
 
-        if (c >= 0xFDD0 && c <= 0xFDEF)
+        if (codepoint >= 0xFDD0 && codepoint <= 0xFDEF)
             return false;
 
-        switch (c)
+        switch (codepoint)
         {
         case 0x000B:
         case 0xFFFE:
