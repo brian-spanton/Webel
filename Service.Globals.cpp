@@ -46,8 +46,8 @@ namespace Service
 {
     Globals* globals = 0;
 
-    __declspec(thread) Basic::IStream<Codepoint>* debug_stream = 0;
-    __declspec(thread) Basic::TextWriter* debug_writer = 0;
+    __declspec(thread) Basic::IStream<Codepoint>* thread_log_stream = 0;
+    __declspec(thread) Basic::TextWriter* thread_log_writer = 0;
 
     DWORD WINAPI Globals::Thread(void* param)
     {
@@ -712,7 +712,7 @@ namespace Service
 
     Basic::IStream<Codepoint>* Globals::LogStream()
     {
-        if (debug_stream == 0)
+        if (thread_log_stream == 0)
         {
             Basic::LogStream* log_stream = new Basic::LogStream();
             log_stream->logs.push_back(this->console_log);
@@ -720,18 +720,18 @@ namespace Service
             log_stream->logs.push_back(this->file_log);
             log_stream->logs.push_back(this->tail_log);
 
-            debug_stream = log_stream;
+            thread_log_stream = log_stream;
         }
 
-        return debug_stream;
+        return thread_log_stream;
     }
 
     Basic::TextWriter* Globals::DebugWriter()
     {
-        if (debug_writer == 0)
-            debug_writer = new Basic::TextWriter(LogStream());
+        if (thread_log_writer == 0)
+            thread_log_writer = new Basic::TextWriter(LogStream());
 
-        return debug_writer;
+        return thread_log_writer;
     }
 
     void Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
