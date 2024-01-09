@@ -178,7 +178,7 @@ namespace Service
         DebugWriter()->WriteLine("testing gzip");
 
         this->gzip_test_file = ::CreateFileA(
-            "c:\\users\\brian\\test.gz",
+            "test.gz",
             GENERIC_READ,
             FILE_SHARE_READ,
             0,
@@ -471,7 +471,7 @@ namespace Service
                 std::shared_ptr<ByteString> bytes = std::static_pointer_cast<ByteString>(completion->context);
 
                 auto file_stream = std::make_shared<FileStream>();
-                file_stream->Initialize("c:\\users\\brian\\test_result.tar");
+                file_stream->Initialize("test_result.tar");
 
                 auto count_stream = std::make_shared<CountStream<byte> >();
 
