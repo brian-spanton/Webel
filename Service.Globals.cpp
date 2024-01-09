@@ -164,73 +164,71 @@ namespace Service
 
     bool Globals::TestHuffman()
     {
-        try
-        {
-            std::shared_ptr<Gzip::HuffmanAlphabet<byte> > root;
-            std::vector<byte> lengths;
-            lengths.insert(lengths.end(), 5, 3);
-            lengths.insert(lengths.end(), 1, 2);
-            lengths.insert(lengths.end(), 2, 4);
-            Gzip::HuffmanAlphabet<byte>::make_alphabet((uint16)lengths.size(), lengths, &root);
-            return true;
-        }
-        catch (...) // $$$ remove use of exceptions
-        {
-            return false;
-        }
+        std::shared_ptr<Gzip::HuffmanAlphabet<byte> > root;
+        std::vector<byte> lengths;
+        lengths.insert(lengths.end(), 5, 3);
+        lengths.insert(lengths.end(), 1, 2);
+        lengths.insert(lengths.end(), 2, 4);
+
+        return Gzip::HuffmanAlphabet<byte>::make_alphabet((uint16)lengths.size(), lengths, &root);
     }
 
     bool Globals::TestGzip()
     {
-        try
+        DebugWriter()->WriteLine("testing gzip");
+
+        this->gzip_test_file = ::CreateFileA(
+            "c:\\users\\brian\\test.gz",
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            0,
+            OPEN_EXISTING,
+            FILE_FLAG_OVERLAPPED,
+            0);
+        if (this->gzip_test_file == INVALID_HANDLE_VALUE)
         {
-            DebugWriter()->WriteLine("testing gzip");
-
-            this->gzip_test_file = ::CreateFileA(
-                "c:\\users\\brian\\test.gz",
-                GENERIC_READ,
-                FILE_SHARE_READ,
-                0,
-                OPEN_EXISTING,
-                FILE_FLAG_OVERLAPPED,
-                0);
-            if (this->gzip_test_file == INVALID_HANDLE_VALUE)
-                throw FatalError("Service", "Globals::TestGzip CreateFileA failed", GetLastError());
-
-            HANDLE result = CreateIoCompletionPort(this->gzip_test_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
-            if (result == 0)
-                throw FatalError("Service", "Globals::TestGzip CreateIoCompletionPort failed", GetLastError());
-
-            LARGE_INTEGER size;
-            bool success = (bool)GetFileSizeEx(this->gzip_test_file, &size);
-            if (!success)
-                throw FatalError("Service", "Globals::TestGzip GetFileSizeEx failed", GetLastError());
-
-            if (size.HighPart > 0)
-                throw FatalError("Service", "Globals::TestGzip GetFileSizeEx { size.HighPart > 0 }", 0);
-
-            std::shared_ptr<ByteString> data = std::make_shared<ByteString>();
-            data->resize(size.LowPart);
-
-            std::shared_ptr<Job> job = Job::make(this->shared_from_this(), data);
-
-            success = (bool)ReadFile(this->gzip_test_file, data->address(), data->size(), 0, job.get());
-            if (!success)
-            {
-                DWORD error = GetLastError();
-                if (error != ERROR_IO_PENDING)
-                {
-                    job->Internal = error;
-                    Service::globals->QueueJob(job);
-                }
-            }
-
-            return true;
-        }
-        catch (...) // $$$ remove use of exceptions
-        {
+            Basic::LogDebug("Service", "Globals::TestGzip CreateFileA failed", GetLastError());
             return false;
         }
+
+        HANDLE result = CreateIoCompletionPort(this->gzip_test_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
+        if (result == 0)
+        {
+            Basic::LogDebug("Service", "Globals::TestGzip CreateIoCompletionPort failed", GetLastError());
+            return false;
+        }
+
+        LARGE_INTEGER size;
+        bool success = (bool)GetFileSizeEx(this->gzip_test_file, &size);
+        if (!success)
+        {
+            Basic::LogDebug("Service", "Globals::TestGzip GetFileSizeEx failed", GetLastError());
+            return false;
+        }
+
+        if (size.HighPart > 0)
+        {
+            Basic::LogDebug("Service", "Globals::TestGzip GetFileSizeEx { size.HighPart > 0 }", 0);
+            return false;
+        }
+
+        std::shared_ptr<ByteString> data = std::make_shared<ByteString>();
+        data->resize(size.LowPart);
+
+        std::shared_ptr<Job> job = Job::make(this->shared_from_this(), data);
+
+        success = (bool)ReadFile(this->gzip_test_file, data->address(), data->size(), 0, job.get());
+        if (!success)
+        {
+            DWORD error = GetLastError();
+            if (error != ERROR_IO_PENDING)
+            {
+                job->Internal = error;
+                Service::globals->QueueJob(job);
+            }
+        }
+
+        return true;
     }
 
     bool Globals::ReadCertificate()

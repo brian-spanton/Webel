@@ -90,36 +90,52 @@ namespace Gzip
         byte length = 0;
         symbol_type symbol = 0;
 
-        void validate()
+        bool validate()
         {
-            validate(0, 0);
+            return validate(0, 0);
         }
 
-        void validate(byte test_length, uint16 test_code)
+        bool validate(byte test_length, uint16 test_code)
         {
             if (children[0])
             {
                 // not a leaf node, must have both children (this is always true except for one specific edge case with Deflate
                 if (!children[1])
-                    throw FatalError("Gzip", "HuffmanAlphabet::validate { !children[1] }");
+                {
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { !children[1] }");
+                    return false;
+                }
 
-                children[0]->validate(test_length + 1, (test_code << 1) | 0);
+                if (!children[0]->validate(test_length + 1, (test_code << 1) | 0))
+                    return false;
 
-                children[1]->validate(test_length + 1, (test_code << 1) | 1);
+                if (!children[1]->validate(test_length + 1, (test_code << 1) | 1))
+                    return false;
 
-                return;
+                return true;
             }
 
             if (children[1])
-                throw FatalError("Gzip", "HuffmanAlphabet::validate { children[1] }");
+            {
+                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { children[1] }");
+                return false;
+            }
 
             // it is a leaf node, validate the node values
 
             if (this->code != test_code)
-                throw FatalError("Gzip", "HuffmanAlphabet::validate { this->code != test_code }");
+            {
+                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { this->code != test_code }");
+                return false;
+            }
 
             if (this->length != test_length)
-                throw FatalError("Gzip", "HuffmanAlphabet::validate { this->length != test_length }");
+            {
+                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { this->length != test_length }");
+                return false;
+            }
+
+            return true;
         }
 
         bool is_leaf()
@@ -127,10 +143,13 @@ namespace Gzip
             return !children[0] && !children[1];
         }
 
-        static void make_alphabet(uint16 count, std::vector<byte>& lengths, std::shared_ptr<HuffmanAlphabet<symbol_type> >* alphabet)
+        static bool make_alphabet(uint16 count, std::vector<byte>& lengths, std::shared_ptr<HuffmanAlphabet<symbol_type> >* alphabet)
         {
             if (count > lengths.size())
-                throw FatalError("Gzip", "HuffmanAlphabet::make_alphabet { count > lengths.size() }");
+            {
+                Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { count > lengths.size() }");
+                return false;
+            }
 
             std::vector<uint16> length_count;
             length_count.reserve(16);
@@ -148,11 +167,17 @@ namespace Gzip
                 length_count[length]++;
 
                 if (length_count[length] > (1 << length))
-                    throw FatalError("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                {
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                    return false;
+                }
             }
 
             if (length_count.size() > 16)
-                throw FatalError("Gzip", "HuffmanAlphabet::make_alphabet { length_count.size() > 16 }");
+            {
+                Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { length_count.size() > 16 }");
+                return false;
+            }
 
             byte max_length = (byte)length_count.size() - 1;
 
@@ -167,7 +192,10 @@ namespace Gzip
                 first_code = (previous_last_code << 1);
 
                 if (first_code > ((1 << length) - 1))
-                    throw FatalError("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                {
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                    return false;
+                }
 
                 next_code[length] = first_code;
             }
@@ -197,15 +225,21 @@ namespace Gzip
                 }
 
                 if (current->length != 0)
-                    throw FatalError("Gzip", "HuffmanAlphabet::make_alphabet duplicate code");
+                {
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet duplicate code");
+                    return false;
+                }
 
                 current->symbol = (symbol_type)symbol;
                 current->code = code;
                 current->length = length;
             }
 
-            root->validate();
+            if (!root->validate())
+                return false;
+
             (*alphabet) = root;
+            return true;
         }
     };
 }
