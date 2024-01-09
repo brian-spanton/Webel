@@ -14,7 +14,7 @@ namespace Basic
     public:
         Globals();
 
-        void Initialize(std::shared_ptr<ILogger> error_handler, std::shared_ptr<ICompletionQueue> completion_queue);
+        void Initialize(std::shared_ptr<ILogger> logger, std::shared_ptr<ICompletionQueue> completion_queue);
         void InitializeSocketApi();
 
         byte utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
@@ -65,7 +65,7 @@ namespace Basic
 
         bool sanitizer_white_space[0x100] = { 0 };
 
-        std::shared_ptr<ILogger> error_handler;
+        std::shared_ptr<ILogger> logger;
         std::shared_ptr<ICompletionQueue> completion_queue;
 
         LPFN_CONNECTEX ConnectEx = 0;

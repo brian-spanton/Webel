@@ -73,7 +73,6 @@ namespace Service
 
         std::shared_ptr<Basic::Console> console;
         std::shared_ptr<Basic::FileLog> file_log;
-        std::shared_ptr<Basic::MemoryLog> memory_log;
         std::shared_ptr<Basic::TailLog> tail_log;
         std::shared_ptr<Basic::ConsoleLog> console_log;
         std::shared_ptr<Basic::DebugLog> debug_log;

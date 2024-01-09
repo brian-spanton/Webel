@@ -67,7 +67,6 @@ namespace Service
 
         this->console_log = std::make_shared<Basic::ConsoleLog>();
         this->debug_log = std::make_shared<Basic::DebugLog>();
-        this->memory_log = std::make_shared<Basic::MemoryLog>();
         this->tail_log = std::make_shared<Basic::TailLog>();
     }
 
@@ -475,13 +474,9 @@ namespace Service
 
                 auto count_stream = std::make_shared<CountStream<byte> >();
 
-                //auto console_decoder = std::make_shared<SingleByteDecoder>(Basic::globals->ascii_index, Service::globals->console.get());
-
                 auto splitter = std::make_shared<SplitStream<byte> >();
                 splitter->outputs.push_back(file_stream);
                 splitter->outputs.push_back(count_stream);
-                //splitter->outputs.push_back(console_decoder);
-                //splitter->outputs.push_back(this->debug_log);
 
                 auto gzip = std::make_shared<Gzip::FileFormat>(splitter);
 
@@ -723,7 +718,6 @@ namespace Service
             log_stream->logs.push_back(this->console_log);
             log_stream->logs.push_back(this->debug_log);
             log_stream->logs.push_back(this->file_log);
-            log_stream->logs.push_back(this->memory_log);
             log_stream->logs.push_back(this->tail_log);
 
             debug_stream = log_stream;
