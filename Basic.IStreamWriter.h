@@ -7,15 +7,8 @@
 namespace Basic
 {
     template <typename element_type>
-    __interface IStreamWriter
+    __interface IStreamWriter // $$$ rename to IRenderable
     {
-        void write_to_stream(IStream<element_type>* stream) const;
-    };
-
-    template <typename element_type>
-    __interface IVector
-    {
-        element_type* address() const;
-        uint32 size() const;
+        void write_to_stream(IStream<element_type>* stream) const; // $$$ rename to render_to
     };
 }

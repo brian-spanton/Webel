@@ -180,8 +180,14 @@ namespace Web
         Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
         request_bytes.write_to_stream(this->transport.get());
 
-        render_request_line(this->planned_request.get(), &Basic::globals->DebugWriter()->decoder);
-        Basic::globals->DebugWriter()->WriteLine();
+        // $$$ just because of TextWriter.  don't like that guy, can't we make it more intuitive?
+        {
+		    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+            TextWriter writer(&entry->unicode_message);
+            writer.write_literal("Requeset sent: ");
+            this->planned_request->render_request_line(&entry->unicode_message);
+		    Basic::globals->add_entry(entry);
+        }
     }
 
     void Client::QueueJob()
@@ -257,10 +263,12 @@ namespace Web
                         bool success = location_url->Parse(location_string.get(), this->transaction->request->resource.get());
                         if (success)
                         {
-                            this->transaction->request->resource->write_to_stream(Basic::globals->LogStream(), 0, 0);
-                            Basic::globals->DebugWriter()->WriteFormat<24>(" redirected with %d to ", code);
-                            location_url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-                            Basic::globals->DebugWriter()->WriteLine();
+			                std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+                            this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
+                            TextWriter writer(&entry->unicode_message);
+                            writer.WriteFormat<0x40>(" redirected with %d to ", code);
+                            location_url->write_to_stream(&entry->unicode_message, 0, 0);
+			                Basic::globals->add_entry(entry);
 
                             Redirect(location_url);
                         }
@@ -275,12 +283,11 @@ namespace Web
                 // can choose and set a body stream
                 if (this->planned_request.get() == 0)
                 {
-                    std::shared_ptr<Uri> url;
-                    get_url(&url);
-
-                    url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-                    Basic::globals->DebugWriter()->WriteFormat<0x40>(" returned %d", this->transaction->response->code);
-                    Basic::globals->DebugWriter()->WriteLine();
+			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+                    this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
+                    TextWriter writer(&entry->unicode_message);
+                    writer.WriteFormat<0x40>(" returned %d", this->transaction->response->code);
+			        Basic::globals->add_entry(entry);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)
@@ -439,9 +446,11 @@ namespace Web
                 {
                     UnicodeStringRef cookie_value = it->second;
 
-                    Basic::globals->DebugWriter()->write_literal("Cookie received: ");
-                    cookie_value->write_to_stream(Basic::globals->LogStream());
-                    Basic::globals->DebugWriter()->WriteLine();
+			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+                    TextWriter writer(&entry->unicode_message);
+                    writer.write_literal("Cookie received: ");
+                    cookie_value->write_to_stream(&entry->unicode_message);
+			        Basic::globals->add_entry(entry);
 
                     // $ conform to RFC6265 section 5.3 (storage model)
 

@@ -86,6 +86,13 @@ namespace Basic
     }
 
     template <typename element_type>
+    __interface IVector // $ make it's own file
+    {
+        element_type* address() const;
+        uint32 size() const;
+    };
+
+    template <typename element_type>
     class String : public std::basic_string<element_type>, public IStream<element_type>, public IStreamWriter<element_type>, public IVector<element_type>
     {
     public:
@@ -227,10 +234,12 @@ namespace Basic
     typedef String<Codepoint> UnicodeString;
     typedef std::shared_ptr<UnicodeString> UnicodeStringRef;
    
+    void ascii_encode(UnicodeString* value, std::string* output);
     void ascii_encode(UnicodeString* value, IStream<byte>* bytes);
     void ascii_decode(ByteString* bytes, UnicodeString* value);
     void utf_8_encode(UnicodeString* value, IStream<byte>* bytes);
     void utf_8_decode(ByteString* bytes, UnicodeString* value);
+    void utf_16_encode(UnicodeString* value, std::wstring* output);
 
     template <typename string_type, bool case_sensitive>
     bool equals(string_type* left_value, string_type* right_value)
@@ -413,6 +422,24 @@ namespace Basic
                 insert(value_type(name, value));
             else
                 it->second = value;
+        }
+    };
+
+    template <class element_type>
+    class StdStringStream : public ArrayStream<element_type>
+    {
+    private:
+        std::basic_string<element_type>* destination;
+
+    public:
+        StdStringStream(std::basic_string<element_type>* destination) :
+            destination(destination)
+        {
+        }
+
+        virtual void IStream<element_type>::write_elements(const element_type* elements, uint32 received)
+        {
+            this->destination->insert(this->destination->end(), elements, elements + received);
         }
     };
 }

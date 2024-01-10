@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include "Basic.LogEntry.h"
+
 namespace Basic
 {
     __interface ILog
     {
-        void write_entry(UnicodeStringRef entry);
+        void add_entry(std::shared_ptr<LogEntry> entry);
     };
 }

@@ -21,7 +21,7 @@ namespace Basic
 
         void Initialize(const char* name);
 
-        virtual void ILog::write_entry(UnicodeStringRef entry);
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
         void close_file();
 
         virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);

@@ -24,6 +24,7 @@ namespace Json
             string_state,
             escape_state,
             character_code_state,
+            utf16_surrogate_state,
             number_state,
             fraction_state,
             exponent_state,
@@ -46,6 +47,8 @@ namespace Json
         uint64 whole = 0;
         uint64 fraction = 0;
         uint64 exponent = 0;
+        bool utf16_surrogate = false;
+        Codepoint utf16_lead_surrogate = 0;
 
         void Emit(std::shared_ptr<Token> token);
         void handle_error(const char* error);

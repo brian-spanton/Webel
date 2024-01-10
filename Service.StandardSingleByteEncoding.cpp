@@ -38,8 +38,10 @@ namespace Service
         {
             std::shared_ptr<Uri> url;
             this->client->get_url(&url);
-            url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-            Basic::globals->DebugWriter()->WriteLine();
+
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Service");
+			url->write_to_stream(&entry->unicode_message, 0, 0);
+			Basic::globals->add_entry(entry);
 
             switch_to_state(State::connection_lost_error);
             return ProcessResult::process_result_ready;

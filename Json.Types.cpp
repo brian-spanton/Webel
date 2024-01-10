@@ -167,7 +167,7 @@ namespace Json
         TextWriter writer(stream);
 
         // $ handle exponents and fractions
-        writer.WriteFormat<64>("%d", (uint64)this->value);
+        writer.WriteFormat<0x40>("%d", (uint64)this->value);
     }
 
     void String::write_to_stream(Basic::IStream<Codepoint>* stream) const

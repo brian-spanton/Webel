@@ -9,6 +9,6 @@ namespace Basic
     class ConsoleLog : public ILog
     {
     public:
-        virtual void ILog::write_entry(UnicodeStringRef entry);
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
     };
 }

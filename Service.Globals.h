@@ -4,7 +4,6 @@
 
 #include <Windows.h>
 #include "Basic.ICompleter.h"
-#include "Basic.LogStream.h"
 #include "Basic.ListenSocket.h"
 #include "Basic.Cng.h"
 #include "Basic.Frame.h"
@@ -27,7 +26,7 @@ namespace Service
 {
     using namespace Basic;
 
-    class Globals : public Frame, public ICompleter, public ILogger, public ICompletionQueue, public Tls::ICertificate, public std::enable_shared_from_this<Globals>
+    class Globals : public Frame, public ICompleter, public ILog, public ICompletionQueue, public Tls::ICertificate, public std::enable_shared_from_this<Globals>
     {
     private:
         enum State
@@ -46,6 +45,9 @@ namespace Service
         };
 
         typedef std::vector<HANDLE> ThreadList;
+        typedef std::list<std::weak_ptr<ILog> > LogList;
+
+        LogList logs;
 
         HANDLE queue;
         HANDLE stopEvent;
@@ -140,9 +142,7 @@ namespace Service
             strcat_s(value, name);
         }
 
-        virtual void ILogger::Log(LogLevel level, const char* component, const char* context, uint32 code);
-        virtual Basic::IStream<Codepoint>* ILogger::LogStream();
-        virtual Basic::TextWriter* ILogger::DebugWriter();
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
 
         virtual void ICompletionQueue::BindToCompletionQueue(HANDLE handle);
         virtual void ICompletionQueue::QueueJob(std::shared_ptr<Job> job);

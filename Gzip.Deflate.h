@@ -56,7 +56,7 @@ namespace Gzip
         };
 
         std::shared_ptr<IStream<byte> > output_stream;
-        std::shared_ptr<String<byte> > look_back;
+        std::shared_ptr<ByteString> look_back;
 
         uint32 buffered_bits = 0;
         byte buffered_bits_length = 0;

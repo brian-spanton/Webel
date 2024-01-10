@@ -43,7 +43,7 @@ namespace Ftp
         case State::pending_connection_state:
             if (event->get_type() == Basic::EventType::can_send_bytes_event)
             {
-                Basic::globals->DebugWriter()->WriteLine("accepted");
+                Basic::LogDebug("Ftp", "accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)

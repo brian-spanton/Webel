@@ -34,8 +34,11 @@ namespace Scrape
 			std::shared_ptr<Uri> url;
 			this->client->get_url(&url);
 
-			url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-			Basic::globals->DebugWriter()->WriteLine(" did not return 200");
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape");
+			TextWriter writer(&entry->unicode_message);
+			url->write_to_stream(&entry->unicode_message, 0, 0);
+			writer.write_literal(" did not return 200");
+			Basic::globals->add_entry(entry);
 
 			return false;
 		}

@@ -10,14 +10,13 @@ namespace Basic
     class TailLog : public ILog, public IStreamWriter<Codepoint>
     {
     private:
-        std::shared_ptr<UnicodeString> tail[0x100];
+        std::shared_ptr<LogEntry> tail[0x100];
         uint32 bookmark;
 
     public:
         TailLog();
 
-        virtual void ILog::write_entry(UnicodeStringRef entry);
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
         virtual void IStreamWriter<Codepoint>::write_to_stream(IStream<Codepoint>* stream) const;
-        void WriteTo(ILog* log);
     };
 }

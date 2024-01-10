@@ -7,24 +7,28 @@
 
 namespace Basic
 {
-    FatalError::FatalError(const char* component, const char* context)
+    FatalError::FatalError(const char* component, const char* message)
     {
-        Basic::globals->Log(LogLevel::Critical, component, context, 0);
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, 0);
+        Basic::globals->add_entry(entry);
     }
 
-    FatalError::FatalError(const char* component, const char* context, uint32 code)
+    FatalError::FatalError(const char* component, const char* message, uint32 code)
     {
-        Basic::globals->Log(LogLevel::Critical, component, context, code);
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, code);
+        Basic::globals->add_entry(entry);
     }
 
-    void LogDebug(const char* component, const char* context)
+    void LogDebug(const char* component, const char* message)
     {
-        Basic::globals->Log(LogLevel::Debug, component, context, 0);
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, 0);
+        Basic::globals->add_entry(entry);
     }
 
-    void LogDebug(const char* component, const char* context, uint32 code)
+    void LogDebug(const char* component, const char* message, uint32 code)
     {
-        Basic::globals->Log(LogLevel::Debug, component, context, code);
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, code);
+        Basic::globals->add_entry(entry);
     }
 
     IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :

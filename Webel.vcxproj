@@ -97,13 +97,14 @@
     <ClInclude Include="Basic.ConsoleLog.h" />
     <ClInclude Include="Basic.DebugLog.h" />
     <ClInclude Include="Basic.FileStream.h" />
+    <ClInclude Include="Basic.LogEntry.h" />
     <ClInclude Include="Basic.NullTerminatedAsciiStringFrame.h" />
     <ClInclude Include="Basic.NumberFrame.h" />
+    <ClInclude Include="Basic.Utf16Encoder.h" />
     <ClInclude Include="Gzip.Deflate.h" />
     <ClInclude Include="Gzip.FileFormat.h" />
     <ClInclude Include="Gzip.MemberFrame.h" />
     <ClInclude Include="Basic.ILog.h" />
-    <ClInclude Include="Basic.LogStream.h" />
     <ClInclude Include="Basic.ElementSource.h" />
     <ClInclude Include="Basic.IStreamWriter.h" />
     <ClInclude Include="Basic.MemoryLog.h" />
@@ -136,7 +137,6 @@
     <ClInclude Include="Basic.IDecoder.h" />
     <ClInclude Include="Basic.IEncoder.h" />
     <ClInclude Include="Basic.IEncoderFactory.h" />
-    <ClInclude Include="Basic.ILogger.h" />
     <ClInclude Include="Basic.IEvent.h" />
     <ClInclude Include="Basic.INumberStream.h" />
     <ClInclude Include="Basic.ISingleByteEncodingIndex.h" />
@@ -265,11 +265,12 @@
     <ClCompile Include="Basic.ConsoleLog.cpp" />
     <ClCompile Include="Basic.DebugLog.cpp" />
     <ClCompile Include="Basic.FileStream.cpp" />
+    <ClCompile Include="Basic.LogEntry.cpp" />
     <ClCompile Include="Basic.NullTerminatedAsciiStringFrame.cpp" />
+    <ClCompile Include="Basic.Utf16Encoder.cpp" />
     <ClCompile Include="Gzip.Deflate.cpp" />
     <ClCompile Include="Gzip.FileFormat.cpp" />
     <ClCompile Include="Gzip.MemberFrame.cpp" />
-    <ClCompile Include="Basic.LogStream.cpp" />
     <ClCompile Include="Basic.Event.cpp" />
     <ClCompile Include="Basic.Frame.cpp" />
     <ClCompile Include="Basic.ProcessStream.cpp" />

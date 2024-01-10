@@ -12,8 +12,8 @@ namespace Basic
 {
     struct FatalError
     {
-        FatalError(const char* component, const char* context);
-        FatalError(const char* component, const char* context, uint32 code);
+        FatalError(const char* component, const char* message);
+        FatalError(const char* component, const char* message, uint32 code);
     };
 
     struct Path : std::vector<UnicodeStringRef>
@@ -81,8 +81,8 @@ namespace Basic
         }
     };
 
-    void LogDebug(const char* component, const char* context);
-    void LogDebug(const char* component, const char* context, uint32 code);
+    void LogDebug(const char* component, const char* message);
+    void LogDebug(const char* component, const char* message, uint32 code);
 
     typedef StringMapCaseInsensitive<std::shared_ptr<IEncoderFactory> > EncoderMap;
     typedef StringMapCaseInsensitive<std::shared_ptr<IDecoderFactory> > DecoderMap;

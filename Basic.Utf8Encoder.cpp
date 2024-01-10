@@ -59,16 +59,16 @@ namespace Basic
             return;
         }
 
+        if (codepoint >= 0x0000 && codepoint <= 0x007F)
+        {
+            Emit((byte)codepoint);
+            return;
+        }
+
         if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
         {
             EncoderError(codepoint);
             Emit(this->error_replacement_byte);
-            return;
-        }
-
-        if (codepoint >= 0x0000 && codepoint <= 0x007F)
-        {
-            Emit((byte)codepoint);
             return;
         }
 

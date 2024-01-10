@@ -9,15 +9,13 @@ namespace Basic
     class MemoryLog : public ILog
     {
     private:
-        typedef std::list<UnicodeStringRef> EntryList;
+        typedef std::list<std::shared_ptr<LogEntry> > EntryList;
 
         EntryList entries;
 
     public:
         MemoryLog();
 
-        virtual void ILog::write_entry(UnicodeStringRef entry);
-        void WriteTo(IStream<Codepoint>* stream);
-        void WriteTo(ILog* log);
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
     };
 }

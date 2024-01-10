@@ -12,27 +12,31 @@ namespace Http
 
     struct Request
     {
-        UnicodeStringRef method;
+        UnicodeStringRef method; // $$ unicode?!
         std::shared_ptr<Uri> resource;
-        UnicodeStringRef protocol;
+        UnicodeStringRef protocol; // $$ unicode?!
         std::shared_ptr<NameValueCollection> headers;
         std::shared_ptr<IStreamWriter<byte> > request_body;
         bool is_iframe = false;
 
         void Initialize();
         void Initialize(Request* request);
+
+        void render_request_line(IStream<Codepoint>* stream);
+        void render_request_line(IStream<byte>* stream);
     };
 
     struct Response
     {
-        UnicodeStringRef protocol;
+        UnicodeStringRef protocol; // $$ unicode?!
         uint16 code = 0;
-        UnicodeStringRef reason;
+        UnicodeStringRef reason; // $$ unicode?!
         std::shared_ptr<NameValueCollection> headers;
         std::shared_ptr<IStreamWriter<byte> > response_body;
 
         void Initialize();
 
+        void render_response_line(IStream<Codepoint>* stream);
         void render_response_line(IStream<byte>* stream);
     };
 

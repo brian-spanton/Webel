@@ -15,28 +15,12 @@ namespace Basic
     {
     }
 
-    void Globals::Log(LogLevel level, const char* component, const char* context, uint32 code)
+    void Globals::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        if (this->logger.get() == 0)
+        if (this->log.get() == 0)
             return;
 
-        this->logger->Log(level, component, context, code);
-    }
-
-    Basic::IStream<Codepoint>* Globals::LogStream()
-    {
-        if (this->logger.get() == 0)
-            throw FatalError("Basic", "Globals::logger { this->logger.get() == 0 }");
-
-        return this->logger->LogStream();
-    }
-
-    Basic::TextWriter* Globals::DebugWriter()
-    {
-        if (this->logger.get() == 0)
-            throw FatalError("Basic", "Globals::DebugWriter { this->logger.get() == 0 }");
-
-        return this->logger->DebugWriter();
+        this->log->add_entry(entry);
     }
 
     void Globals::GetEncoder(std::shared_ptr<UnicodeString> encoding, std::shared_ptr<IEncoder>* encoder)
@@ -63,9 +47,9 @@ namespace Basic
         it->second->CreateDecoder(decoder);
     }
 
-    void Globals::Initialize(std::shared_ptr<ILogger> logger, std::shared_ptr<ICompletionQueue> completion_queue)
+    void Globals::Initialize(std::shared_ptr<ILog> log, std::shared_ptr<ICompletionQueue> completion_queue)
     {
-        this->logger = logger;
+        this->log = log;
         this->completion_queue = completion_queue;
 
         this->ascii_index = std::make_shared<SingleByteEncodingIndex>();

@@ -6,10 +6,9 @@
 
 namespace Basic
 {
-    class DebugLog : public ILog, public ArrayStream<byte>
+    class DebugLog : public ILog
     {
     public:
-        virtual void ILog::write_entry(UnicodeStringRef entry);
-        virtual void IStream<byte>::write_elements(const byte* elements, uint32 count);
+        virtual void ILog::add_entry(std::shared_ptr<LogEntry> entry);
     };
 }

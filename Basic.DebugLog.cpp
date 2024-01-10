@@ -6,17 +6,11 @@
 
 namespace Basic
 {
-    void DebugLog::write_entry(UnicodeStringRef entry)
+    void DebugLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        ByteString bytes;
-        ascii_encode(entry.get(), &bytes);
-        OutputDebugStringA((char*)bytes.c_str());
-    }
-
-    void DebugLog::write_elements(const byte* elements, uint32 count)
-    {
-        String<byte> bytes;
-        bytes.insert(0, elements, count);
-        OutputDebugStringA((char*)bytes.c_str());
+        std::wstring message;
+        entry->render_utf16(&message);
+        message.push_back(L'\n');
+        OutputDebugStringW(message.c_str());
     }
 }

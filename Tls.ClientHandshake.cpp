@@ -374,7 +374,7 @@ namespace Tls
                     }
                 }
 
-                // $$ log level?
+                // $$$ log level?
                 //Basic::globals->DebugWriter()->WriteFormat<0x100>("TLS client handshake successfully negotiated 0x%04X", this->session->version);
                 //Basic::globals->DebugWriter()->WriteLine();
 

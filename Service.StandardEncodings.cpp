@@ -230,7 +230,9 @@ namespace Service
                     if (found_ascii == false)
                         throw FatalError("Service", "StandardEncodings::process_event didn't find us-ascii encoding");
 
-                    Service::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d encodings\n", Basic::globals->decoder_map.size());
+                    char message[0x100];
+                    sprintf_s(message, "Recognized %d encodings", Basic::globals->decoder_map.size());
+                    Basic::LogDebug("Service", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)

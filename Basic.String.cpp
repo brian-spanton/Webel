@@ -7,6 +7,7 @@
 #include "Basic.SingleByteEncodingIndex.h"
 #include "Basic.Utf8Encoder.h"
 #include "Basic.Utf8Decoder.h"
+#include "Basic.Utf16Encoder.h"
 #include "Basic.Globals.h"
 
 namespace Basic
@@ -31,6 +32,12 @@ namespace Basic
     void initialize_ascii(ByteString* variable, const char* value, int count)
     {
         variable->write_elements((const byte*)value, count);
+    }
+
+    void ascii_encode(UnicodeString* value, std::string* output)
+    {
+        AsciiEncoder encoder(output);
+        encoder.write_elements(value->address(), value->size());
     }
 
     void ascii_encode(UnicodeString* value, IStream<byte>* stream)
@@ -64,6 +71,12 @@ namespace Basic
         Utf8Decoder decoder;
         decoder.set_destination(value);
         decoder.write_elements(bytes->address(), bytes->size());
+    }
+
+    void utf_16_encode(UnicodeString* value, std::wstring* output)
+    {
+        Utf16Encoder encoder(output);
+        encoder.write_elements(value->address(), value->size());
     }
 
     std::string String<byte>::as_std_string()

@@ -48,8 +48,6 @@ namespace Http
         RequestFrame(std::shared_ptr<Request> request);
     };
 
-    void render_request_line(const Request* value, IStream<byte>* stream);
-
     template <>
     struct __declspec(novtable) serialize<Request>
     {

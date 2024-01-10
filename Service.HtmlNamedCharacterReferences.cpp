@@ -119,7 +119,9 @@ namespace Service
                         Html::globals->named_character_references_table->emplace(std::move(value));
                     }
 
-                    Basic::globals->DebugWriter()->WriteFormat<0x100>("Recognized %d HTML named character references\n", Html::globals->named_character_references_table->size());
+                    char message[0x100];
+                    sprintf_s(message, "Recognized %d HTML named character references", Html::globals->named_character_references_table->size());
+                    Basic::LogDebug("Service", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion.get() != 0)

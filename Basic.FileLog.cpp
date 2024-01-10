@@ -58,14 +58,11 @@ namespace Basic
         }
     }
 
-    void FileLog::write_entry(UnicodeStringRef entry)
+    void FileLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
         std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
-
-        // the log file is utf-8 encoded; pre-allocate space so the encoding 
-        // doesn't make a lot of incrementally increasing allocations
-        bytes->reserve(entry->size() * 5 / 4);
-        utf_8_encode(entry.get(), bytes.get());
+        entry->render_utf8(bytes.get());
+        bytes->append(reinterpret_cast<byte*>("\r\n"), 2);
 
         std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
         job->Offset = this->position;

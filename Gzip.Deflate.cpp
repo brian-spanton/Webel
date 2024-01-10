@@ -109,7 +109,7 @@ namespace Gzip
 
         auto splitter = std::make_shared<SplitStream<byte> >();
 
-        this->look_back = std::make_shared<String<byte> >();
+        this->look_back = std::make_shared<ByteString>();
         this->look_back->reserve(0x10000);
         splitter->outputs.push_back(this->look_back);
 

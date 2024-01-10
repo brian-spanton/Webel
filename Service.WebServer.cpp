@@ -4,7 +4,6 @@
 #include "Service.WebServer.h"
 #include "Basic.ServerSocket.h"
 #include "Basic.ProcessStream.h"
-#include "Basic.LogStream.h"
 #include "Basic.CountStream.h"
 #include "Http.Globals.h"
 #include "Http.HeadersFrame.h"

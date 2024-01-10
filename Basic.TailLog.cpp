@@ -11,7 +11,7 @@ namespace Basic
     {
     }
 
-    void TailLog::write_entry(UnicodeStringRef entry)
+    void TailLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
         this->tail[this->bookmark] = entry;
 
@@ -28,20 +28,7 @@ namespace Basic
             if (this->tail[next].get() == 0)
                 continue;
 
-            this->tail[next]->write_to_stream(stream);
-        }
-    }
-
-    void TailLog::WriteTo(ILog* log)
-    {
-        for (uint32 i = 0; i < _countof(this->tail); i++)
-        {
-            uint32 next = (this->bookmark + i) % _countof(this->tail);
-
-            if (this->tail[next].get() == 0)
-                continue;
-
-            log->write_entry(this->tail[next]);
+            this->tail[next]->render_utf32(stream);
         }
     }
 }

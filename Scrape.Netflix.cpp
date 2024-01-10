@@ -37,8 +37,11 @@ namespace Scrape
 			std::shared_ptr<Uri> url;
 			this->client->get_url(&url);
 
-			url->write_to_stream(Basic::globals->LogStream(), 0, 0);
-			Basic::globals->DebugWriter()->WriteLine(" did not return 200");
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape");
+			url->write_to_stream(&entry->unicode_message, 0, 0);
+			TextWriter writer(&entry->unicode_message);
+			writer.write_literal(" did not return 200");
+			Basic::globals->add_entry(entry);
 
 			return false;
 		}
@@ -301,8 +304,9 @@ namespace Scrape
 
 	void Netflix::ScrapeMovies(std::shared_ptr<Basic::Uri>* next_page, uint32* next_row)
 	{
-		Basic::globals->DebugWriter()->WriteFormat<0x100>("Row %d+", this->current_row);
-		Basic::globals->DebugWriter()->WriteLine();
+		char message[0x100];
+		sprintf_s(message, "Row %d+", this->current_row);
+		Basic::LogDebug("Scrape", message);
 
 		for (uint32 i = 0; i < this->current_page->links.size(); i++)
 		{

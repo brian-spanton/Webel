@@ -29,7 +29,7 @@ namespace Basic
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
             this->remoteAddress.sin_port);
 
-        // $ find a way to correlate this id to all related log entries
+        // $$$ find a way to correlate this id to all related log entries
     }
 
     void ConnectedSocket::Received(ByteString* bytes)

@@ -129,7 +129,7 @@ namespace Http
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-                // $$ log level?
+                // $$$ log level?
                 //Basic::globals->DebugWriter()->write_literal("Response headers received: ");
                 //this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
                 //Basic::globals->DebugWriter()->WriteLine();
@@ -190,21 +190,20 @@ namespace Http
         this->decoded_content_stream = decoded_content_stream;
     }
 
+    void Response::render_response_line(IStream<Codepoint>* stream)
+    {
+        TextWriter writer(stream);
+
+        this->protocol->write_to_stream(stream);
+        writer.WriteFormat<0x10>(" %d ", this->code);
+        this->reason->write_to_stream(stream);
+    }
+
     void Response::render_response_line(IStream<byte>* stream)
     {
         SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        this->protocol->write_to_stream(&encoder);
-
-        UnicodeString code;
-        TextWriter writer(&code);
-        writer.WriteFormat<0x10>("%d", this->code);
-
-        stream->write_element(Http::globals->SP);
-        code.write_to_stream(&encoder);
-
-        stream->write_element(Http::globals->SP);
-        this->reason->write_to_stream(&encoder);
+        render_response_line(&encoder);
     }
 }

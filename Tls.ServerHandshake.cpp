@@ -393,8 +393,9 @@ namespace Tls
                     return ProcessResult::process_result_ready;
                 }
 
-                Basic::globals->DebugWriter()->WriteFormat<0x100>("TLS server handshake successfully negotiated 0x%04X", this->session->version);
-                Basic::globals->DebugWriter()->WriteLine();
+                char message[0x100];
+                sprintf_s(message, "TLS server handshake successfully negotiated 0x%04X", this->session->version);
+                Basic::LogDebug("Tls", message);
 
                 // $ handle renegotiates, etc.
                 switch_to_state(State::done_state);
@@ -459,7 +460,8 @@ namespace Tls
 
                 if (pre_master_secret.client_version != this->clientHello.client_version)
                 {
-                    Basic::globals->Log(LogLevel::Warning, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
+			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
+			        Basic::globals->add_entry(entry);
                     return false;
                 }
             }

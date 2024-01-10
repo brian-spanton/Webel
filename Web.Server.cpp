@@ -64,7 +64,7 @@ namespace Web
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::globals->DebugWriter()->WriteLine("accepted");
+                Basic::LogDebug("Web", "Server accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)
@@ -96,9 +96,9 @@ namespace Web
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-                Basic::globals->DebugWriter()->write_literal("Request received: ");
-                render_request_line(this->request.get(),  &Basic::globals->DebugWriter()->decoder);
-                Basic::globals->DebugWriter()->WriteLine();
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Request received: ", 0);
+                this->request->render_request_line(&entry->unicode_message);
+			    Basic::globals->add_entry(entry);
 
                 this->response = std::make_shared<Response>();
                 this->response->Initialize();
@@ -126,9 +126,9 @@ namespace Web
 
                 switch_to_state(State::response_done_state);
 
-                Basic::globals->DebugWriter()->write_literal("Response sent: ");
-                this->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
-                Basic::globals->DebugWriter()->WriteLine();
+			    entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Response sent: ", 0);
+                this->response->render_response_line(&entry->unicode_message);
+			    Basic::globals->add_entry(entry);
             }
             break;
 

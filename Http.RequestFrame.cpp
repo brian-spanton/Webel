@@ -142,15 +142,21 @@ namespace Http
         return ProcessResult::process_result_ready;
     }
 
-    void render_request_line(const Request* value, IStream<byte>* stream)
+    void Request::render_request_line(IStream<Codepoint>* stream)
+    {
+        this->resource->write_to_stream(stream, true, false);
+
+        TextWriter text_writer(stream);
+        text_writer.write_literal(" method ");
+
+        this->method->write_to_stream(stream);
+    }
+
+    void Request::render_request_line(IStream<byte>* stream)
     {
         SingleByteEncoder encoder;
         encoder.Initialize(Basic::globals->ascii_index, stream);
 
-        value->resource->write_to_stream(&encoder, true, false);
-
-        TextWriter text_writer(&encoder);
-        text_writer.write_literal(" method ");
-        value->method->write_to_stream(&encoder);
+        this->render_request_line(&encoder);
     }
 }

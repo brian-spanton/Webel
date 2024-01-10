@@ -53,7 +53,7 @@ namespace Gzip
         byte SI1;
         byte SI2;
         uint16 LEN;
-        String<byte> data;
+        ByteString data;
     };
 
     struct MemberHeader

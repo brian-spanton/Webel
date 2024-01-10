@@ -9,6 +9,7 @@
 #include "Basic.String.h"
 #include "Basic.SingleByteEncoder.h"
 #include "Basic.SingleByteEncodingIndex.h"
+#include "Basic.Utf16Encoder.h"
 
 namespace Basic
 {
@@ -128,15 +129,12 @@ namespace Basic
         if (output == INVALID_HANDLE_VALUE)
             return;
 
-        // $$ switch to converting to UTF-16 and using WriteConsoleW
+        std::wstring utf16_elements;
 
-        ByteString ascii_elements;
-
-        SingleByteEncoder encoder;
-        encoder.Initialize(Basic::globals->ascii_index, &ascii_elements);
+        Basic::Utf16Encoder encoder(&utf16_elements);
         encoder.write_elements(elements, count);
 
-        BOOL success = WriteConsoleA(output, (char*)ascii_elements.c_str(), ascii_elements.size(), 0, 0);
+        BOOL success = WriteConsoleW(output, utf16_elements.c_str(), utf16_elements.length(), 0, 0);
         if (success == FALSE)
             throw FatalError("Basic", "Console::write_elements WriteConsoleA", GetLastError());
     }

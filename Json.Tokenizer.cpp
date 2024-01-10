@@ -300,6 +300,28 @@ namespace Json
                     this->hex_number_stream.reset(&this->whole);
                     switch_to_state(State::character_code_state);
                     break;
+
+                default:
+                    handle_error("invalid escape character");
+                    write_element(codepoint);
+                    return;
+                }
+            }
+            break;
+
+        case State::utf16_surrogate_state:
+            {
+                switch (codepoint)
+                {
+                case 'u':
+                    this->hex_number_stream.reset(&this->whole);
+                    switch_to_state(State::character_code_state);
+                    break;
+
+                default:
+                    handle_error("invalid utf16 surrogate (no low after high)");
+                    write_element(codepoint);
+                    return;
                 }
             }
             break;
@@ -312,19 +334,46 @@ namespace Json
                     if (this->hex_number_stream.get_digit_count() != 4)
                     {
                         handle_error("character code does not have 4 digits");
-                        write_element(codepoint);
-                        return;
+                    }
+                    else if (this->utf16_surrogate)
+                    {
+                        this->utf16_surrogate = false;
+
+                        Codepoint c16 = static_cast<Codepoint>(this->whole);
+                        if (c16 >= 0xDC00 && c16 <= 0xDFFF)
+                        {
+                            Codepoint c32 = 0x10000 + ((this->utf16_lead_surrogate - 0xD800) << 10) + (c16 - 0xDC00);
+                            this->string->push_back(c32);
+                            switch_to_state(State::string_state);
+                        }
+                        else
+                        {
+                            handle_error("low utf16 surrogate is invalid: !(c >= 0xDC00 && c <= 0xDFFF)");
+                        }
                     }
                     else
                     {
-                        // $ handle utf-16 surrogate pairs
-
-                        this->string->push_back((Codepoint)this->whole);
-
-                        switch_to_state(State::string_state);
-                        write_element(codepoint);
-                        return;
+                        Codepoint c16 = static_cast<Codepoint>(this->whole);
+                        if (c16 >= 0xD800 && c16 <= 0xDBFF)
+                        {
+                            this->utf16_surrogate = true;
+                            this->utf16_lead_surrogate = c16;
+                            switch_to_state(State::string_state);
+                        }
+                        else if (c16 >= 0xDC00 && c16 <= 0xDFFF)
+                        {
+                            handle_error("character code is invalid: c >= 0xDC00 && c <= 0xDFFF");
+                        }
+                        else
+                        {
+                            this->string->push_back(c16);
+                            switch_to_state(State::string_state);
+                        }
                     }
+
+                    // recurse with the codepoint that was after the hex digit(s)
+                    write_element(codepoint);
+                    return;
                 }
             }
             break;

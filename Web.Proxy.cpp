@@ -67,7 +67,7 @@ namespace Web
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::globals->DebugWriter()->WriteLine("accepted");
+                Basic::LogDebug("Web", "Proxy accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion.get() != 0)

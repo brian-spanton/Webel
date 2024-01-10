@@ -346,9 +346,6 @@
     <ClInclude Include="Tls.ServerHandshake.h">
       <Filter>Tls</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.ILogger.h">
-      <Filter>Basic</Filter>
-    </ClInclude>
     <ClInclude Include="Http.MediaTypeStream.h">
       <Filter>Http</Filter>
     </ClInclude>
@@ -417,9 +414,6 @@
     </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Project</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.LogStream.h">
-      <Filter>Basic</Filter>
     </ClInclude>
     <ClInclude Include="Basic.IStreamWriter.h">
       <Filter>Basic</Filter>
@@ -498,6 +492,12 @@
     </ClInclude>
     <ClInclude Include="Scrape.Types.h">
       <Filter>Scrape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.Utf16Encoder.h">
+      <Filter>Basic</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic.LogEntry.h">
+      <Filter>Basic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -846,9 +846,6 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Project</Filter>
     </ClCompile>
-    <ClCompile Include="Basic.LogStream.cpp">
-      <Filter>Basic</Filter>
-    </ClCompile>
     <ClCompile Include="Basic.Job.cpp">
       <Filter>Basic</Filter>
     </ClCompile>
@@ -908,6 +905,12 @@
     </ClCompile>
     <ClCompile Include="Scrape.Types.cpp">
       <Filter>Scrape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.Utf16Encoder.cpp">
+      <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic.LogEntry.cpp">
+      <Filter>Basic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
