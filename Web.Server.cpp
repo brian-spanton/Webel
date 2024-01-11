@@ -64,10 +64,10 @@ namespace Web
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::LogDebug("Web", "Server accepted");
+                Basic::LogInfo("Web", "Server accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion.get() != 0)
+                if (completion)
                 {
                     AcceptCompleteEvent event;
                     event.cookie = this->completion_cookie;
@@ -96,7 +96,8 @@ namespace Web
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Request received: ", 0);
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+                TextWriter(&entry->unicode_message).write_literal("Request received: ");
                 this->request->render_request_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
 
@@ -107,7 +108,7 @@ namespace Web
 
                 this->response->protocol = Http::globals->HTTP_1_1;
 
-                if (this->response->response_body.get() != 0)
+                if (this->response->response_body)
                 {
                     Basic::CountStream<byte> count;
 
@@ -126,7 +127,8 @@ namespace Web
 
                 switch_to_state(State::response_done_state);
 
-			    entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Response sent: ", 0);
+			    entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+                TextWriter(&entry->unicode_message).write_literal("Response sent: ");
                 this->response->render_response_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
             }

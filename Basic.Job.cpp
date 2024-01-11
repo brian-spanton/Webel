@@ -34,7 +34,7 @@ namespace Basic
     {
         std::shared_ptr<ICompleter> completer = this->completer.lock();
 
-        if (completer.get() != 0)
+        if (completer)
         {
             completer->complete(this->context, count, error);
         }

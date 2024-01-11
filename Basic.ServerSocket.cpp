@@ -33,7 +33,7 @@ namespace Basic
         InitializePeer((sockaddr_in*)&remoteAddress);
 
         std::shared_ptr<IProcess> protocol = this->protocol.lock();
-        if (protocol.get() == 0)
+        if (!protocol)
         {
             Disconnect(0);
             return;

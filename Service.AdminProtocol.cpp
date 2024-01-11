@@ -116,7 +116,7 @@ namespace Service
             if (cookie_event->cookie.get() != this->get_cookie.get())
                 throw FatalError("Service", "AdminProtocol::process_event { cookie_event->cookie.get() != this->get_cookie.get() }");
 
-            if (this->html_parser.get() != 0)
+            if (this->html_parser)
             {
                 this->current_page = std::make_shared<Web::Page>(this->html_parser->tree->document, this->client);
 
@@ -174,7 +174,7 @@ namespace Service
                         {
                             this->get_cookie = std::make_shared<ByteString>();
 
-                            if (this->current_page.get() != 0)
+                            if (this->current_page)
                                 this->client->http_cookies = this->current_page->http_cookies;
 
                             this->client->Get(url, 0, this->shared_from_this(), this->get_cookie);
@@ -264,7 +264,7 @@ namespace Service
                 }
                 else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_links.get()))
                 {
-                    if (this->current_page.get() != 0)
+                    if (this->current_page)
                     {
                         writer.WriteLine("Links <l>:");
 
@@ -274,7 +274,7 @@ namespace Service
                             this->current_page->links[i]->text->write_to_stream(this->peer.get());
                             writer.write_literal(" [");
 
-                            if (this->current_page->links[i]->url.get() != 0)
+                            if (this->current_page->links[i]->url)
                                 this->current_page->links[i]->url->write_to_stream(this->peer.get(), false, false);
 
                             writer.write_literal("]");
@@ -290,7 +290,7 @@ namespace Service
                 }
                 else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_forms.get()))
                 {
-                    if (this->current_page.get() != 0)
+                    if (this->current_page)
                     {
                         writer.WriteLine("Forms <f>:");
 
@@ -310,7 +310,7 @@ namespace Service
                 }
                 else if (this->command.size() >= 1 && this->command.size() <= 2 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_render_nodes.get()))
                 {
-                    if (this->current_page.get() != 0)
+                    if (this->current_page)
                     {
                         writer.WriteLine("Nodes:");
 
@@ -340,7 +340,7 @@ namespace Service
                 }
 				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_amazon.get()))
 				{
-					if (this->amazon_scrape->current_page.get() != 0)
+					if (this->amazon_scrape->current_page)
 					{
 						this->current_page = this->amazon_scrape->current_page;
 						writer.WriteLine("Amazon scrape peeked");
@@ -362,7 +362,7 @@ namespace Service
 				}
 				else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_netflix.get()))
 				{
-					if (this->netflix_scrape->current_page.get() != 0)
+					if (this->netflix_scrape->current_page)
 					{
 						this->current_page = this->netflix_scrape->current_page;
 						writer.WriteLine("Netflix scrape peeked");
@@ -412,13 +412,13 @@ namespace Service
     void AdminProtocol::write_to_human_with_context(Html::Node* node, IStream<Codepoint>* stream, bool verbose)
     {
         std::shared_ptr<Html::Node> parent = node->parent.lock();
-        if (parent.get() != 0)
+        if (parent)
             write_to_human_with_context(parent.get(), stream, verbose);
 
         TextWriter writer(stream);
         writer.write_literal("/");
 
-        if (parent.get() != 0)
+        if (parent)
         {
             bool found = false;
 

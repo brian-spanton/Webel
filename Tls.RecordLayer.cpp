@@ -173,7 +173,7 @@ namespace Tls
     void RecordLayer::ConnectApplication()
     {
         std::shared_ptr<IProcess> protocol = this->application_stream.lock();
-        if (protocol.get() == 0)
+        if (!protocol)
             throw State::application_lost_error_1;
 
         this->application_connected = true;
@@ -212,7 +212,7 @@ namespace Tls
     void RecordLayer::DisconnectApplication()
     {
         std::shared_ptr<IProcess> protocol = this->application_stream.lock();
-        if (protocol.get() == 0)
+        if (!protocol)
              return;
 
         ElementStreamEndingEvent application_event;
@@ -364,7 +364,7 @@ namespace Tls
                     throw State::unexpected_application_data_error;
 
                 std::shared_ptr<IProcess> protocol = this->application_stream.lock();
-                if (protocol.get() == 0)
+                if (!protocol)
                     throw State::application_lost_error_2;
 
                 // RFC5246 section 6.2.1
@@ -723,7 +723,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::LogDebug("Tls", "RecordLayer::DecryptStream BCryptDecrypt failed", error);
+                    Basic::LogError("Tls", "RecordLayer::DecryptStream BCryptDecrypt failed", error);
                     throw State::decrypt_stream_decryption_failed;
                 }
 
@@ -805,7 +805,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::LogDebug("Tls", "RecordLayer::DecryptBlock BCryptDecrypt failed", error);
+                    Basic::LogError("Tls", "RecordLayer::DecryptBlock BCryptDecrypt failed", error);
                     throw State::decrypt_block_decryption_failed;
                 }
 

@@ -193,7 +193,7 @@ namespace Gzip
 
                 if (first_code > ((1 << length) - 1))
                 {
-                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > ((1 << length) - 1) }");
                     return false;
                 }
 

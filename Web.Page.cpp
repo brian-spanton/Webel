@@ -58,7 +58,7 @@ namespace Web
             {
                 prune = false;
             }
-            else if (element->form_owner.lock().get() != 0)
+            else if (element->form_owner.lock())
             {
                 prune = false;
             }

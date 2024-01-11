@@ -37,7 +37,7 @@ namespace Json
 
     void ArrayFrame::write_element(std::shared_ptr<Token> token)
     {
-        if (this->scripted_tokens.get() != 0)
+        if (this->scripted_tokens)
         {
             this->scripted_tokens->push_back(token);
         }
@@ -109,7 +109,7 @@ namespace Json
                     return;
                 }
 
-                if (this->scripted_tokens.get() != 0)
+                if (this->scripted_tokens)
                 {
                     this->value->elements.push_back(this->element);
 

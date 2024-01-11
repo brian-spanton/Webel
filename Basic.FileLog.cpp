@@ -60,6 +60,9 @@ namespace Basic
 
     void FileLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
+        if (entry->level < LogLevel::Info)
+            return;
+
         std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
         entry->render_utf8(bytes.get());
         bytes->append(reinterpret_cast<byte*>("\r\n"), 2);
@@ -94,7 +97,7 @@ namespace Basic
         {
             close_file();
 
-            Basic::LogDebug("Basic", "FileLog::complete { error != ERROR_SUCCESS }", error);
+            Basic::LogError("Basic", "FileLog::complete", error);
         }
     }
 }

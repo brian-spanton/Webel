@@ -43,10 +43,10 @@ namespace Ftp
         case State::pending_connection_state:
             if (event->get_type() == Basic::EventType::can_send_bytes_event)
             {
-                Basic::LogDebug("Ftp", "accepted");
+                Basic::LogInfo("Ftp", "accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion.get() != 0)
+                if (completion)
                 {
                     Http::AcceptCompleteEvent event;
                     event.cookie = this->completion_cookie;

@@ -129,13 +129,13 @@ namespace Http
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-                // $$$ log level?
-                //Basic::globals->DebugWriter()->write_literal("Response headers received: ");
-                //this->transaction->response->render_response_line(&Basic::globals->DebugWriter()->decoder);
-                //Basic::globals->DebugWriter()->WriteLine();
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Http");
+			    TextWriter(&entry->unicode_message).write_literal("Response headers received: ");
+                this->transaction->response->render_response_line(&entry->unicode_message);
+			    Basic::globals->add_entry(entry);
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion.get() != 0)
+                if (completion)
                 {
                     Http::ResponseHeadersEvent event;
                     event.cookie = this->completion_cookie;

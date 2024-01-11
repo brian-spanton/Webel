@@ -106,7 +106,7 @@ namespace Web
     void Client::Completion()
     {
         std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion.get() != 0)
+        if (completion)
         {
             ResponseCompleteEvent event;
             event.cookie = this->completion_cookie;
@@ -126,7 +126,7 @@ namespace Web
 
         this->planned_request->protocol = Http::globals->HTTP_1_1;
 
-        if (this->planned_request->request_body.get() == 0)
+        if (!this->planned_request->request_body)
         {
             this->planned_request->headers->set_base_10(Http::globals->header_content_length, 0);
             this->planned_request->headers->erase(Http::globals->header_content_type);
@@ -154,7 +154,7 @@ namespace Web
         {
             if ((*it)->Matches(this->planned_request->resource.get()))
             {
-                if (cookie_header_value.get() == 0)
+                if (!cookie_header_value)
                 {
                     cookie_header_value = std::make_shared<UnicodeString>();
                     cookie_header_value->reserve(0x400);
@@ -173,21 +173,17 @@ namespace Web
             }
         }
 
-        if (cookie_header_value.get() != 0)
+        if (cookie_header_value)
             this->planned_request->headers->set_string(Http::globals->header_cookie, cookie_header_value);
 
         ByteString request_bytes;
         Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
         request_bytes.write_to_stream(this->transport.get());
 
-        // $$$ just because of TextWriter.  don't like that guy, can't we make it more intuitive?
-        {
-		    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
-            TextWriter writer(&entry->unicode_message);
-            writer.write_literal("Requeset sent: ");
-            this->planned_request->render_request_line(&entry->unicode_message);
-		    Basic::globals->add_entry(entry);
-        }
+		std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+        TextWriter(&entry->unicode_message).write_literal("Request sent: ");
+        this->planned_request->render_request_line(&entry->unicode_message);
+		Basic::globals->add_entry(entry);
     }
 
     void Client::QueueJob()
@@ -198,7 +194,7 @@ namespace Web
 
     void Client::QueuePlanned()
     {
-        if (this->planned_request.get() != 0)
+        if (this->planned_request)
         {
             switch_to_state(State::get_pending_state);
             QueueJob();
@@ -265,8 +261,7 @@ namespace Web
                         {
 			                std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
                             this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
-                            TextWriter writer(&entry->unicode_message);
-                            writer.WriteFormat<0x40>(" redirected with %d to ", code);
+                            TextWriter(&entry->unicode_message).WriteFormat<0x40>(" redirected with %d to ", code);
                             location_url->write_to_stream(&entry->unicode_message, 0, 0);
 			                Basic::globals->add_entry(entry);
 
@@ -281,16 +276,15 @@ namespace Web
 
                 // if we are not planning a retry or redirect, let the caller know headers are back, so it
                 // can choose and set a body stream
-                if (this->planned_request.get() == 0)
+                if (!this->planned_request)
                 {
 			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
                     this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
-                    TextWriter writer(&entry->unicode_message);
-                    writer.WriteFormat<0x40>(" returned %d", this->transaction->response->code);
+                    TextWriter(&entry->unicode_message).WriteFormat<0x40>(" returned %d", this->transaction->response->code);
 			        Basic::globals->add_entry(entry);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion.get() != 0)
+                    if (completion)
                     {
                         Http::ResponseHeadersEvent event;
                         event.cookie = this->completion_cookie;
@@ -309,7 +303,7 @@ namespace Web
 
                 if (this->response_frame->failed())
                 {
-                    if (this->transport.get() != 0)
+                    if (this->transport)
                     {
                         this->transport->write_eof();
                         this->transport.reset();
@@ -447,8 +441,7 @@ namespace Web
                     UnicodeStringRef cookie_value = it->second;
 
 			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
-                    TextWriter writer(&entry->unicode_message);
-                    writer.write_literal("Cookie received: ");
+                    TextWriter(&entry->unicode_message).write_literal("Cookie received: ");
                     cookie_value->write_to_stream(&entry->unicode_message);
 			        Basic::globals->add_entry(entry);
 

@@ -157,7 +157,9 @@ namespace Tls
             }
         }
 
-        Basic::LogDebug("Tls", "Globals::SelectCipherSuite no match");
+        // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+        // connections are failing due to an unsupported algorithm
+        Basic::LogError("Tls", "Globals::SelectCipherSuite no match");
         return false;
     }
 

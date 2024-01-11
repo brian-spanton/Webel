@@ -9,9 +9,19 @@ namespace Basic
 {
     void ConsoleLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
+        if (entry->level < LogLevel::Info)
+            return;
+
         std::wstring output;
         entry->render_utf16(&output);
         output.push_back('\n');
-        wprintf_s(output.c_str());
+
+        int result = wprintf_s(output.c_str());
+        if (result < 0)
+        {
+            // this can happen if trying to render un-renderable characters in the current console code page,
+            // which tends to abort the attempt, leaving a dangling line... this can help keep it looking tidy.
+            wprintf_s(L"\n");
+        }
     }
 }

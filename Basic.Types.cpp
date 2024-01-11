@@ -9,26 +9,12 @@ namespace Basic
 {
     FatalError::FatalError(const char* component, const char* message)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, 0);
-        Basic::globals->add_entry(entry);
+        LogCritical(component, message);
     }
 
     FatalError::FatalError(const char* component, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, code);
-        Basic::globals->add_entry(entry);
-    }
-
-    void LogDebug(const char* component, const char* message)
-    {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, 0);
-        Basic::globals->add_entry(entry);
-    }
-
-    void LogDebug(const char* component, const char* message, uint32 code)
-    {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, code);
-        Basic::globals->add_entry(entry);
+        LogCritical(component, message, code);
     }
 
     IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :

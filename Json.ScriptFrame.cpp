@@ -6,6 +6,7 @@
 #include "Json.Types.h"
 #include "Json.Parser.h"
 #include "Json.ValueFrame.h"
+#include "Basic.LogEntry.h"
 
 namespace Json
 {

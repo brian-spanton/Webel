@@ -73,7 +73,7 @@ namespace Json
                 {
                     this->encoding = Basic::globals->utf_8_label;
                 }
-                else if (this->charset.get() != 0)
+                else if (this->charset)
                 {
                     this->encoding = this->charset;
                 }
@@ -84,7 +84,7 @@ namespace Json
                 }
 
                 Basic::globals->GetDecoder(this->encoding, &this->decoder);
-                if (this->decoder.get() == 0)
+                if (!this->decoder)
                 {
                     switch_to_state(State::could_not_find_decoder_error);
                     return;

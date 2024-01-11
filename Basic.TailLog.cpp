@@ -25,7 +25,7 @@ namespace Basic
         {
             uint32 next = (this->bookmark + i) % _countof(this->tail);
 
-            if (this->tail[next].get() == 0)
+            if (!this->tail[next])
                 continue;
 
             this->tail[next]->render_utf32(stream);

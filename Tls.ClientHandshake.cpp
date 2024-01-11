@@ -223,7 +223,7 @@ namespace Tls
                     NTSTATUS error = BCryptGenRandom(0, pre_master_secret.random, sizeof(pre_master_secret.random), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
+                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
                         switch_to_state(State::BCryptGenRandom_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -248,7 +248,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
+                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
                         switch_to_state(State::BCryptEncrypt_1_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -269,7 +269,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::LogDebug("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
+                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
                         switch_to_state(State::BCryptEncrypt_2_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -374,9 +374,9 @@ namespace Tls
                     }
                 }
 
-                // $$$ log level?
-                //Basic::globals->DebugWriter()->WriteFormat<0x100>("TLS client handshake successfully negotiated 0x%04X", this->session->version);
-                //Basic::globals->DebugWriter()->WriteLine();
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Tls");
+			    TextWriter(&entry->unicode_message).WriteFormat<0x100>("TLS client handshake successfully negotiated 0x%04X", this->session->version);
+			    Basic::globals->add_entry(entry);
 
                 // $ handle renegotiates, etc.
                 switch_to_state(State::done_state);

@@ -48,7 +48,7 @@ namespace Basic
         else
             state = State::scheme_start_state;
 
-        if (encoding_override.get() == 0)
+        if (!encoding_override)
             encoding_override = Basic::globals->utf_8_label;
 
         UnicodeStringRef buffer = std::make_shared<UnicodeString>();
@@ -391,13 +391,13 @@ namespace Basic
                                 parse_error(codepoint);
                             }
 
-                            if (codepoint == ':' && this->password.get() == 0)
+                            if (codepoint == ':' && !this->password)
                             {
                                 this->password = std::make_shared<UnicodeString>();
                                 continue;
                             }
 
-                            if (this->password.get() != 0)
+                            if (this->password)
                             {
                                 utf_8_percent_encode(codepoint, Basic::globals->default_encode_anti_set, this->password);
                             }
@@ -982,11 +982,11 @@ namespace Basic
                 output->write_element('/');
                 output->write_element('/');
 
-                if (!is_null_or_empty(this->username.get()) || this->password.get() != 0)
+                if (!is_null_or_empty(this->username.get()) || this->password)
                 {
                     this->username->write_to_stream(output);
 
-                    if (this->password.get() != 0)
+                    if (this->password)
                     {
                         output->write_element(':');
 

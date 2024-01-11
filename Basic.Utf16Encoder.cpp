@@ -45,8 +45,6 @@ namespace Basic
 
         uint32 offset = codepoint - 0x10000;
 
-        // $$$ should validate this is correctly ordered for windows APIs - I expect it is, looks like there is no UTF16 encoding 
-        // that reverses this order. regardless would like to try to OutputDebugStringW or wprintf an emoji :D
         Emit(static_cast<wchar_t>((offset >> 10) + 0xD800)); // lead/high surrogate
         Emit(static_cast<wchar_t>((offset & 0x3FF) + 0xDC00)); // low surrogate
     }

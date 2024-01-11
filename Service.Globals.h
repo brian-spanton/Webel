@@ -65,6 +65,7 @@ namespace Service
         bool CreateSelfSignCert();
         bool ExtractPrivateKey();
 
+        bool TestUtf16();
         bool TestHuffman();
         bool TestGzip();
 

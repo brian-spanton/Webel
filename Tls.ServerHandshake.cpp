@@ -138,7 +138,7 @@ namespace Tls
                 NTSTATUS error = BCryptGenRandom(0, this->security_parameters->server_random.random_bytes, sizeof(this->security_parameters->server_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                 if (error != 0)
                 {
-                    Basic::LogDebug("Tls", "ServerHandshake::process_event BCryptGenRandom", error);
+                    Basic::LogError("Tls", "ServerHandshake::process_event BCryptGenRandom", error);
                     switch_to_state(State::BCryptGenRandom_1_failed);
                     return ProcessResult::process_result_ready;
                 }
@@ -315,7 +315,7 @@ namespace Tls
                     NTSTATUS error = BCryptGenRandom(0, this->pre_master_secret_bytes.address(), this->pre_master_secret_bytes.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::LogDebug("Tls", "ServerHandshake::process_event BCryptGenRandom failed", error);
+                        Basic::LogError("Tls", "ServerHandshake::process_event BCryptGenRandom failed", error);
                         switch_to_state(State::BCryptGenRandom_2_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -460,19 +460,20 @@ namespace Tls
 
                 if (pre_master_secret.client_version != this->clientHello.client_version)
                 {
-			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.", 0);
-			        Basic::globals->add_entry(entry);
+			        Basic::LogAlert("Tls", "ServerHandshake::ProcessClientKeyExchange Could be version roll-back attack.");
                     return false;
                 }
             }
             break;
 
-        // $$ implement DHE_DSS
+        // $$ NYI implement DHE_DSS
         //case KeyExchangeAlgorithm::DHE_DSS:
         //    break;
 
         default:
-            Basic::LogDebug("Tls", "ServerHandshake::ProcessClientKeyExchange unexpected key_exchange_algorithm");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "ServerHandshake::ProcessClientKeyExchange unexpected key_exchange_algorithm");
             return false;
         }
 

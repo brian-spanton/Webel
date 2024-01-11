@@ -86,7 +86,9 @@ namespace Tls
             break;
 
         default:
-            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported cipher_suite");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported cipher_suite");
             return false;
         }
 
@@ -105,7 +107,9 @@ namespace Tls
             break;
 
         default:
-            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported version");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported version");
             return false;
         }
 
@@ -156,7 +160,9 @@ namespace Tls
             break;
 
         default:
-            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported interim_cipher");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported interim_cipher");
             return false;
         }
 
@@ -190,7 +196,9 @@ namespace Tls
             break;
 
         default:
-            Basic::LogDebug("Tls", "SecurityParameters::Initialize unsupported mac_algorithm");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported mac_algorithm");
             return false;
         }
 

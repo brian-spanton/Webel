@@ -75,7 +75,7 @@ namespace Basic
         {
             close_file();
 
-            Basic::LogDebug("FileStream", "complete", error);
+            Basic::LogError("Basic", "FileStream::complete", error);
         }
     }
 }

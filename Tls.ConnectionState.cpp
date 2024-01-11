@@ -40,7 +40,9 @@ namespace Tls
             break;
 
         default:
-            Basic::LogDebug("Tls", "ConnectionState::Initialize switch(security_parameters->bulk_cipher_algorithm) default: unsupported cipher_suite");
+            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
+            // connections are failing due to an unsupported algorithm
+            Basic::LogError("Tls", "ConnectionState::Initialize switch(security_parameters->bulk_cipher_algorithm) default: unsupported cipher_suite");
             return false;
         }
 
@@ -51,7 +53,7 @@ namespace Tls
             NTSTATUS error = BCryptOpenAlgorithmProvider(&bulk_cipher_algorithm_handle, algorithm, 0, 0);
             if (error != 0)
             {
-                Basic::LogDebug("Tls", "ConnectionState::Initialize BCryptOpenAlgorithmProvider failed", error);
+                Basic::LogError("Tls", "ConnectionState::Initialize BCryptOpenAlgorithmProvider failed", error);
                 return false;
             }
 
@@ -68,7 +70,7 @@ namespace Tls
             error = BCryptImportKey(bulk_cipher_algorithm_handle, 0, BCRYPT_KEY_DATA_BLOB, &this->key_handle, 0, 0, key_blob.address(), key_blob.size(), 0);
             if (error != 0)
             {
-                Basic::LogDebug("Tls", "ConnectionState::Initialize BCryptImportKey failed", error);
+                Basic::LogError("Tls", "ConnectionState::Initialize BCryptImportKey failed", error);
                 return false;
             }
         }

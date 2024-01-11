@@ -17,7 +17,7 @@ namespace Basic
         {
             NTSTATUS error = BCryptDestroyHash(hash);
             if (error != 0)
-                Basic::LogDebug("Basic", "HashStream::~HashStream BCryptDestroyHash failed", error);
+                Basic::LogError("Basic", "HashStream::~HashStream BCryptDestroyHash failed", error);
         }
     }
 

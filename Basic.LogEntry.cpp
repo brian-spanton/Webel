@@ -3,21 +3,16 @@
 #include "stdafx.h"
 #include "Basic.LogEntry.h"
 #include "Basic.Utf16Encoder.h"
+#include "Basic.Globals.h"
 
 namespace Basic
 {
-    LogEntry::LogEntry() :
-        thread(GetCurrentThreadId())
-    {
-        GetSystemTime(&this->time);
-    }
-
     LogEntry::LogEntry(LogLevel level, const char* component) :
         thread(GetCurrentThreadId()),
         level(level)
     {
         GetSystemTime(&this->time);
-        this->component = std::make_shared<std::string>(component); // $$$ make these globals and passed in as native type
+        this->component = std::make_shared<std::string>(component); // $$$ make all of these inputs globals and passed in as native type
     }
 
     LogEntry::LogEntry(LogLevel level, const char* component, const char* message, uint32 code) :
@@ -51,6 +46,14 @@ namespace Basic
         {
         case LogLevel::Debug:
             output->append("DEBUG");
+            break;
+
+        case LogLevel::Info:
+            output->append("INFO");
+            break;
+
+        case LogLevel::Error:
+            output->append("ERROR");
             break;
 
         case LogLevel::Alert:
@@ -91,7 +94,7 @@ namespace Basic
 
     void LogEntry::render_utf8(ByteString* output)
     {
-        // $$$ can we avoid double buffering?
+        // $$ can we avoid double buffering?
         UnicodeString message;
         StdStringStream<Codepoint> input_stream(static_cast<std::basic_string<Codepoint>*>(&message));
         render_utf32(&input_stream);
@@ -121,6 +124,14 @@ namespace Basic
         {
         case LogLevel::Debug:
             output->append(L"DEBUG");
+            break;
+
+        case LogLevel::Info:
+            output->append(L"INFO");
+            break;
+
+        case LogLevel::Error:
+            output->append(L"ERROR");
             break;
 
         case LogLevel::Alert:
@@ -180,6 +191,14 @@ namespace Basic
             writer.write_literal("DEBUG");
             break;
 
+        case LogLevel::Info:
+            writer.write_literal("INFO");
+            break;
+
+        case LogLevel::Error:
+            writer.write_literal("ERROR");
+            break;
+
         case LogLevel::Alert:
             writer.write_literal("ALERT");
             break;
@@ -211,5 +230,53 @@ namespace Basic
             writer.write_literal(" ");
             stream->write_elements(this->unicode_message.c_str(), this->unicode_message.length());
         }
+    }
+
+    void LogDebug(const char* component, const char* message)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, 0);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogDebug(const char* component, const char* message, uint32 code)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, code);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogInfo(const char* component, const char* message)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, component, message, 0);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogError(const char* component, const char* message)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Error, component, message, 0);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogError(const char* component, const char* message, uint32 code)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Error, component, message, code);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogAlert(const char* component, const char* message)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Alert, component, message, 0);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogCritical(const char* component, const char* message)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, 0);
+        Basic::globals->add_entry(entry);
+    }
+
+    void LogCritical(const char* component, const char* message, uint32 code)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, code);
+        Basic::globals->add_entry(entry);
     }
 }

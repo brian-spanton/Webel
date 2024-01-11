@@ -7,8 +7,8 @@
 namespace Basic
 {
     template <typename element_type>
-    __interface IStreamWriter // $$$ rename to IRenderable
+    __interface IStreamWriter // $$ rename to something like IRenderable?  or consider another pattern
     {
-        void write_to_stream(IStream<element_type>* stream) const; // $$$ rename to render_to
+        void write_to_stream(IStream<element_type>* stream) const; // $$ rename to something like render_to?  or consider another pattern
     };
 }

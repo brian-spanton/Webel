@@ -69,7 +69,7 @@ namespace Service
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::object_value)
                     {
-                        Basic::LogDebug("Service", "HtmlNamedCharacterReferences::process_event { this->json_parser->text->value->type != Json::Value::Type::object_value } unexpected json structure");
+                        Basic::LogError("Service", "HtmlNamedCharacterReferences::process_event { this->json_parser->text->value->type != Json::Value::Type::object_value } unexpected json structure");
                         switch_to_state(State::unexpected_json_error);
                         return ProcessResult::process_result_blocked;
                     }
@@ -120,11 +120,11 @@ namespace Service
                     }
 
                     char message[0x100];
-                    sprintf_s(message, "Recognized %d HTML named character references", Html::globals->named_character_references_table->size());
-                    Basic::LogDebug("Service", message);
+                    sprintf_s(message, "recognized %d HTML named character references", Html::globals->named_character_references_table->size());
+                    Basic::LogInfo("Service", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion.get() != 0)
+                    if (completion)
                     {
                         CharactersCompleteEvent event;
                         event.cookie = this->completion_cookie;

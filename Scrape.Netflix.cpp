@@ -39,8 +39,7 @@ namespace Scrape
 
 			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape");
 			url->write_to_stream(&entry->unicode_message, 0, 0);
-			TextWriter writer(&entry->unicode_message);
-			writer.write_literal(" did not return 200");
+			TextWriter(&entry->unicode_message).write_literal(" did not return 200");
 			Basic::globals->add_entry(entry);
 
 			return false;
@@ -232,7 +231,7 @@ namespace Scrape
 				this->next_page = 0;
 				ScrapeMovies(&this->next_page, &next_row);
 
-				if (this->next_page.get() == 0)
+				if (!this->next_page)
 				{
 					switch_to_state(State::done_state);
 					Complete();
@@ -306,13 +305,13 @@ namespace Scrape
 	{
 		char message[0x100];
 		sprintf_s(message, "Row %d+", this->current_row);
-		Basic::LogDebug("Scrape", message);
+		Basic::LogInfo("Scrape", message);
 
 		for (uint32 i = 0; i < this->current_page->links.size(); i++)
 		{
 			std::shared_ptr<Web::Link> link = this->current_page->links.at(i);
 
-			if (link->url.get() != 0)
+			if (link->url)
 			{
 				if (is_null_or_empty(link->url->query.get()) == false)
 				{
@@ -388,7 +387,7 @@ namespace Scrape
 	void Netflix::Complete()
 	{
 		std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion.get() != 0)
+        if (completion)
         {
             TaskCompleteEvent event;
             event.cookie = this->completion_cookie;

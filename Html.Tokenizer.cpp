@@ -58,15 +58,15 @@ namespace Html
 
     void Tokenizer::InsertAttribute()
     {
-        if (this->current_attribute_name.get() == 0 || this->current_attribute_name->size() == 0)
+        if (!this->current_attribute_name || this->current_attribute_name->size() == 0)
         {
-            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { this->current_attribute_name.get() == 0 || this->current_attribute_name->size() == 0 }");
+            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { !this->current_attribute_name || this->current_attribute_name->size() == 0 }");
             return;
         }
 
-        if (this->current_tag_token.get() == 0)
+        if (!this->current_tag_token)
         {
-            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { this->current_tag_token.get() == 0 }");
+            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { !this->current_tag_token }");
             return;
         }
 
@@ -103,8 +103,8 @@ namespace Html
 
     void Tokenizer::EmitCurrentTagToken()
     {
-        if (this->current_tag_token.get() == 0)
-            throw FatalError("Html", "Tokenizer::EmitCurrentTagToken { this->current_tag_token.get() == 0 }");
+        if (!this->current_tag_token)
+            throw FatalError("Html", "Tokenizer::EmitCurrentTagToken { !this->current_tag_token }");
 
         if (this->get_state() == attribute_name_state)
             InsertAttribute();

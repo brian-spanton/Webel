@@ -17,7 +17,7 @@ namespace Basic
 
     void Globals::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        if (this->log.get() == 0)
+        if (!this->log)
             return;
 
         this->log->add_entry(entry);
@@ -149,6 +149,8 @@ namespace Basic
 
     void Globals::InitializeSocketApi()
     {
+        Basic::LogInfo("Service", "initializing socket library");
+
         WSADATA wsaData;
         int error = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (error != 0)
@@ -179,16 +181,16 @@ namespace Basic
 
     void Globals::QueueJob(std::shared_ptr<Job> job)
     {
-        if (this->completion_queue.get() == 0)
-            throw FatalError("Basic", "Globals::QueueJob { this->completion_queue.get() == 0 }");
+        if (!this->completion_queue)
+            throw FatalError("Basic", "Globals::QueueJob { !this->completion_queue }");
 
         return this->completion_queue->QueueJob(job);
     }
 
     void Globals::BindToCompletionQueue(HANDLE handle)
     {
-        if (this->completion_queue.get() == 0)
-            throw FatalError("Basic", "Globals::BindToCompletionQueue { this->completion_queue.get() == 0 }");
+        if (!this->completion_queue)
+            throw FatalError("Basic", "Globals::BindToCompletionQueue { !this->completion_queue }");
 
         return this->completion_queue->BindToCompletionQueue(handle);
     }

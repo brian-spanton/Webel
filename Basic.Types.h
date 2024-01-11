@@ -81,9 +81,6 @@ namespace Basic
         }
     };
 
-    void LogDebug(const char* component, const char* message);
-    void LogDebug(const char* component, const char* message, uint32 code);
-
     typedef StringMapCaseInsensitive<std::shared_ptr<IEncoderFactory> > EncoderMap;
     typedef StringMapCaseInsensitive<std::shared_ptr<IDecoderFactory> > DecoderMap;
 

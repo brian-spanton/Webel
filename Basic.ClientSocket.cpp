@@ -17,7 +17,7 @@ namespace Basic
     {
         if (is_null_or_empty(host.get()))
         {
-            Basic::LogDebug("Basic", "ClientSocket::Resolve { is_null_or_empty(host.get()) }");
+            Basic::LogError("Basic", "ClientSocket::Resolve { is_null_or_empty(host.get()) }");
             return false;
         }
 
@@ -81,7 +81,7 @@ namespace Basic
     void ClientSocket::CompleteConnectionAccepted()
     {
         std::shared_ptr<IProcess> protocol = this->protocol.lock();
-        if (protocol.get() != 0)
+        if (protocol)
         {
             CanSendBytesEvent event;
             event.Initialize(&this->protocol_element_source);
@@ -100,7 +100,7 @@ namespace Basic
         }
         else
         {
-            if (this->sendBuffer.get() == 0)
+            if (!this->sendBuffer)
             {
                 this->sendBuffer = std::make_shared<ByteString>();
                 this->sendBuffer->reserve(0x1000);
@@ -149,7 +149,7 @@ namespace Basic
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED)
-                Basic::LogDebug("Basic", "ConnectedSocket::CompleteSend { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED }", error);
+                Basic::LogError("Basic", "ConnectedSocket::CompleteSend { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED }", error);
 
             DisconnectAndNotifyProtocol();
         }
@@ -163,7 +163,7 @@ namespace Basic
 
                     StartReceive(bytes);
 
-                    if (this->sendBuffer.get() != 0)
+                    if (this->sendBuffer)
                     {
                         std::shared_ptr<ByteString> sendBuffer;
                         sendBuffer.swap(this->sendBuffer);

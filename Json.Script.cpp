@@ -19,14 +19,14 @@ namespace Json
 
     bool Script::Execute(std::shared_ptr<Html::Node> domain, std::shared_ptr<Html::Node> after, std::shared_ptr<Html::Node>* result)
     {
-        if (this->element_name.get() != 0)
+        if (this->element_name)
         {
             std::shared_ptr<Html::ElementName> element_name = std::make_shared<Html::ElementName>();
             element_name->Initialize(Html::globals->Namespace_HTML, this->element_name);
 
-            if (this->attribute_name.get() == 0 &&
+            if (!this->attribute_name &&
                 equals<UnicodeString, true>(this->method_name.get(), Json::globals->children_count_equals_method.get()) &&
-                this->parameter_value.get() != 0 &&
+                this->parameter_value &&
                 this->parameter_value->type == Json::Value::Type::number_value)
             {
                 Json::Number* number_parameter = (Json::Number*)this->parameter_value.get();
@@ -39,9 +39,9 @@ namespace Json
                     return true;
                 }
             }
-            else if (this->attribute_name.get() != 0 &&
+            else if (this->attribute_name &&
                 equals<UnicodeString, true>(this->method_name.get(), Json::globals->starts_with_method.get()) &&
-                this->parameter_value.get() != 0 &&
+                this->parameter_value &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
                 Json::String* string_parameter = (Json::String*)this->parameter_value.get();
@@ -54,9 +54,9 @@ namespace Json
                     return true;
                 }
             }
-            else if (this->attribute_name.get() != 0 &&
+            else if (this->attribute_name &&
                 equals<UnicodeString, true>(this->method_name.get(), Json::globals->equals_method.get()) &&
-                this->parameter_value.get() != 0 &&
+                this->parameter_value &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
                 Json::String* string_parameter = (Json::String*)this->parameter_value.get();
@@ -69,9 +69,9 @@ namespace Json
                     return true;
                 }
             }
-            else if (this->attribute_name.get() == 0 &&
+            else if (!this->attribute_name &&
                 equals<UnicodeString, true>(this->method_name.get(), Json::globals->text_equals_method.get()) &&
-                this->parameter_value.get() != 0 &&
+                this->parameter_value &&
                 this->parameter_value->type == Json::Value::Type::string_value)
             {
                 Json::String* string_parameter = (Json::String*)this->parameter_value.get();
@@ -92,13 +92,13 @@ namespace Json
 
     bool Script::Execute(std::shared_ptr<Html::Node> domain, UnicodeStringRef* result)
     {
-        if (this->element_name.get() != 0)
+        if (this->element_name)
         {
             std::shared_ptr<Html::ElementName> element_name = std::make_shared<Html::ElementName>();
             element_name->Initialize(Html::globals->Namespace_HTML, this->element_name);
 
-            if (this->attribute_name.get() != 0 &&
-                this->method_name.get() == 0)
+            if (this->attribute_name &&
+                !this->method_name)
             {
                 std::shared_ptr<Html::ElementNode> element_node;
                 bool success = domain->find_element(element_name.get(), this->attribute_name, 0, &element_node);
@@ -111,9 +111,9 @@ namespace Json
         }
         else
         {
-            if (this->attribute_name.get() == 0 &&
-                this->method_name.get() != 0 &&
-                this->parameter_value.get() == 0)
+            if (!this->attribute_name &&
+                this->method_name &&
+                !this->parameter_value)
             {
                 if (equals<UnicodeString, true>(this->method_name.get(), Json::globals->deep_text_method.get()))
                 {

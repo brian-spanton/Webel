@@ -34,7 +34,7 @@ namespace Basic
     {
         char message[0x100];
         sprintf_s(message, "%s unexpected event %d in state %d", function, event->get_type(), get_state());
-        Basic::LogDebug(component, message);
+        Basic::LogError(component, message);
     }
 
     StateMachine::StateMachine() :

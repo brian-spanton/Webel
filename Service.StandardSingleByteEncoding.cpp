@@ -39,7 +39,7 @@ namespace Service
             std::shared_ptr<Uri> url;
             this->client->get_url(&url);
 
-			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Service");
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, "Service");
 			url->write_to_stream(&entry->unicode_message, 0, 0);
 			Basic::globals->add_entry(entry);
 

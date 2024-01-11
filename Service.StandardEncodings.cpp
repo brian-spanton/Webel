@@ -77,7 +77,7 @@ namespace Service
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::array_value)
                     {
-                        Basic::LogDebug("Service", "StandardEncodings::process_event { this->json_parser->text->value->type != Json::Value::Type::array_value }");
+                        Basic::LogError("Service", "StandardEncodings::process_event { this->json_parser->text->value->type != Json::Value::Type::array_value }");
                         switch_to_state(State::unexpected_json_error);
                         return ProcessResult::process_result_blocked;
                     }
@@ -199,7 +199,7 @@ namespace Service
                                     }
                                 }
 
-                                if (index.get() == 0)
+                                if (!index)
                                 {
                                     index = std::make_shared<SingleByteEncodingIndex>();
                                     index->Initialize();
@@ -231,11 +231,11 @@ namespace Service
                         throw FatalError("Service", "StandardEncodings::process_event didn't find us-ascii encoding");
 
                     char message[0x100];
-                    sprintf_s(message, "Recognized %d encodings", Basic::globals->decoder_map.size());
-                    Basic::LogDebug("Service", message);
+                    sprintf_s(message, "recognized %d encodings", Basic::globals->decoder_map.size());
+                    Basic::LogInfo("Service", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion.get() != 0)
+                    if (completion)
                     {
                         EncodingsCompleteEvent event;
                         event.cookie = this->completion_cookie;

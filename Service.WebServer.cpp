@@ -66,7 +66,7 @@ namespace Service
 
             ProcessStream<Codepoint> frame_stream(admin_protocol);
 
-            if (request->resource->query.get() != 0)
+            if (request->resource->query)
             {
                 StringMap data_set;
                 Web::Form::url_decode(request->resource->query, UnicodeStringRef(), false, &data_set);

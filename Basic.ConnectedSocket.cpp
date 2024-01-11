@@ -43,7 +43,7 @@ namespace Basic
             else
             {
                 std::shared_ptr<IProcess> protocol = this->protocol.lock();
-                if (protocol.get() == 0)
+                if (!protocol)
                 {
                     Disconnect(0);
                     return;
@@ -67,7 +67,7 @@ namespace Basic
         DWORD flags = 0;
 
         std::shared_ptr<SocketJobContext> job_context = std::make_shared<SocketJobContext>(SocketJobContext::receive_type);
-        job_context->bytes = bytes.get() != 0 ? bytes : std::make_shared<ByteString>();
+        job_context->bytes = bytes ? bytes : std::make_shared<ByteString>();
         job_context->bytes->resize(0x400);
         job_context->wsabuf.buf = (char*)job_context->bytes->address();
         job_context->wsabuf.len = job_context->bytes->size();
@@ -91,7 +91,7 @@ namespace Basic
         std::shared_ptr<IProcess> protocol;
         Disconnect(&protocol);
 
-        if (protocol.get() != 0)
+        if (protocol)
         {
             ElementStreamEndingEvent event;
             process_event_ignore_failures(protocol.get(), &event);
@@ -180,7 +180,7 @@ namespace Basic
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
-                Basic::LogDebug("Basic", "ConnectedSocket::CompleteReceive { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED }", error);
+                Basic::LogError("Basic", "ConnectedSocket::CompleteReceive { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED }", error);
 
             DisconnectAndNotifyProtocol();
         }

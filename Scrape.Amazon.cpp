@@ -35,9 +35,8 @@ namespace Scrape
 			this->client->get_url(&url);
 
 			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape");
-			TextWriter writer(&entry->unicode_message);
 			url->write_to_stream(&entry->unicode_message, 0, 0);
-			writer.write_literal(" did not return 200");
+			TextWriter(&entry->unicode_message).write_literal(" did not return 200");
 			Basic::globals->add_entry(entry);
 
 			return false;
@@ -348,7 +347,7 @@ namespace Scrape
 	void Amazon::Complete()
 	{
 		std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion.get() != 0)
+        if (completion)
         {
             TaskCompleteEvent event;
             event.cookie = this->completion_cookie;

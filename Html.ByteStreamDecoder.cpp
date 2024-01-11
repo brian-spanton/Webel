@@ -56,7 +56,7 @@ namespace Html
                     this->confidence = Confidence_Certain;
                     consumed = _countof(Basic::globals->utf_8_bom);
                 }
-                else if (this->transport_charset.get() != 0)
+                else if (this->transport_charset)
                 {
                     this->encoding = this->transport_charset;
                     this->confidence = Confidence_Certain;
@@ -73,7 +73,7 @@ namespace Html
                 }
 
                 Basic::globals->GetDecoder(this->encoding, &this->decoder);
-                if (this->decoder.get() == 0)
+                if (!this->decoder)
                 {
                     switch_to_state(State::get_decoder_failed);
                     return;

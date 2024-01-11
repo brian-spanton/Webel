@@ -45,7 +45,7 @@ namespace Html
 
     std::shared_ptr<ElementNode> TreeConstruction::AdjustedCurrentNode()
     {
-        if (this->fragment_context.get() != 0 && this->open_elements.size() == 1)
+        if (this->fragment_context && this->open_elements.size() == 1)
             return this->fragment_context;
 
         return CurrentNode();
@@ -179,7 +179,7 @@ namespace Html
         create_an_element_for_a_token(token, Html::globals->Namespace_HTML, &local_element);
 
         if (local_element->IsFormAssociated()
-            && this->form_element.get() != 0
+            && this->form_element
             && !local_element->has_attribute(Html::globals->form_attribute_name))
         {
             // When a form-associated element or one of its ancestors is inserted into a Document, then the user agent must 
@@ -922,7 +922,7 @@ outer_loop:
         }
 
         // If there is no such node, then abort these steps and instead act as described in the "any other end tag" entry below.
-        if (formatting_element.get() == 0)
+        if (!formatting_element)
         {
             any_other_end_tag_in_body(tag, ignored);
             return;
@@ -983,7 +983,7 @@ outer_loop:
         // 6. If there is no furthest block, then the UA must first pop all the nodes from the bottom of the stack of open elements,
         // from the current node up to and including the formatting element, then remove the formatting element from the list of active
         // formatting elements, and finally abort these steps.
-        if (furthest_block.get() == 0)
+        if (!furthest_block)
         {
             while (true)
             {
@@ -1190,22 +1190,22 @@ loop:
         if (
             (
                 !doctype_token->has_name_of(Html::globals->HTML_html.get()) ||
-                doctype_token->public_identifier.get() != 0 ||
-                (doctype_token->system_identifier.get() != 0 && !equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_legacy_compat.get()))
+                doctype_token->public_identifier ||
+                (doctype_token->system_identifier && !equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_legacy_compat.get()))
             )
             &&
             (
                 !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_html_4_0_public_identifier.get()) &&
-                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_0_system_identifier.get())))
+                    (!doctype_token->system_identifier || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_0_system_identifier.get())))
                     &&
                 !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_html_4_01_public_identifier.get()) &&
-                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_01_system_identifier.get())))
+                    (!doctype_token->system_identifier || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_html_4_01_system_identifier.get())))
                     &&
                 !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_xhtml_1_0_public_identifier.get()) &&
-                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_0_system_identifier.get())))
+                    (!doctype_token->system_identifier || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_0_system_identifier.get())))
                     &&
                 !(equals<UnicodeString, true>(doctype_token->public_identifier.get(), Html::globals->DOCTYPE_xhtml_1_1_public_identifier.get()) &&
-                    (doctype_token->system_identifier.get() == 0 || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_1_system_identifier.get())))
+                    (!doctype_token->system_identifier || equals<UnicodeString, true>(doctype_token->system_identifier.get(), Html::globals->DOCTYPE_xhtml_1_1_system_identifier.get())))
             ))
             return false;
 
@@ -1221,7 +1221,7 @@ loop:
             return Document::Mode::quirks_mode;
 
         //• The name is set to anything other than "html" (compared case-sensitively). 
-        if (doctype_token->name.get() != 0 && !doctype_token->has_name_of(Html::globals->HTML_html.get()))
+        if (doctype_token->name && !doctype_token->has_name_of(Html::globals->HTML_html.get()))
             return Document::Mode::quirks_mode;
 
         //• The public identifier starts with: "+//Silmaril//dtd html Pro v0r11 19970101//" 
@@ -1604,9 +1604,9 @@ loop:
                             ParseError("!IsValidDocType(doctype_token)");
 
                         std::shared_ptr<DocumentTypeNode> doctype_node = std::make_shared<DocumentTypeNode>();
-                        doctype_node->name = doctype_token->name.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->name;
-                        doctype_node->publicId = doctype_token->public_identifier.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->public_identifier;
-                        doctype_node->systemId = doctype_token->system_identifier.get() == 0 ? std::make_shared<UnicodeString>() : doctype_token->system_identifier;
+                        doctype_node->name = doctype_token->name ? doctype_token->name : std::make_shared<UnicodeString>();
+                        doctype_node->publicId = doctype_token->public_identifier ? doctype_token->public_identifier : std::make_shared<UnicodeString>();
+                        doctype_node->systemId = doctype_token->system_identifier ? doctype_token->system_identifier : std::make_shared<UnicodeString>();
 
                         // and the other attributes specific to DocumentType objects set to null and empty lists as appropriate.
 
@@ -2458,7 +2458,7 @@ loop:
                         }
                         else if (tag->has_name_of(Html::globals->HTML_form.get()))
                         {
-                            if (this->form_element.get() != 0)
+                            if (this->form_element)
                             {
                                 ParseError(token.get());
                                 (*ignored) = true;
@@ -2638,7 +2638,7 @@ loop:
                                 formatting_element_index--;
                             }
 
-                            if (formatting_element.get() != 0)
+                            if (formatting_element)
                             {
                                 ParseError(tag.get());
 
@@ -2807,7 +2807,7 @@ loop:
                         {
                             ParseError(token.get());
 
-                            if (this->form_element.get() != 0)
+                            if (this->form_element)
                             {
                                 (*ignored) = true;
                             }
@@ -3141,7 +3141,7 @@ loop:
                             std::shared_ptr<ElementNode> node = this->form_element;
                             this->form_element = 0;
 
-                            if (node.get() == 0 || !has_element_in_scope(node.get()))
+                            if (!node || !has_element_in_scope(node.get()))
                             {
                                 ParseError(token.get());
                                 (*ignored) = true;
@@ -3546,7 +3546,7 @@ loop:
                         {
                             ParseError(token.get());
 
-                            if (this->form_element.get() != 0)
+                            if (this->form_element)
                             {
                                 (*ignored) = true;
                             }
@@ -4674,7 +4674,7 @@ loop:
 
                         if (tag->has_name_of(Html::globals->HTML_html.get()))
                         {
-                            if (this->fragment_context.get() != 0)
+                            if (this->fragment_context)
                             {
                                 ParseError(token.get());
 
@@ -4811,7 +4811,7 @@ loop:
                                 pop_the_current_node_off_the_stack_of_open_elements();
                             }
 
-                            if (this->fragment_context.get() == 0 &&
+                            if (!this->fragment_context &&
                                 !this->CurrentNode()->has_element_name(Html::globals->HTML_frameset.get()))
                             {
                                 switch_the_insertion_mode(InsertionMode::after_frameset_insertion_mode);

@@ -404,7 +404,7 @@ namespace Web
 
         ////2. If the form element has an accept-charset attribute, let the selected character encoding be the result
         ////   of picking an encoding for the form.
-        //if (accept_charset.get() != 0)
+        //if (accept_charset)
         //{
         //    pick_an_encoding_for_the_form(form, &charset);
         //}
@@ -444,7 +444,7 @@ namespace Web
 
             encode_value(charset, entry.name, &entry.name);
 
-            if (entry.value.get() != 0)
+            if (entry.value)
                 encode_value(charset, entry.value, &entry.value);
 
             //7. If the entry's name is "isindex", its type is "text", and this is the first entry in the form data set,
@@ -470,7 +470,7 @@ namespace Web
             //10. Append a single U+003D EQUALS SIGN character (=) to result.
             unicode_result->push_back(0x003D);
 
-            if (entry.value.get() != 0)
+            if (entry.value)
             {
                 //11. Append the entry's value to result.
                 unicode_result->append(*entry.value.get());
@@ -604,7 +604,7 @@ namespace Web
             }
             else if (equals<UnicodeString, false>(method.get(), Http::globals->post_method.get()))
             {
-                if (enctype.get() == 0 || equals<UnicodeString, false>(enctype.get(), Http::globals->application_x_www_form_urlencoded_media_type.get()))
+                if (!enctype || equals<UnicodeString, false>(enctype.get(), Http::globals->application_x_www_form_urlencoded_media_type.get()))
                 {
                     handled = true;
 

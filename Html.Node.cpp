@@ -56,7 +56,7 @@ namespace Html
         if (parent == node)
             return true;
 
-        if (parent.get() == 0)
+        if (!parent)
             return false;
 
         return parent->has_ancestor(node);
@@ -66,7 +66,7 @@ namespace Html
     {
         std::shared_ptr<Node> parent(this->parent);
 
-        if (parent.get() == 0)
+        if (!parent)
             return false;
 
         if (parent->type == NodeType::ELEMENT_NODE)
@@ -82,7 +82,7 @@ namespace Html
     {
         std::shared_ptr<Node> parent = this->parent.lock();
 
-        if (parent.get() != 0)
+        if (parent)
             parent->Remove(shared_from_this());
     }
 
@@ -309,7 +309,7 @@ namespace Html
 
             if (element->has_element_name(name))
             {
-                if (attribute_name.get() != 0 && attribute_value.get() != 0)
+                if (attribute_name && attribute_value)
                 {
                     if (element->has_attribute_value(attribute_name, attribute_value))
                     {
@@ -317,7 +317,7 @@ namespace Html
                         return true;
                     }
                 }
-                else if (attribute_name.get() != 0)
+                else if (attribute_name)
                 {
                     if (element->has_attribute(attribute_name))
                     {

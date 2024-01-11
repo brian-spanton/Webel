@@ -31,7 +31,7 @@ namespace Html
 
     bool FormattingElement::IsMarker()
     {
-        if (this->element.get() == 0)
+        if (!this->element)
             return true;
 
         return false;

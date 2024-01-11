@@ -33,13 +33,13 @@ namespace Web
 
         if (!this->in_progress())
         {
-            if (this->client_transport.get() != 0)
+            if (this->client_transport)
             {
                 this->client_transport->write_eof();
                 this->client_transport.reset();
             }
 
-            if (this->server_transport.get() != 0)
+            if (this->server_transport)
             {
                 this->server_transport->write_eof();
                 this->server_transport.reset();
@@ -67,10 +67,10 @@ namespace Web
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::LogDebug("Web", "Proxy accepted");
+                Basic::LogInfo("Web", "Proxy accepted");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion.get() != 0)
+                if (completion)
                 {
                     AcceptCompleteEvent event;
                     event.cookie = this->completion_cookie;

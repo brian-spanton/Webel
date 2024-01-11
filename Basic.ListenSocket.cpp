@@ -40,7 +40,7 @@ namespace Basic
 
         char message[0x40];
         sprintf_s(message, "listening on port %d", port);
-        Basic::LogDebug("Basic", message);
+        Basic::LogInfo("Basic", message);
     }
 
     void ListenSocket::start_accept(std::shared_ptr<ServerSocket> server_socket, bool receive_with_connect)
