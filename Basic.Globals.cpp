@@ -149,7 +149,7 @@ namespace Basic
 
     void Globals::InitializeSocketApi()
     {
-        Basic::LogInfo("Service", "initializing socket library");
+        Basic::LogInfo("Basic", "initializing socket library");
 
         WSADATA wsaData;
         int error = WSAStartup(MAKEWORD(2, 2), &wsaData);
