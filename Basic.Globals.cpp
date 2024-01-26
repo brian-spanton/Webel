@@ -20,7 +20,6 @@ namespace Basic
         if (!this->log)
             return;
 
-        // $$$ implement log sampling controls, consider all ILog::add_entry implementations
         this->log->add_entry(entry);
     }
 

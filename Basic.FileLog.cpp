@@ -60,6 +60,8 @@ namespace Basic
 
     void FileLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
+        // $$$ implement log sampling controls
+
         if (entry->level < LogLevel::Info)
             return;
 
