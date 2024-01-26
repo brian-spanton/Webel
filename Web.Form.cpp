@@ -624,7 +624,7 @@ namespace Web
         }
 
         if (!handled)
-            throw FatalError("Web", "Form::construct_request unhandled form submission type");
+            throw FatalError("Web", "Form", "construct_request", "unhandled form submission type (not http)");
 
         return true;
     }

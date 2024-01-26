@@ -13,21 +13,24 @@ namespace Basic
         Critical, // a severe (or even fatal) impact to functionality
     };
 
+    typedef std::vector<std::shared_ptr<std::string> > LogContext;
+
     class LogEntry
     {
     private:
         DWORD thread;
         SYSTEMTIME time = { 0 };
-        std::shared_ptr<std::string> component;
+        LogContext context;
 
     public:
+        static void make(LogLevel level, const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
+
         LogLevel level = LogLevel::Debug;
         std::string ascii_message;
         UnicodeString unicode_message;
         uint32 code = 0;
 
-        LogEntry(LogLevel level, const char* component);
-        LogEntry(LogLevel level, const char* component, const char* message, uint32 code);
+        LogEntry(LogLevel level, const char* ns, const char* cl, const char* func);
 
         void render_ascii(std::string* output);
         void render_utf8(ByteString* output);
@@ -35,12 +38,9 @@ namespace Basic
         void render_utf32(IStream<Codepoint>* output);
     };
 
-    void LogInfo(const char* component, const char* message);
-    void LogDebug(const char* component, const char* message);
-    void LogDebug(const char* component, const char* message, uint32 code);
-    void LogError(const char* component, const char* message);
-    void LogError(const char* component, const char* message, uint32 code);
-    void LogAlert(const char* component, const char* message);
-    void LogCritical(const char* component, const char* message);
-    void LogCritical(const char* component, const char* message, uint32 code);
+    void LogDebug(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
+    void LogInfo(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
+    void LogError(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
+    void LogAlert(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
+    void LogCritical(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
 }

@@ -14,7 +14,7 @@ namespace Basic
             return ProcessResult::process_result_blocked;
 
         if (event->get_type() != EventType::received_bytes_event)
-            Event::HandleUnexpectedEvent("Event::Read", event);
+            Event::HandleUnexpectedEvent("Basic", "Event", "Read", event);
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
 
@@ -33,11 +33,11 @@ namespace Basic
             return ProcessResult::process_result_blocked;
 
         if (event->get_type() != EventType::received_bytes_event)
-            Event::HandleUnexpectedEvent("Event::ReadNext", event);
+            Event::HandleUnexpectedEvent("Basic", "Event", "ReadNext", event);
 
         ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
         if (read_event->element_source->Exhausted())
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
 
         read_event->element_source->ReadNext(element);
 
@@ -58,7 +58,7 @@ namespace Basic
             return write_event->element_source->AddObserver(stream);
         }
 
-        throw FatalError("Basic", "Event::AddObserver");
+        throw FatalError("Basic", "Event", "AddObserver", "unexpected event type", event->get_type());
     }
 
     template <>
@@ -75,7 +75,7 @@ namespace Basic
             return write_event->element_source->RemoveObserver(stream);
         }
 
-        throw FatalError("Basic", "Event::RemoveObserver");
+        throw FatalError("Basic", "Event", "RemoveObserver", "unexpected event type", event->get_type());
     }
 
     template <>
@@ -85,7 +85,7 @@ namespace Basic
             return ProcessResult::process_result_blocked;
 
         if (event->get_type() != EventType::received_codepoints_event)
-            Event::HandleUnexpectedEvent("Event::Read", event);
+            Event::HandleUnexpectedEvent("Basic", "Event", "Read", event);
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
 
@@ -104,11 +104,11 @@ namespace Basic
             return ProcessResult::process_result_blocked;
 
         if (event->get_type() != EventType::received_codepoints_event)
-            Event::HandleUnexpectedEvent("Event::ReadNext", event);
+            Event::HandleUnexpectedEvent("Basic", "Event", "ReadNext", event);
 
         ReceivedCodepointsEvent* read_event = (ReceivedCodepointsEvent*)event;
         if (read_event->element_source->Exhausted())
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
 
         read_event->element_source->ReadNext(element);
 
@@ -129,7 +129,7 @@ namespace Basic
             return write_event->element_source->AddObserver(stream);
         }
 
-        Event::HandleUnexpectedEvent("Event::AddObserver", event);
+        Event::HandleUnexpectedEvent("Basic", "Event", "AddObserver", event);
     }
 
     template <>
@@ -146,13 +146,13 @@ namespace Basic
             return write_event->element_source->RemoveObserver(stream);
         }
 
-        Event::HandleUnexpectedEvent("Event::RemoveObserver", event);
+        Event::HandleUnexpectedEvent("Basic", "Event", "RemoveObserver", event);
     }
 
-    void Event::HandleUnexpectedEvent(const char* function, IEvent* event)
+    void Event::HandleUnexpectedEvent(const char* ns, const char* cl, const char* func, IEvent* event)
     {
         char message[0x100];
-        sprintf_s(message, "%s unexpected event type %d", function, event->get_type());
-        throw FatalError("Basic", message);
+        sprintf_s(message, "unexpected event type %d", event->get_type());
+        throw FatalError(ns, cl, func, message);
     }
 }

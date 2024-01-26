@@ -38,7 +38,7 @@ namespace Basic
     void Utf32LittleEndianDecoder::write_eof()
     {
         if (this->received != 0)
-            Basic::LogDebug("Basic", "Utf32LittleEndianDecoder::write_eof { this->received != 0 } eof mid-character");
+            Basic::LogDebug("Basic", "Utf32LittleEndianDecoder", "write_eof", "this->received != 0 (eof mid-character)");
     }
 
     void Utf32LittleEndianDecoder::Emit(Codepoint codepoint)

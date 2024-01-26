@@ -7,28 +7,29 @@
 
 namespace Basic
 {
-    LogEntry::LogEntry(LogLevel level, const char* component) :
+    void LogEntry::make(LogLevel level, const char* ns, const char* cl, const char* func, const char* message, uint32 code)
+    {
+        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(level, ns, cl, func);
+        entry->ascii_message = message;
+        entry->code = code;
+        Basic::globals->add_entry(entry);
+    }
+
+    LogEntry::LogEntry(LogLevel level, const char* ns, const char* cl, const char* func) :
         thread(GetCurrentThreadId()),
         level(level)
     {
-        GetSystemTime(&this->time);
-        this->component = std::make_shared<std::string>(component); // $$$ make all of these inputs globals and passed in as native type
-    }
+        this->context.push_back(std::make_shared<std::string>(ns));
+        this->context.push_back(std::make_shared<std::string>(cl));
+        this->context.push_back(std::make_shared<std::string>(func));
 
-    LogEntry::LogEntry(LogLevel level, const char* component, const char* message, uint32 code) :
-        thread(GetCurrentThreadId()),
-        level(level),
-        ascii_message(message),
-        code(code)
-    {
         GetSystemTime(&this->time);
-        this->component = std::make_shared<std::string>(component);
     }
 
     void LogEntry::render_ascii(std::string* output)
     {
-        char context[0x40];
-        int context_length = sprintf_s(context, "%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
+        char runtime_context[0x40];
+        int runtime_context_length = sprintf_s(runtime_context, "%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
             this->thread, 
             this->time.wYear, 
             this->time.wMonth, 
@@ -38,9 +39,9 @@ namespace Basic
             this->time.wSecond, 
             this->time.wMilliseconds);
 
-        output->reserve(sizeof(context) + this->component->length() + this->ascii_message.length() + this->unicode_message.length());
+        output->reserve(sizeof(runtime_context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
 
-        output->append(context, context_length);
+        output->append(runtime_context, runtime_context_length);
 
         switch (this->level)
         {
@@ -65,17 +66,26 @@ namespace Basic
             break;
 
         default:
-            throw FatalError("Basic", "LogEntry::render_ascii unhandled level");
+            LogCritical("Basic", "LogEntry", "render_ascii", "unhandled level", this->level);
+            return;
         }
 
         output->append(": [");
-        output->append(this->component->begin(), this->component->end());
+
+        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        {
+            if (context_frame != this->context.begin())
+                output->append("/");
+
+            output->append((*context_frame)->begin(), (*context_frame)->end());
+        }
+
         output->append("]");
 
         if (this->code)
         {
             char code_string[0x40];
-            // $$$ want the logic from TextWriter::WriteError
+            // $$ want the logic from TextWriter::WriteError
             int code_string_length = sprintf_s(code_string, " (code=%d)", this->code);
             output->append(code_string, code_string_length);
         }
@@ -105,8 +115,8 @@ namespace Basic
 
     void LogEntry::render_utf16(std::wstring* output)
     {
-        wchar_t context[0x40];
-        int context_length = swprintf_s(context, L"%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
+        wchar_t runtime_context[0x40];
+        int runtime_context_length = swprintf_s(runtime_context, L"%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
             this->thread, 
             this->time.wYear, 
             this->time.wMonth, 
@@ -116,9 +126,9 @@ namespace Basic
             this->time.wSecond, 
             this->time.wMilliseconds);
 
-        output->reserve(sizeof(context) + this->component->length() + this->ascii_message.length() + this->unicode_message.length());
+        output->reserve(sizeof(context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
 
-        output->append(context, context_length);
+        output->append(runtime_context, runtime_context_length);
 
         switch (this->level)
         {
@@ -143,17 +153,26 @@ namespace Basic
             break;
 
         default:
-            throw FatalError("Basic", "LogEntry::render_ascii unhandled level");
+            LogCritical("Basic", "LogEntry", "render_ascii", "unhandled level", this->level);
+            return;
         }
 
         output->append(L": [");
-        output->append(this->component->begin(), this->component->end());
+
+        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        {
+            if (context_frame != this->context.begin())
+                output->append(L"/");
+
+            output->append((*context_frame)->begin(), (*context_frame)->end());
+        }
+
         output->append(L"]");
 
         if (this->code)
         {
             wchar_t code_string[0x40];
-            // $$$ want the logic from TextWriter::WriteError
+            // $$ want the logic from TextWriter::WriteError
             int code_string_length = swprintf_s(code_string, L" (code=%d)", this->code);
             output->append(code_string, code_string_length);
         }
@@ -208,16 +227,27 @@ namespace Basic
             break;
 
         default:
-            throw FatalError("Basic", "LogEntry::render_ascii unhandled level");
+            LogCritical("Basic", "LogEntry", "render_ascii", "unhandled level", this->level);
+            return;
         }
 
         writer.write_literal(": [");
-        writer.write_elements(this->component->c_str(), this->component->length());
+
+        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        {
+            if (context_frame != this->context.begin())
+                writer.write_literal("/");
+
+            writer.write_elements((*context_frame)->c_str(), (*context_frame)->length());
+        }
+
         writer.write_literal("]");
 
         if (this->code)
         {
-            writer.WriteFormat<0x40>(" (code=%d)", this->code);
+            writer.write_literal(" (code=");
+            writer.WriteError(this->code);
+            writer.write_literal(")");
         }
 
         if (this->ascii_message.size())
@@ -232,51 +262,28 @@ namespace Basic
         }
     }
 
-    void LogDebug(const char* component, const char* message)
+    void LogDebug(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, 0);
-        Basic::globals->add_entry(entry);
+        LogEntry::make(LogLevel::Debug, ns, cl, func, message, code);
     }
 
-    void LogDebug(const char* component, const char* message, uint32 code)
+    void LogInfo(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, component, message, code);
-        Basic::globals->add_entry(entry);
+        LogEntry::make(LogLevel::Info, ns, cl, func, message, code);
     }
 
-    void LogInfo(const char* component, const char* message)
+    void LogError(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, component, message, 0);
-        Basic::globals->add_entry(entry);
+        LogEntry::make(LogLevel::Error, ns, cl, func, message, code);
     }
 
-    void LogError(const char* component, const char* message)
+    void LogAlert(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Error, component, message, 0);
-        Basic::globals->add_entry(entry);
+        LogEntry::make(LogLevel::Alert, ns, cl, func, message, code);
     }
 
-    void LogError(const char* component, const char* message, uint32 code)
+    void LogCritical(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Error, component, message, code);
-        Basic::globals->add_entry(entry);
-    }
-
-    void LogAlert(const char* component, const char* message)
-    {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Alert, component, message, 0);
-        Basic::globals->add_entry(entry);
-    }
-
-    void LogCritical(const char* component, const char* message)
-    {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, 0);
-        Basic::globals->add_entry(entry);
-    }
-
-    void LogCritical(const char* component, const char* message, uint32 code)
-    {
-        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Critical, component, message, code);
-        Basic::globals->add_entry(entry);
+        LogEntry::make(LogLevel::Critical, ns, cl, func, message, code);
     }
 }

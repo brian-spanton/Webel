@@ -13,12 +13,12 @@ namespace Basic
 
     void Utf16Encoder::EncoderError(Codepoint codepoint)
     {
-        char error[0x100];
-        int result = sprintf_s(error, "Utf16Encoder::EncoderError codepoint=0x%04X", codepoint);
+        char message[0x100];
+        int result = sprintf_s(message, "codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("Basic", "Utf16Encoder::EncodeError { sprintf_s }");
+            throw FatalError("Basic", "Utf16Encoder", "EncoderError", "sprintf_s error", result);
 
-        Basic::LogDebug("Basic", error);
+        Basic::LogDebug("Basic", "Utf16Encoder", "EncoderError", message);
     }
 
     void Utf16Encoder::write_element(Codepoint codepoint)
@@ -27,7 +27,7 @@ namespace Basic
 
         if (codepoint == EOF)
         {
-            Basic::LogDebug("Basic", "Utf16Encoder::write_element { codepoint == EOF } unexpected eof");
+            Basic::LogDebug("Basic", "Utf16Encoder", "write_element", "codepoint == EOF (unexpected eof)");
             return;
         }
 
@@ -61,19 +61,19 @@ namespace Basic
 
     void AsciiEncoder::EncoderError(Codepoint codepoint)
     {
-        char error[0x100];
-        int result = sprintf_s(error, "Utf16Encoder::EncoderError codepoint=0x%04X", codepoint);
+        char message[0x100];
+        int result = sprintf_s(message, "codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("Basic", "Utf16Encoder::EncodeError { sprintf_s }");
+            throw FatalError("Basic", "Utf16Encoder", "EncodeError", "sprintf_s error", result);
 
-        Basic::LogDebug("Basic", error);
+        Basic::LogDebug("Basic", "Utf16Encoder", "EncodeError", message);
     }
 
     void AsciiEncoder::write_element(Codepoint codepoint)
     {
         if (codepoint == EOF)
         {
-            Basic::LogDebug("Basic", "Utf16Encoder::write_element { codepoint == EOF } unexpected eof");
+            Basic::LogDebug("Basic", "Utf16Encoder", "write_element", "codepoint == EOF (unexpected eof)");
             return;
         }
 

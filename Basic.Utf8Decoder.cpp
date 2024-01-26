@@ -21,11 +21,11 @@ namespace Basic
     void Utf8Decoder::EmitDecoderError(const char* error)
     {
         char full_error[0x100];
-        int result = sprintf_s(full_error, "Utf8Decoder::EmitDecoderError needed=%d seen=%d %hs", this->needed, this->seen, error);
+        int result = sprintf_s(full_error, "needed=%d seen=%d %hs", this->needed, this->seen, error);
         if (result == -1)
-            throw FatalError("Basic", "Utf8Decoder::EmitDecoderError sprintf_s failed");
+            throw FatalError("Basic", "Utf8Decoder", "EmitDecoderError", "sprintf_s", result);
 
-        Basic::LogDebug("Basic", full_error);
+        Basic::LogDebug("Basic", "Utf8Decoder", "EmitDecoderError", full_error);
 
         Emit(0xFFFD);
     }

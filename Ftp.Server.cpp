@@ -43,7 +43,7 @@ namespace Ftp
         case State::pending_connection_state:
             if (event->get_type() == Basic::EventType::can_send_bytes_event)
             {
-                Basic::LogInfo("Ftp", "accepted");
+                Basic::LogInfo("Ftp", "Server", "process_event", "accepted connection");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion)
@@ -59,8 +59,8 @@ namespace Ftp
             }
             else
             {
-                StateMachine::LogUnexpectedEvent("Ftp", "Server::process_event", event);
-                throw FatalError("Ftp", "Server::process_Event unexpected event");
+                StateMachine::LogUnexpectedEvent("Ftp", "Server", "process_event", event);
+                throw FatalError();
             }
             break;
 
@@ -92,7 +92,7 @@ namespace Ftp
             break;
 
         default:
-            throw FatalError("Ftp", "Server::process_event unhandled state");
+            throw FatalError("Ftp", "Server", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

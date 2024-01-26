@@ -20,6 +20,7 @@ namespace Basic
         if (!this->log)
             return;
 
+        // $$$ implement log sampling controls, consider all ILog::add_entry implementations
         this->log->add_entry(entry);
     }
 
@@ -149,16 +150,16 @@ namespace Basic
 
     void Globals::InitializeSocketApi()
     {
-        Basic::LogInfo("Basic", "initializing socket library");
+        Basic::LogInfo("Basic", "Globals", "InitializeSocketApi", "initializing socket library");
 
         WSADATA wsaData;
         int error = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (error != 0)
-            throw FatalError("Basic", "Globals::InitializeSocketApi WSAStartup", error);
+            throw FatalError("Basic", "Globals", "InitializeSocketApi", "WSAStartup", error);
 
         SOCKET tempSocket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (tempSocket == INVALID_SOCKET)
-            throw FatalError("Basic", "Globals::InitializeSocketApi ::socket", WSAGetLastError());
+            throw FatalError("Basic", "Globals", "InitializeSocketApi", "::socket", WSAGetLastError());
 
         uint32 count;
 
@@ -174,7 +175,7 @@ namespace Basic
             0,
             0);
         if (error == SOCKET_ERROR)
-            throw FatalError("Basic", "Globals::InitializeSocketApi WSAIoctl", WSAGetLastError());
+            throw FatalError("Basic", "Globals", "InitializeSocketApi", "WSAIoctl", WSAGetLastError());
 
         closesocket(tempSocket);
     }
@@ -182,7 +183,7 @@ namespace Basic
     void Globals::QueueJob(std::shared_ptr<Job> job)
     {
         if (!this->completion_queue)
-            throw FatalError("Basic", "Globals::QueueJob { !this->completion_queue }");
+            throw FatalError("Basic", "Globals", "QueueJob", "!this->completion_queue");
 
         return this->completion_queue->QueueJob(job);
     }
@@ -190,7 +191,7 @@ namespace Basic
     void Globals::BindToCompletionQueue(HANDLE handle)
     {
         if (!this->completion_queue)
-            throw FatalError("Basic", "Globals::BindToCompletionQueue { !this->completion_queue }");
+            throw FatalError("Basic", "Globals", "BindToCompletionQueue", "!this->completion_queue");
 
         return this->completion_queue->BindToCompletionQueue(handle);
     }

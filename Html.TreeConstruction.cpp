@@ -1346,7 +1346,7 @@ loop:
         char full_error[0x100];
         sprintf_s(full_error, "stack=%s; insertion_mode=%s; %s", StackString().c_str(), mode_string, error);
 
-        Basic::LogDebug("Html", full_error);
+        Basic::LogDebug("Html", "TreeConstruction", "HandleError", full_error);
     }
 
     void TreeConstruction::ParseError(const char* error)

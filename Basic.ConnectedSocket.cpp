@@ -29,7 +29,7 @@ namespace Basic
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
             this->remoteAddress.sin_port);
 
-        // $$$ find a way to correlate this id to all related log entries
+        // $$$ correlate this id to all related log entries, across async and network hops too
     }
 
     void ConnectedSocket::Received(ByteString* bytes)
@@ -56,7 +56,7 @@ namespace Basic
                 process_event_ignore_failures(protocol.get(), &event);
 
                 if (!this->protocol_element_source.Exhausted() && !protocol->failed())
-                    throw FatalError("Basic", "ConnectedSocket::Received { !this->protocol_element_source.Exhausted() && !protocol->failed() }");
+                    throw FatalError("Basic", "ConnectedSocket", "Received", "!this->protocol_element_source.Exhausted() && !protocol->failed()");
             }
         }
     }
@@ -144,7 +144,7 @@ namespace Basic
     void ConnectedSocket::Send(ByteStringRef bytes)
     {
         if (bytes->size() == 0)
-            throw FatalError("Basic", "ConnectedSocket::Send { bytes->size() == 0 }");
+            throw FatalError("Basic", "ConnectedSocket", "Send", "bytes->size() == 0");
 
         uint32 count;
         DWORD flags = 0;
@@ -180,7 +180,7 @@ namespace Basic
         if (error != ERROR_SUCCESS && error != STATUS_PENDING)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED)
-                Basic::LogError("Basic", "ConnectedSocket::CompleteReceive { error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED }", error);
+                Basic::LogError("Basic", "ConnectedSocket", "CompleteReceive", "error != STATUS_CONNECTION_RESET && error != STATUS_CONNECTION_ABORTED && error != STATUS_CANCELLED", error);
 
             DisconnectAndNotifyProtocol();
         }

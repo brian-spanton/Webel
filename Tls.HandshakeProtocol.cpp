@@ -43,7 +43,7 @@ namespace Tls
     void HandshakeProtocol::CalculateVerifyData(ByteString* label, byte* output, uint16 output_max)
     {
         if (output_max < this->security_parameters->verify_data_length)
-            throw FatalError("Tls::HandshakeProtocol::CalculateVerifyData output_max < this->security_parameters->verify_data_length", 0);
+            throw FatalError("Tls", "HandshakeProtocol", "CalculateVerifyData", "output_max < this->security_parameters->verify_data_length", this->security_parameters->verify_data_length);
 
         IStreamWriter<byte>* seed[] = { this->handshake_messages.get(), };
 

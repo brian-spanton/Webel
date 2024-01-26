@@ -124,7 +124,7 @@ namespace Gzip
         uint32 dw = 0;
 
         if (count > 16)
-            throw FatalError("Gzip", "Deflate::read_next { count > 16 }");
+            throw FatalError("Gzip", "Deflate", "read_next", "count > 16");
 
         while (this->buffered_bits_length < count)
         {
@@ -147,7 +147,7 @@ namespace Gzip
         this->buffered_bits_length -= count;
 
         if (this->buffered_bits_length > 7)
-            throw FatalError("Gzip", "Deflate::read_next { this->buffered_bits_length > 7 }");
+            throw FatalError("Gzip", "Deflate", "read_next", "this->buffered_bits_length > 7");
 
         return ProcessResult::process_result_ready;
     }
@@ -334,7 +334,7 @@ namespace Gzip
 
                 if (this->dynamic_code_lengths.size() > expected)
                 {
-                    Basic::LogDebug("Gzip", "Deflate::process_event { this->dynamic_code_lengths.size() > expected } bad dynamic lengths");
+                    Basic::LogDebug("Gzip", "Deflate", "process_event", "this->dynamic_code_lengths.size() > expected (bad dynamic lengths)");
                     switch_to_state(State::lengths_failed);
                     break;
                 }
@@ -385,7 +385,7 @@ namespace Gzip
                 this->HCLEN_current = this->HCLEN_current->children[b];
                 if (!this->HCLEN_current)
                 {
-                    Basic::LogDebug("Gzip", "Deflate::process_event { !this->HCLEN_current } bad code length (HCLEN) huffman tree");
+                    Basic::LogDebug("Gzip", "Deflate", "process_event", "!this->HCLEN_current (bad code lengths (HCLEN) huffman tree)");
                     switch_to_state(State::lengths_failed);
                     break;
                 }
@@ -457,7 +457,7 @@ namespace Gzip
             this->HLIT_current = this->HLIT_current->children[b];
             if (!this->HLIT_current)
             {
-                Basic::LogDebug("Gzip", "Deflate::process_event { !this->HLIT_current } bad literal/length (HLIT) huffman tree");
+                Basic::LogDebug("Gzip", "Deflate", "process_event", "{ !this->HLIT_current } bad literal/length (HLIT) huffman tree");
                 switch_to_state(State::length_code_failed);
                 break;
             }
@@ -512,7 +512,7 @@ namespace Gzip
             this->HDIST_current = this->HDIST_current->children[b];
             if (!this->HDIST_current)
             {
-                Basic::LogDebug("Gzip", "Deflate::process_event { !this->HDIST_current } bad distance (HDIST) huffman tree");
+                Basic::LogDebug("Gzip", "Deflate", "process_event", "!this->HDIST_current (bad distance (HDIST) huffman tree)");
                 switch_to_state(State::distance_code_failed);
                 break;
             }
@@ -537,7 +537,7 @@ namespace Gzip
 
                 if (distance > size)
                 {
-                    Basic::LogDebug("Gzip", "Deflate::process_event { distance > size }");
+                    Basic::LogDebug("Gzip", "Deflate", "process_event", "distance > size");
                     switch_to_state(State::after_extra_distance_bits_failed);
                     break;
                 }
@@ -555,7 +555,7 @@ namespace Gzip
             break;
 
         default:
-            throw FatalError("Gzip", "Deflate::process_event unhandled state");
+            throw FatalError("Gzip", "Deflate", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

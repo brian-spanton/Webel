@@ -34,8 +34,8 @@ namespace Web
 
         Hold hold(this->lock);
 
-        if (get_state() != State::inactive_state)
-            throw FatalError("Web", "Client::Get get_state() != State::inactive_state");
+        if (this->get_state() != State::inactive_state)
+            throw FatalError("Web", "Client", "Get", "this->get_state() != State::inactive_state", this->get_state());
 
         this->retries = 0;
         this->redirects = 0;
@@ -59,7 +59,7 @@ namespace Web
     {
         if (this->redirects == 5)
         {
-            Basic::LogDebug("Web", "Client::Redirect { this->redirects == 5 } too many redirects");
+            Basic::LogDebug("Web", "Client", "Redirect", "this->redirects == 5 (too many redirects)");
             this->planned_request = 0;
         }
         else
@@ -93,7 +93,7 @@ namespace Web
     {
         if (this->retries == this->max_retries)
         {
-            Basic::LogDebug("Web", "Client::Retry { this->retries == this->max_retries } too many retries");
+            Basic::LogDebug("Web", "Client", "Retry", "this->retries == this->max_retries (too many retries)");
             this->planned_request = 0;
         }
         else
@@ -180,7 +180,7 @@ namespace Web
         Http::serialize<Request>()(this->planned_request.get(), &request_bytes);
         request_bytes.write_to_stream(this->transport.get());
 
-		std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+		std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Client", "SendRequest");
         TextWriter(&entry->unicode_message).write_literal("Request sent: ");
         this->planned_request->render_request_line(&entry->unicode_message);
 		Basic::globals->add_entry(entry);
@@ -238,7 +238,7 @@ namespace Web
             this->transport.reset();
 
         if (this->get_state() == State::inactive_state)
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
 
         if (this->get_state() == State::response_pending_state)
         {
@@ -259,7 +259,7 @@ namespace Web
                         bool success = location_url->Parse(location_string.get(), this->transaction->request->resource.get());
                         if (success)
                         {
-			                std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+			                std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Client", "process_event");
                             this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
                             TextWriter(&entry->unicode_message).WriteFormat<0x40>(" redirected with %d to ", code);
                             location_url->write_to_stream(&entry->unicode_message, 0, 0);
@@ -278,7 +278,7 @@ namespace Web
                 // can choose and set a body stream
                 if (!this->planned_request)
                 {
-			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Client", "process_event");
                     this->transaction->request->resource->write_to_stream(&entry->unicode_message, 0, 0);
                     TextWriter(&entry->unicode_message).WriteFormat<0x40>(" returned %d", this->transaction->response->code);
 			        Basic::globals->add_entry(entry);
@@ -311,7 +311,7 @@ namespace Web
 
                     Retry(this->transaction->request);
                     QueuePlanned();
-                    return ProcessResult::process_result_blocked; // event consumed, new thread
+                    return ProcessResult::process_result_blocked;
                 }
 
                 switch_to_state(State::response_complete_state);
@@ -324,7 +324,7 @@ namespace Web
             }
             else
             {
-                StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
+                StateMachine::LogUnexpectedEvent("Web", "Client", "process_event", event);
             }
 
             return ProcessResult::process_result_blocked;
@@ -345,10 +345,10 @@ namespace Web
                 break;
 
             default:
-                throw FatalError("Web", "Client::process_event element_stream_ending_event unhandled state");
+                throw FatalError("Web", "Client", "process_event", "element_stream_ending_event unhandled state", this->get_state());
             }
 
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
         }
 
         switch (get_state())
@@ -357,16 +357,16 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
                 if (!this->planned_request->resource->is_http_scheme())
                 {
-                    Basic::LogDebug("Web", "Client::process_event { !this->planned_request->resource->is_http_scheme() } not an http url");
+                    Basic::LogDebug("Web", "Client", "process_event", "!this->planned_request->resource->is_http_scheme() (not an http url)");
                     switch_to_state(State::inactive_state);
                     Completion();
-                    return ProcessResult::process_result_blocked; // event consumed
+                    return ProcessResult::process_result_blocked;
                 }
 
                 std::shared_ptr<Uri> current_url;
@@ -395,7 +395,7 @@ namespace Web
                     bool success = client_socket->Resolve(this->planned_request->resource->host, this->planned_request->resource->get_port(), &addr);
                     if (!success)
                     {
-                        Basic::LogDebug("Web", "Client::process_event client_socket->Resolve(this->planned_request->resource->host, ...) failed");
+                        Basic::LogDebug("Web", "Client", "process_event", "!client_socket->Resolve(this->planned_request->resource->host, ...)");
                         switch_to_state(State::inactive_state);
                         Completion();
                         return ProcessResult::process_result_blocked; // event consumed
@@ -406,7 +406,7 @@ namespace Web
                     switch_to_state(State::connection_pending_state);
                 }
 
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -414,13 +414,13 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
                 switch_to_state(State::response_pending_state);
                 SendRequest();
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -428,7 +428,7 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Client::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Client", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -440,7 +440,7 @@ namespace Web
                 {
                     UnicodeStringRef cookie_value = it->second;
 
-			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+			        std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Client", "process_event");
                     TextWriter(&entry->unicode_message).write_literal("Cookie received: ");
                     cookie_value->write_to_stream(&entry->unicode_message);
 			        Basic::globals->add_entry(entry);
@@ -470,12 +470,12 @@ namespace Web
                 }
 
                 QueuePlanned();
-                return ProcessResult::process_result_blocked; // event consumed, new thread
+                return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Web", "Client::process_event unhandled state");
+            throw FatalError("Web", "Client", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

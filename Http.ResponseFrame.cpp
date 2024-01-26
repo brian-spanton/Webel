@@ -129,7 +129,7 @@ namespace Http
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Http");
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Http", "ResponseFrame", "process_event");
 			    TextWriter(&entry->unicode_message).write_literal("Response headers received: ");
                 this->transaction->response->render_response_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
@@ -179,7 +179,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http", "ResponseFrame::process_event unhandled state");
+            throw FatalError("Http", "ResponseFrame", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

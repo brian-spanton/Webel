@@ -64,18 +64,18 @@ namespace Basic
             }
 
             if (out_address == 0)
-                throw FatalError("Basic", "ElementSource::Read { out_address == 0 }");
+                throw FatalError("Basic", "ElementSource", "Read", "out_address == 0");
 
             if (out_count == 0)
-                throw FatalError("Basic", "ElementSource::Read { out_count == 0 }");
+                throw FatalError("Basic", "ElementSource", "Read", "out_count == 0");
 
             if (count == 0)
-                throw FatalError("Basic", "ElementSource::Read { count == 0 }");
+                throw FatalError("Basic", "ElementSource", "Read", "count == 0");
 
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw new FatalError("Basic", "ElementSource::Read { elements_remaining == 0 }"); // return ProcessResult::process_result_blocked; // event consumed
+                throw new FatalError("Basic", "ElementSource", "Read", "elements_remaining == 0");
 
             const T* return_address = this->elements + this->elements_read;
             uint32 return_count = (elements_remaining < count) ? elements_remaining : count;
@@ -93,7 +93,12 @@ namespace Basic
             uint32 elements_remaining = this->count - this->elements_read;
 
             if (elements_remaining == 0)
-                throw new FatalError("Basic", "ElementSource::ReadNext { elements_remaining == 0 }"); // return ProcessResult::process_result_blocked; // event consumed
+            {
+                // $ this was returning ProcessResult::process_result_blocked, but let's start with the assumption
+                // that ReadNext is never called when there are no elements left, and see what shakes out.  if this
+                // comment still exists after a few years, it can be deleted.
+                throw new FatalError("Basic", "ElementSource", "ReadNext", "elements_remaining == 0");
+            }
 
             (*element) = this->elements[this->elements_read];
             this->elements_read++;

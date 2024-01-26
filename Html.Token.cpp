@@ -34,7 +34,7 @@ namespace Html
 
         default:
             sprintf_s(debug_string, count, "%d", this->type);
-            Basic::LogError("Html", "Token::GetDebugString unexpected type");
+            Basic::LogError("Html", "Token", "GetDebugString", "unexpected type", this->type);
             break;
         }
     }

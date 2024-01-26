@@ -219,7 +219,7 @@ namespace Html
             break;
 
         default:
-            throw FatalError("Html", "CharacterReferenceFrame::process_event unhandled state");
+            throw FatalError("Html", "CharacterReferenceFrame", "process_event", "unhandled state", this->get_state());
         }
     }
 

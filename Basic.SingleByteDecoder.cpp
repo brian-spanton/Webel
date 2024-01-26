@@ -23,26 +23,21 @@ namespace Basic
         this->destination = destination;
     }
 
-    void SingleByteDecoder::EmitDecoderError(const char* error)
+    void SingleByteDecoder::EmitDecoderError(const char* message)
     {
-        char full_error[0x100];
-        int result = sprintf_s(full_error, "SingleByteDecoder::EmitDecoderError %s", error);
-        if (result == -1)
-            throw FatalError("Basic", "SingleByteDecoder::EmitDecoderError sprintf_s failed");
-
-        Basic::LogDebug("Basic", full_error);
+        Basic::LogDebug("Basic", "SingleByteDecoder", "EmitDecoderError", message);
 
         Emit(0xFFFD);
     }
 
     void SingleByteDecoder::EmitDecoderError(byte b)
     {
-        char error[0x100];
-        int result = sprintf_s(error, "byte=0x%02X", b);
+        char message[0x100];
+        int result = sprintf_s(message, "byte=0x%02X", b);
         if (result == -1)
-            throw FatalError("Basic", "SingleByteDecoder::EmitDecoderError sprintf_s failed");
+            throw FatalError("Basic", "SingleByteDecoder", "EmitDecoderError", "sprintf_s", result);
 
-        EmitDecoderError(error);
+        EmitDecoderError(message);
     }
 
     void SingleByteDecoder::write_elements(const byte* elements, uint32 count)

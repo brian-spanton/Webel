@@ -34,19 +34,19 @@ namespace Basic
 
         output = GetStdHandle(STD_OUTPUT_HANDLE);
         if (output == INVALID_HANDLE_VALUE)
-            throw FatalError("Basic", "Console::Initialize GetStdHandle failed", GetLastError());
+            throw FatalError("Basic", "Console", "Initialize", "GetStdHandle(STD_OUTPUT_HANDLE)", GetLastError());
 
         input = GetStdHandle(STD_INPUT_HANDLE);
         if (input == INVALID_HANDLE_VALUE)
-            throw FatalError("Basic", "Console::Initialize GetStdHandle failed", GetLastError());
+            throw FatalError("Basic", "Console", "Initialize", "GetStdHandle(STD_INPUT_HANDLE)", GetLastError());
 
         bool success = (bool)GetConsoleMode(input, &originalMode);
         if (!success)
-            throw FatalError("Basic", "Console::Initialize GetConsoleMode failed", GetLastError());
+            throw FatalError("Basic", "Console", "Initialize", "GetConsoleMode", GetLastError());
 
         success = (bool)SetConsoleMode(input, ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_PROCESSED_INPUT);
         if (!success)
-            throw FatalError("Basic", "Console::Initialize SetConsoleMode failed", GetLastError());
+            throw FatalError("Basic", "Console", "Initialize", "SetConsoleMode", GetLastError());
 
         CanSendCodepointsEvent event;
         event.Initialize(&this->protocol_element_source);
@@ -54,7 +54,7 @@ namespace Basic
 
         HANDLE thread = ::CreateThread(0, 0, Thread, this, 0, 0);
         if (thread == 0)
-            throw FatalError("Basic", "Console::Initialize CreateThread failed", GetLastError());
+            throw FatalError("Basic", "Console", "Initialize", "::CreateThread", GetLastError());
 
         (*createdThread) = thread;
     }
@@ -78,7 +78,7 @@ namespace Basic
 
             BOOL success = ReadConsoleInputW(input, &record, 1, &count);
             if (success == FALSE)
-                throw FatalError("Basic", "Console::Thread ReadConsoleInputA failed", GetLastError());
+                throw FatalError("Basic", "Console", "Thread", "ReadConsoleInputW", GetLastError());
 
             if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown == TRUE)
             {
@@ -136,11 +136,11 @@ namespace Basic
 
         BOOL success = WriteConsoleW(output, utf16_elements.c_str(), utf16_elements.length(), 0, 0);
         if (success == FALSE)
-            throw FatalError("Basic", "Console::write_elements WriteConsoleA", GetLastError());
+            throw FatalError("Basic", "Console", "write_elements", "WriteConsoleW", GetLastError());
     }
 
     void Console::write_eof()
     {
-        throw FatalError("Basic", "Console::write_eof");
+        throw FatalError("Basic", "Console", "write_eof", "call not expected");
     }
 }

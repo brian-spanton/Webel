@@ -103,7 +103,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic", "MatchFrame::process_event unhandled state");
+                throw FatalError("Basic", "MatchFrame", "process_event", "unhandled state", this->get_state());
             }
         }
     };

@@ -51,7 +51,7 @@ namespace Web
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             switch_to_state(State::done_state);
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
         }
 
         switch (get_state())
@@ -60,11 +60,11 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Server::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Server", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::LogInfo("Web", "Server accepted");
+                Basic::LogInfo("Web", "Server", "process_event", "accepted connection");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion)
@@ -75,7 +75,7 @@ namespace Web
                 }
 
                 switch_to_state(State::new_request_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -96,7 +96,7 @@ namespace Web
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
-			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Server", "process_event");
                 TextWriter(&entry->unicode_message).write_literal("Request received: ");
                 this->request->render_request_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
@@ -127,7 +127,7 @@ namespace Web
 
                 switch_to_state(State::response_done_state);
 
-			    entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web");
+			    entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Server", "process_event");
                 TextWriter(&entry->unicode_message).write_literal("Response sent: ");
                 this->response->render_response_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
@@ -153,7 +153,7 @@ namespace Web
             break;
 
         default:
-            throw FatalError("Web", "Server::process_event unhandled state");
+            throw FatalError("Web", "Server", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

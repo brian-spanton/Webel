@@ -69,7 +69,7 @@ namespace Service
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::object_value)
                     {
-                        Basic::LogError("Service", "HtmlNamedCharacterReferences::process_event { this->json_parser->text->value->type != Json::Value::Type::object_value } unexpected json structure");
+                        Basic::LogError("Service", "HtmlNamedCharacterReferences", "process_event", "this->json_parser->text->value->type != Json::Value::Type::object_value (unexpected json structure)");
                         switch_to_state(State::unexpected_json_error);
                         return ProcessResult::process_result_blocked;
                     }
@@ -121,7 +121,7 @@ namespace Service
 
                     char message[0x100];
                     sprintf_s(message, "recognized %d HTML named character references", Html::globals->named_character_references_table->size());
-                    Basic::LogInfo("Service", message);
+                    Basic::LogInfo("Service", "HtmlNamedCharacterReferences", "process_event", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion)
@@ -136,14 +136,14 @@ namespace Service
                 break;
 
             default:
-                StateMachine::LogUnexpectedEvent("Service", "HtmlNamedCharacterReferences::process_event", event);
+                StateMachine::LogUnexpectedEvent("Service", "HtmlNamedCharacterReferences", "process_event", event);
                 switch_to_state(State::unexpected_event_error);
                 return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Service", "HtmlNamedCharacterReferences::process_event unhandled state");
+            throw FatalError("Service", "HtmlNamedCharacterReferences", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

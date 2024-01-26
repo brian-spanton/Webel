@@ -99,10 +99,10 @@ namespace Gzip
         {
             if (children[0])
             {
-                // not a leaf node, must have both children (this is always true except for one specific edge case with Deflate
                 if (!children[1])
                 {
-                    Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { !children[1] }");
+                    // there is one specific edge case with Deflate that defies this rule
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet", "validate", "!children[1] (non-leaf nodes must have both children)");
                     return false;
                 }
 
@@ -117,7 +117,7 @@ namespace Gzip
 
             if (children[1])
             {
-                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { children[1] }");
+                Basic::LogDebug("Gzip", "HuffmanAlphabet", "validate", "children[1] (non-leaf nodes must have both children)");
                 return false;
             }
 
@@ -125,13 +125,13 @@ namespace Gzip
 
             if (this->code != test_code)
             {
-                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { this->code != test_code }");
+                Basic::LogDebug("Gzip", "HuffmanAlphabet", "validate", "this->code != test_code");
                 return false;
             }
 
             if (this->length != test_length)
             {
-                Basic::LogDebug("Gzip", "HuffmanAlphabet::validate { this->length != test_length }");
+                Basic::LogDebug("Gzip", "HuffmanAlphabet", "validate", "this->length != test_length");
                 return false;
             }
 
@@ -147,7 +147,7 @@ namespace Gzip
         {
             if (count > lengths.size())
             {
-                Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { count > lengths.size() }");
+                Basic::LogDebug("Gzip", "HuffmanAlphabet", "make_alphabet", "count > lengths.size()");
                 return false;
             }
 
@@ -168,14 +168,14 @@ namespace Gzip
 
                 if (length_count[length] > (1 << length))
                 {
-                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > masks[length] }");
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet", "make_alphabet", "first_code > masks[length]");
                     return false;
                 }
             }
 
             if (length_count.size() > 16)
             {
-                Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { length_count.size() > 16 }");
+                Basic::LogDebug("Gzip", "HuffmanAlphabet", "make_alphabet", "length_count.size() > 16");
                 return false;
             }
 
@@ -193,7 +193,7 @@ namespace Gzip
 
                 if (first_code > ((1 << length) - 1))
                 {
-                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet { first_code > ((1 << length) - 1) }");
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet", "make_alphabet", "first_code > ((1 << length) - 1)");
                     return false;
                 }
 
@@ -226,7 +226,7 @@ namespace Gzip
 
                 if (current->length != 0)
                 {
-                    Basic::LogDebug("Gzip", "HuffmanAlphabet::make_alphabet duplicate code");
+                    Basic::LogDebug("Gzip", "HuffmanAlphabet", "make_alphabet", "duplicate huffman code");
                     return false;
                 }
 

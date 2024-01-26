@@ -20,9 +20,7 @@ namespace Json
 
     void ScriptFrame::ParseError(const char* error)
     {
-        char full_error[0x100];
-        sprintf_s(full_error, "ScriptFrame::ParseError %s", error);
-        Basic::LogDebug("Json", full_error);
+        Basic::LogDebug("Json", "ScriptFrame", "ParseError", error);
     }
 
     void ScriptFrame::write_element(std::shared_ptr<Token> token)
@@ -226,7 +224,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json", "ScriptFrame::write_element unhandled state");
+            throw FatalError("Json", "ScriptFrame", "write_element", "unhandled state", this->get_state());
         }
     }
 }

@@ -67,7 +67,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::PRF unsupported PRFAlgorithm", 0);
+            throw FatalError("Tls", "Globals", "PRF_hash", "unsupported PRFAlgorithm", prf_algorithm);
         }
     }
 
@@ -120,14 +120,14 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls::HMAC_hash unsupported mac_algorithm", 0);
+            throw FatalError("Tls", "Globals", "HMAC_hash", "unsupported mac_algorithm", mac_algorithm);
         }
 
         std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
         hashAlgorithm->Initialize(cng_algorithm, true);
 
         if (expected_output_length != hashAlgorithm->hash_output_length)
-            throw FatalError("expected_output_length != hashAlgorithm->hash_output_length", 0);
+            throw FatalError("Tls", "Globals", "HMAC_hash", "expected_output_length != hashAlgorithm->hash_output_length", hashAlgorithm->hash_output_length);
 
         Hash(hashAlgorithm.get(), secret->address(), secret->size(), seed, seed_count, output, expected_output_length);
     }
@@ -157,9 +157,8 @@ namespace Tls
             }
         }
 
-        // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
-        // connections are failing due to an unsupported algorithm
-        Basic::LogError("Tls", "Globals::SelectCipherSuite no match");
+        // use LogDebug instead of LogError so we are less vulnerable to a logging attack
+        Basic::LogDebug("Tls", "Globals", "SelectCipherSuite", "no match");
         return false;
     }
 
@@ -168,7 +167,7 @@ namespace Tls
         if (length > 0)
         {
             if (length > source->size())
-                throw FatalError("Tls", "Globals::Partition { length > source.size() }", 0);
+                throw FatalError("Tls", "Globals", "Partition", "length > source.size()", length);
 
             destination->write_elements(source->address(), length);
             source->erase(source->begin(), source->begin() + length);

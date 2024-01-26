@@ -39,7 +39,7 @@ namespace Basic
             case State::word_state:
                 {
                     if (event->get_type() == EventType::can_send_codepoints_event)
-                        return ProcessResult::process_result_blocked; // event consumed
+                        return ProcessResult::process_result_blocked;
 
                     element_type b;
                     ProcessResult result = Event::ReadNext(event, &b);
@@ -64,7 +64,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic", "CommandFrame::process_event unhandled state");
+                throw FatalError("Basic", "CommandFrame", "process_event", "unhandled state", this->get_state());
             }
 
             return ProcessResult::process_result_ready;

@@ -32,15 +32,15 @@ namespace Basic
 
         int error = bind(socket, reinterpret_cast<const sockaddr*>(&endpoint), sizeof(endpoint));
         if (error == SOCKET_ERROR)
-            throw FatalError("Basic", "ListenSocket::ListenSocket bind failed", WSAGetLastError());
+            throw FatalError("Basic", "ListenSocket", "ListenSocket", "bind failed", WSAGetLastError());
 
         error = listen(socket, SOMAXCONN);
         if (error == SOCKET_ERROR)
-            throw FatalError("Basic", "ListenSocket::ListenSocket listen failed", WSAGetLastError());
+            throw FatalError("Basic", "ListenSocket", "ListenSocket", "listen failed", WSAGetLastError());
 
         char message[0x40];
         sprintf_s(message, "listening on port %d", port);
-        Basic::LogInfo("Basic", message);
+        Basic::LogInfo("Basic", "ListenSocket", "ListenSocket", message);
     }
 
     void ListenSocket::start_accept(std::shared_ptr<ServerSocket> server_socket, bool receive_with_connect)
@@ -88,7 +88,7 @@ namespace Basic
         if (error != ERROR_SUCCESS)
         {
             if (error != STATUS_CONNECTION_RESET && error != STATUS_CANCELLED)
-                throw FatalError("Basic", "ListenSocket::CompleteAccept { error != ERROR_SUCCESS }", error);
+                throw FatalError("Basic", "ListenSocket", "CompleteAccept", "error != ERROR_SUCCESS", error);
         }
         else
         {
@@ -99,7 +99,7 @@ namespace Basic
                 reinterpret_cast<char*>(&this->socket),
                 sizeof(this->socket));
             if (error == SOCKET_ERROR)
-                throw FatalError("Basic", "ListenSocket::CompleteRead setsockopt failed", WSAGetLastError());
+                throw FatalError("Basic", "ListenSocket", "CompleteRead", "setsockopt", WSAGetLastError());
 
             server_socket->CompleteAccept(bytes, count);
         }

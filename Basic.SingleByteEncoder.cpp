@@ -34,12 +34,12 @@ namespace Basic
 
     void SingleByteEncoder::EncoderError(Codepoint codepoint)
     {
-        char error[0x100];
-        int result = sprintf_s(error, "codepoint=0x%04X", codepoint);
+        char message[0x100];
+        int result = sprintf_s(message, "codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("Basic", "SingleByteEncoder::EncodeError { sprintf_s }");
+            throw FatalError("Basic", "SingleByteEncoder", "EncodeError", "sprintf_s", result);
 
-        Basic::LogDebug("Basic", error);
+        Basic::LogDebug("Basic", "SingleByteEncoder", "EncodeError", message);
     }
 
     void SingleByteEncoder::write_elements(const Codepoint* elements, uint32 count)

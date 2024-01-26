@@ -69,7 +69,7 @@ namespace Service
 
                     this->client->set_decoded_content_stream(this->json_parser);
 
-                    return ProcessResult::process_result_blocked; // event consumed
+                    return ProcessResult::process_result_blocked;
                 }
                 break;
 
@@ -77,7 +77,7 @@ namespace Service
                 {
                     if (this->json_parser->text->value->type != Json::Value::Type::array_value)
                     {
-                        Basic::LogError("Service", "StandardEncodings::process_event { this->json_parser->text->value->type != Json::Value::Type::array_value }");
+                        Basic::LogError("Service", "StandardEncodings", "process_event", "this->json_parser->text->value->type != Json::Value::Type::array_value");
                         switch_to_state(State::unexpected_json_error);
                         return ProcessResult::process_result_blocked;
                     }
@@ -172,7 +172,7 @@ namespace Service
 
                                 bool success = index_url->Parse(file_name.get(), current_url.get());
                                 if (!success)
-                                    throw FatalError("Service", "StandardEncodings::process_event { index_url->Parse failed }");
+                                    throw FatalError("Service", "StandardEncodings", "process_event", "index_url->Parse failed");
 
                                 Json::MemberList::iterator labels_it = encoding->members.find(Name_labels);
                                 if (labels_it == encoding->members.end())
@@ -228,11 +228,11 @@ namespace Service
                     }
 
                     if (found_ascii == false)
-                        throw FatalError("Service", "StandardEncodings::process_event didn't find us-ascii encoding");
+                        throw FatalError("Service", "StandardEncodings", "process_event", "didn't find us-ascii encoding");
 
                     char message[0x100];
                     sprintf_s(message, "recognized %d encodings", Basic::globals->decoder_map.size());
-                    Basic::LogInfo("Service", message);
+                    Basic::LogInfo("Service", "StandardEncodings", "process_event", message);
 
                     std::shared_ptr<IProcess> completion = this->completion.lock();
                     if (completion)
@@ -247,14 +247,14 @@ namespace Service
                 break;
 
             default:
-                StateMachine::LogUnexpectedEvent("Service", "StandardEncodings::process_event", event);
+                StateMachine::LogUnexpectedEvent("Service", "StandardEncodings", "process_event", event);
                 switch_to_state(State::unexpected_event_error);
                 return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Service", "StandardEncodings::process_event unhandled state");
+            throw FatalError("Service", "StandardEncodings", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

@@ -59,7 +59,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic", "StreamFrame::process_event unhandled state");
+                throw FatalError("Basic", "StreamFrame", "process_event", "unhandled state", this->get_state());
             }
 
             return ProcessResult::process_result_ready;

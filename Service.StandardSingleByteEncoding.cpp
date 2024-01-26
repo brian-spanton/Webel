@@ -39,7 +39,7 @@ namespace Service
             std::shared_ptr<Uri> url;
             this->client->get_url(&url);
 
-			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, "Service");
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, "Service", "StandardSingleByteEncoding", "process_event");
 			url->write_to_stream(&entry->unicode_message, 0, 0);
 			Basic::globals->add_entry(entry);
 
@@ -53,7 +53,7 @@ namespace Service
             {
                 if (event->get_type() != Http::EventType::response_headers_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Service", "StandardSingleByteEncoding::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Service", "StandardSingleByteEncoding", "process_event", event);
                     switch_to_state(State::unexpected_event_error);
                     return ProcessResult::process_result_blocked;
                 }
@@ -67,12 +67,12 @@ namespace Service
                 this->client->set_decoded_content_stream(this->shared_from_this());
 
                 switch_to_state(State::line_start_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
         default:
-            throw FatalError("Service", "StandardSingleByteEncoding::process_event unhandled state");
+            throw FatalError("Service", "StandardSingleByteEncoding", "process_event", "unhandled state", this->get_state());
         }
     }
 
@@ -194,7 +194,7 @@ namespace Service
             break;
 
         default:
-            throw FatalError("Service", "StandardSingleByteEncoding::write_element switch (get_state()) default");
+            throw FatalError("Service", "StandardSingleByteEncoding", "write_element", "unhandled state", get_state());
         }
     }
 

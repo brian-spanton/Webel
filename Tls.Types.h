@@ -907,10 +907,10 @@ namespace Basic
             serialize_items(value, &count_stream);
 
             if (count_stream.count < vector_type::encoded_length_min)
-                throw FatalError("Tls", "serialize_vector::operator() { count_stream.count < vector_type::encoded_length_min } vector too short");
+                throw FatalError("Tls", "serialize_vector", "operator()", "count_stream.count < vector_type::encoded_length_min (vector too short)", count_stream.count);
 
             if (count_stream.count > vector_type::encoded_length_max)
-                throw FatalError("Tls", "serialize_vector::operator() { count_stream.count > vector_type::encoded_length_max } vector too long");
+                throw FatalError("Tls", "serialize_vector", "operator()", "count_stream.count > vector_type::encoded_length_max (vector too long)", count_stream.count);
 
             serialize_number<uint32, vector_type::length_of_encoded_length>()(&count_stream.count, stream);
             serialize_items(value, stream);
@@ -1072,7 +1072,7 @@ namespace Tls
                 break;
 
             default:
-                throw FatalError("Tls", "VectorFrame::process_event unhandled state");
+                throw FatalError("Tls", "VectorFrame", "process_event", "unhandled state", this->get_state());
             }
 
             return ProcessResult::process_result_ready;

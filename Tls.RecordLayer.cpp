@@ -35,7 +35,7 @@ namespace Tls
 
         NTSTATUS error = BCryptGenRandom(0, this->session_id.address(), this->session_id.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (error != 0)
-            throw FatalError("Tls", "RecordLayer::RecordLayer BCryptGenRandom failed", error);
+            throw FatalError("Tls", "RecordLayer", "RecordLayer", "BCryptGenRandom", error);
 
         if (server)
         {
@@ -74,7 +74,7 @@ namespace Tls
         if (event->get_type() == Basic::EventType::element_stream_ending_event)
         {
             DisconnectApplication();
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
         }
 
         switch (get_state())
@@ -83,7 +83,7 @@ namespace Tls
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Tls", "RecordLayer::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "RecordLayer", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -101,7 +101,7 @@ namespace Tls
                     switch_to_state(State::receive_record_state);
                 }
 
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -131,7 +131,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls", "RecordLayer::process_event unhandled state");
+            throw FatalError("Tls", "RecordLayer", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;
@@ -196,12 +196,12 @@ namespace Tls
             heartbeat_message.payload.resize(16);
             NTSTATUS error = BCryptGenRandom(0, heartbeat_message.payload.address(), heartbeat_message.payload.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw FatalError("Tls", "RecordLayer::ConnectApplication BCryptGenRandom failed", error);
+                throw FatalError("Tls", "RecordLayer", "ConnectApplication", "BCryptGenRandom", error);
 
             heartbeat_message.padding.resize(16);
             error = BCryptGenRandom(0, heartbeat_message.padding.address(), heartbeat_message.padding.size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (error != 0)
-                throw FatalError("Tls", "RecordLayer::ConnectApplication BCryptGenRandom failed", error);
+                throw FatalError("Tls", "RecordLayer", "ConnectApplication", "BCryptGenRandom", error);
 
             ByteString heartbeat_bytes;
             serialize<HeartbeatMessage>()(&heartbeat_message, &heartbeat_bytes);
@@ -542,7 +542,7 @@ namespace Tls
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw FatalError("Tls", "RecordLayer::EncryptStream BCryptEncrypt failed", error);
+                    throw FatalError("Tls", "RecordLayer", "EncryptStream", "BCryptEncrypt", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_stream_output_overflow_error;
@@ -593,7 +593,7 @@ namespace Tls
 
                     NTSTATUS error = BCryptGenRandom(0, mask->address(), mask->size(), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
-                        throw FatalError("Tls", "RecordLayer::EncryptBlock BCryptGenRandom failed", error);
+                        throw FatalError("Tls", "RecordLayer", "EncryptBlock", "BCryptGenRandom", error);
                 }
 
                 payload.insert(payload.end(), compressed->fragment->begin(), compressed->fragment->end());
@@ -634,7 +634,7 @@ namespace Tls
                     &output_length, 
                     0);
                 if (error != 0)
-                    throw FatalError("Tls", "RecordLayer::EncryptBlock BCryptEncrypt failed", error);
+                    throw FatalError("Tls", "RecordLayer", "EncryptBlock", "BCryptEncrypt", error);
 
                 if (output_length > 0xffff)
                     throw State::encrypt_block_output_overflow_error;
@@ -723,7 +723,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::LogError("Tls", "RecordLayer::DecryptStream BCryptDecrypt failed", error);
+                    Basic::LogError("Tls", "RecordLayer", "DecryptStream", "BCryptDecrypt", error);
                     throw State::decrypt_stream_decryption_failed;
                 }
 
@@ -805,7 +805,7 @@ namespace Tls
                     0);
                 if (error != 0)
                 {
-                    Basic::LogError("Tls", "RecordLayer::DecryptBlock BCryptDecrypt failed", error);
+                    Basic::LogError("Tls", "RecordLayer", "DecryptBlock", "BCryptDecrypt", error);
                     throw State::decrypt_block_decryption_failed;
                 }
 

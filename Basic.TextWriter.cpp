@@ -46,12 +46,6 @@ namespace Basic
         write_literal("\r\n");
     }
 
-    void TextWriter::WriteThreadId()
-    {
-        DWORD threadId = GetCurrentThreadId();
-        WriteFormat<0x100>("%010d", threadId);
-    }
-
     void TextWriter::WriteTimestamp()
     {
         SYSTEMTIME time;

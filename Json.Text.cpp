@@ -117,7 +117,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json", "Text::write_element unhandled state");
+            throw FatalError("Json", "Text", "write_element", "unhandled state", this->get_state());
         }
     }
 }

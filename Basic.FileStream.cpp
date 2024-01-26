@@ -27,7 +27,7 @@ namespace Basic
             FILE_FLAG_OVERLAPPED,
             0);
         if (this->file == INVALID_HANDLE_VALUE)
-            throw FatalError("Basic", "FileStream::Initialize { CreateFileA }", GetLastError());
+            throw FatalError("Basic", "FileStream", "Initialize", "::CreateFileA", GetLastError());
 
         this->position = 0;
 
@@ -75,7 +75,7 @@ namespace Basic
         {
             close_file();
 
-            Basic::LogError("Basic", "FileStream::complete", error);
+            Basic::LogError("Basic", "FileStream", "complete", "error", error);
         }
     }
 }

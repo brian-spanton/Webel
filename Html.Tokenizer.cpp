@@ -60,13 +60,13 @@ namespace Html
     {
         if (!this->current_attribute_name || this->current_attribute_name->size() == 0)
         {
-            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { !this->current_attribute_name || this->current_attribute_name->size() == 0 }");
+            Basic::LogDebug("Html", "Tokenizer", "InsertAttribute", "!this->current_attribute_name || this->current_attribute_name->size() == 0");
             return;
         }
 
         if (!this->current_tag_token)
         {
-            Basic::LogDebug("Html", "Tokenizer::InsertAttribute { !this->current_tag_token }");
+            Basic::LogDebug("Html", "Tokenizer", "InsertAttribute", "!this->current_tag_token");
             return;
         }
 
@@ -104,7 +104,7 @@ namespace Html
     void Tokenizer::EmitCurrentTagToken()
     {
         if (!this->current_tag_token)
-            throw FatalError("Html", "Tokenizer::EmitCurrentTagToken { !this->current_tag_token }");
+            throw FatalError("Html", "Tokenizer", "EmitCurrentTagToken", "!this->current_tag_token");
 
         if (this->get_state() == attribute_name_state)
             InsertAttribute();
@@ -2761,7 +2761,7 @@ namespace Html
             break;
 
         default:
-            throw FatalError("Html", "Tokenizer::write_element unhandled state");
+            throw FatalError("Html", "Tokenizer", "write_element", "unhandled state", this->get_state());
         }
     }
 

@@ -70,7 +70,7 @@ namespace Html
             break;
 
         default:
-            throw FatalError("Html::InputStreamPreprocessor::write_element enexpected state", 0);
+            throw FatalError("Html", "InputStreamPreprocessor", "write_element", "enexpected state", this->state);
         }
     }
 

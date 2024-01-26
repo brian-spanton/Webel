@@ -23,12 +23,12 @@ namespace Basic
 
     void Utf8Encoder::EncoderError(Codepoint codepoint)
     {
-        char error[0x100];
-        int result = sprintf_s(error, "Utf8Encoder::EncoderError codepoint=0x%04X", codepoint);
+        char message[0x100];
+        int result = sprintf_s(message, "Utf8Encoder::EncoderError codepoint=0x%04X", codepoint);
         if (result == -1)
-            throw FatalError("Basic", "Utf8Encoder::EncodeError { sprintf_s }");
+            throw FatalError("Basic", "Utf8Encoder", "EncodeError", "sprintf_s", result);
 
-        Basic::LogDebug("Basic", error);
+        Basic::LogDebug("Basic", "Utf8Encoder", "EncodeError", message);
     }
 
     void Utf8Encoder::write_elements(const Codepoint* elements, uint32 count)
@@ -55,7 +55,7 @@ namespace Basic
 
         if (codepoint == EOF)
         {
-            Basic::LogDebug("Basic", "Utf8Encoder::write_element { codepoint == EOF } unexpected eof");
+            Basic::LogDebug("Basic", "Utf8Encoder", "write_element", "codepoint == EOF (unexpected eof)");
             return;
         }
 

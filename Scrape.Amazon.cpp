@@ -34,7 +34,7 @@ namespace Scrape
 			std::shared_ptr<Uri> url;
 			this->client->get_url(&url);
 
-			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape");
+			std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Scrape", "Amazon", "set_body_stream");
 			url->write_to_stream(&entry->unicode_message, 0, 0);
 			TextWriter(&entry->unicode_message).write_literal(" did not return 200");
 			Basic::globals->add_entry(entry);
@@ -64,7 +64,7 @@ namespace Scrape
         }
         catch (State error_state)
         {
-		    Basic::LogDebug("Scrape", "Amazon::process_event", error_state);
+		    Basic::LogDebug("Scrape", "Amazon", "process_event", "caught error", error_state);
 		    switch_to_state(error_state);
 		    Complete();
 			return ProcessResult::process_result_exited;
@@ -85,7 +85,7 @@ namespace Scrape
                     throw State::anon_home_page_headers_error;
 
                 switch_to_state(State::anon_home_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
 			break;
 
@@ -104,7 +104,7 @@ namespace Scrape
 				this->client->Get(link->url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::sign_in_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -118,7 +118,7 @@ namespace Scrape
                     throw State::sign_in_page_headers_error;
 
                 switch_to_state(State::sign_in_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
 			break;
 
@@ -153,7 +153,7 @@ namespace Scrape
                     throw State::sign_in_submit_error;
 
 				switch_to_state(State::auth_landing_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -167,7 +167,7 @@ namespace Scrape
                     throw State::auth_landing_page_headers_error;
 
                 switch_to_state(State::auth_landing_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -186,7 +186,7 @@ namespace Scrape
 				this->client->Get(link->url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::your_prime_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -200,7 +200,7 @@ namespace Scrape
                     throw State::your_prime_page_headers_error;
 
                 switch_to_state(State::your_prime_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -219,7 +219,7 @@ namespace Scrape
 				this->client->Get(link->url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::instant_video_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -233,7 +233,7 @@ namespace Scrape
                     throw State::instant_video_page_headers_error;
 
                 switch_to_state(State::instant_video_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -252,7 +252,7 @@ namespace Scrape
 				this->client->Get(link->url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::movies_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
@@ -266,7 +266,7 @@ namespace Scrape
                     throw State::movies_page_headers_error;
 
                 switch_to_state(State::movies_page_body_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -292,15 +292,15 @@ namespace Scrape
 				this->client->Get(link->url, 0, this->shared_from_this(), ByteStringRef());
 
 				switch_to_state(State::movies_page_headers_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			break;
 
 		default:
-			throw FatalError("Scrape", "Amazon::process_event_throw unhandled state");
+			throw FatalError("Scrape", "Amazon", "process_event_throw", "unhandled state", this->get_state());
 		}
 
-        return ProcessResult::process_result_ready; // event consumed
+        return ProcessResult::process_result_ready;
 	}
 
 	void Amazon::Scrape(std::shared_ptr<Html::Node> node)

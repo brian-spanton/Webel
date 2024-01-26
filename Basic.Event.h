@@ -25,6 +25,6 @@ namespace Basic
         static void RemoveObserver(IEvent* event, std::shared_ptr<IStream<element_type> > stream);
 
     private:
-        static void HandleUnexpectedEvent(const char* function, IEvent* event);
+        static void HandleUnexpectedEvent(const char* ns, const char* cl, const char* func, IEvent* event);
     };
 }

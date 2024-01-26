@@ -31,7 +31,7 @@ namespace Json
 
     void Tokenizer::handle_error(const char* error)
     {
-        Basic::LogDebug("Json", error);
+        Basic::LogDebug("Json", "Tokenizer", "handle_error", error);
         switch_to_state(State::error_state);
     }
 
@@ -479,7 +479,7 @@ namespace Json
             break;
 
         default:
-            throw FatalError("Json", "Tokenizer::write_element unhandled state");
+            throw FatalError("Json", "Tokenizer", "write_element", "unhandled state", this->get_state());
         }
     }
 }

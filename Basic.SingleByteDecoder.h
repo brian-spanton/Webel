@@ -16,7 +16,7 @@ namespace Basic
 
         void Emit(Codepoint codepoint);
         void EmitDecoderError(byte b);
-        void EmitDecoderError(const char* error);
+        void EmitDecoderError(const char* message);
 
     public:
         SingleByteDecoder(std::shared_ptr<ISingleByteEncodingIndex> index);

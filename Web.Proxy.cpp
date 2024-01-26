@@ -63,11 +63,11 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Proxy::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Proxy", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::LogInfo("Web", "Proxy accepted");
+                Basic::LogInfo("Web", "Proxy", "process_event", "accepted connection");
 
                 std::shared_ptr<IProcess> completion = this->completion.lock();
                 if (completion)
@@ -89,7 +89,7 @@ namespace Web
                 bool success = client_socket->Resolve(this->server_url->host, this->server_url->get_port(), &addr);
                 if (!success)
                 {
-                    Basic::LogDebug("Web", "Proxy::process_event client_socket->Resolve(this->server_url->host, ...) failed");
+                    Basic::LogDebug("Web", "Proxy", "process_event", "!client_socket->Resolve(this->server_url->host, ...)");
                     switch_to_state(State::done_state);
                     return ProcessResult::process_result_ready;
                 }
@@ -104,8 +104,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Proxy::process_event ", event);
-                    throw FatalError("Web", "Proxy::process_event unexpected event");
+                    StateMachine::LogUnexpectedEvent("Web", "Proxy", "process_event ", event);
+                    throw FatalError();
                 }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
@@ -124,8 +124,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Proxy::process_event", event);
-                    throw FatalError("Web", "Proxy::process_event unexpected event");
+                    StateMachine::LogUnexpectedEvent("Web", "Proxy", "process_event", event);
+                    throw FatalError();
                 }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
@@ -143,7 +143,7 @@ namespace Web
             break;
 
         default:
-            throw FatalError("Web", "Proxy::process_event unhandled state");
+            throw FatalError("Web", "Proxy", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;
@@ -165,7 +165,7 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Proxy::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Web", "Proxy", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -183,8 +183,8 @@ namespace Web
             {
                 if (event->get_type() != Basic::EventType::received_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Web", "Proxy::process_event", event);
-                    throw FatalError("Web", "Proxy::process_event unexpected event");
+                    StateMachine::LogUnexpectedEvent("Web", "Proxy", "process_event", event);
+                    throw FatalError();
                 }
 
                 ReceivedBytesEvent* read_event = (ReceivedBytesEvent*)event;
@@ -202,7 +202,7 @@ namespace Web
             break;
 
         default:
-            throw FatalError("Web", "Proxy::process_event unhandled state");
+            throw FatalError("Web", "Proxy", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

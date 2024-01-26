@@ -17,7 +17,7 @@ namespace Basic
         {
             NTSTATUS error = BCryptDestroyKey(this->handle);
             if (error != 0)
-                Basic::LogError("Basic", "BCRYPT_KEY_HANDLE::~BCRYPT_KEY_HANDLE BCryptDestroyKey failed", error);
+                Basic::LogError("Basic", "BCRYPT_KEY_HANDLE", "~BCRYPT_KEY_HANDLE", "BCryptDestroyKey", error);
         }
     }
 
@@ -42,7 +42,7 @@ namespace Basic
         {
             NTSTATUS error = BCryptCloseAlgorithmProvider(this->handle, 0);
             if (error != 0)
-                Basic::LogError("Basic", "BCRYPT_ALG_HANDLE::~BCRYPT_ALG_HANDLE BCryptCloseAlgorithmProvider failed", error);
+                Basic::LogError("Basic", "BCRYPT_ALG_HANDLE", "~BCRYPT_ALG_HANDLE", "BCryptCloseAlgorithmProvider", error);
         }
     }
 
@@ -67,7 +67,7 @@ namespace Basic
         {
             NTSTATUS error = NCryptFreeObject(this->handle);
             if (error != 0)
-                Basic::LogError("Basic", "NCRYPT_KEY_HANDLE::~NCRYPT_KEY_HANDLE NCryptFreeObject failed", error);
+                Basic::LogError("Basic", "NCRYPT_KEY_HANDLE", "~NCRYPT_KEY_HANDLE", "NCryptFreeObject", error);
         }
     }
 
@@ -97,7 +97,7 @@ namespace Basic
         {
             BOOL success = CertCloseStore(this->handle, CERT_CLOSE_STORE_CHECK_FLAG);
             if (!success)
-                Basic::LogError("Basic", "HCERTSTORE::~HCERTSTORE CertCloseStore failed", GetLastError());
+                Basic::LogError("Basic", "HCERTSTORE", "~HCERTSTORE", "CertCloseStore", GetLastError());
         }
     }
 
@@ -127,7 +127,7 @@ namespace Basic
         {
             BOOL success = CertFreeCertificateContext(this->handle);
             if (!success)
-                Basic::LogError("Basic", "PCCERT_CONTEXT::~PCCERT_CONTEXT CertFreeCertificateContext failed", GetLastError());
+                Basic::LogError("Basic", "PCCERT_CONTEXT", "~PCCERT_CONTEXT", "CertFreeCertificateContext", GetLastError());
         }
     }
 

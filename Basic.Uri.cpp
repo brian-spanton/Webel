@@ -23,14 +23,17 @@ namespace Basic
     {
         bool success = Parse(input, 0, UnicodeStringRef(), State::scheme_start_state, false);
         if (!success)
-            throw FatalError("Basic", "Uri::Initialize Parse failed");
+            throw FatalError("Basic", "Uri", "Initialize", "!Parse");
     }
 
     void Uri::parse_error(Codepoint codepoint)
     {
-        char error[0x100];
-        sprintf_s(error, "Uri::parse_error codepoint=%04X", codepoint);
-        Basic::LogDebug("Basic", error);
+        char message[0x100];
+        int result = sprintf_s(message, "codepoint=%04X", codepoint);
+        if (result == -1)
+            throw FatalError("Basic", "Uri", "parse_error", "sprintf_s", result);
+
+        Basic::LogDebug("Basic", "Uri", "parse_error", message);
     }
 
     bool Uri::Parse(UnicodeString* input, Uri* base)
@@ -721,7 +724,7 @@ namespace Basic
                 break;
 
             default:
-                throw FatalError("Basic", "Uri::Parse unhandled state");
+                throw FatalError("Basic", "Uri", "Parse", "unhandled state", state);
             }
         }
 

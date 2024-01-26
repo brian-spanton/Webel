@@ -59,7 +59,7 @@ namespace Service
 				this->current_page = this->amazon_scrape->current_page;
 				writer.WriteLine("Amazon completed");
 
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
             // $ this comparison won't work cross-process
 			else if (cookie_event->cookie.get() == this->netflix_cookie.get())
@@ -67,11 +67,11 @@ namespace Service
 				this->current_page = this->netflix_scrape->current_page;
 				writer.WriteLine("Netflix completed");
 
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
 			}
 			else
 			{
-                throw FatalError("Service", "AdminProtocol::process_event unexpected completion");
+                throw FatalError("Service", "AdminProtocol", "process_event", "unexpected completion");
             }
         }
         else if (event->get_type() == Http::EventType::response_headers_event)
@@ -107,14 +107,14 @@ namespace Service
                 }
             }
 
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
             Http::ResponseHeadersEvent* cookie_event = (Http::ResponseHeadersEvent*)event;
 
             if (cookie_event->cookie.get() != this->get_cookie.get())
-                throw FatalError("Service", "AdminProtocol::process_event { cookie_event->cookie.get() != this->get_cookie.get() }");
+                throw FatalError("Service", "AdminProtocol", "process_event", "cookie_event->cookie.get() != this->get_cookie.get()");
 
             if (this->html_parser)
             {
@@ -127,7 +127,7 @@ namespace Service
                 writer.WriteLine("Get completed (not html)");
             }
 
-            return ProcessResult::process_result_blocked; // event consumed
+            return ProcessResult::process_result_blocked;
         }
         else switch (get_state())
         {
@@ -403,7 +403,7 @@ namespace Service
             break;
 
         default:
-            throw Basic::FatalError("Service", "AdminProtocol::process_event unhandled state");
+            throw Basic::FatalError("Service", "AdminProtocol", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

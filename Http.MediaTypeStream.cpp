@@ -14,9 +14,13 @@ namespace Http
 
     void MediaTypeStream::ParseError(Codepoint codepoint)
     {
-        char error[0x100];
-        sprintf_s(error, "MediaTypeStream::ParseError codepoint=%04X", codepoint),
-        Basic::LogDebug("Http", error);
+        char message[0x100];
+        int result = sprintf_s(message, "codepoint=%04X", codepoint);
+        if (result == -1)
+            throw FatalError("Http", "MediaTypeStream", "ParseError", "sprintf_s", result);
+
+        Basic::LogDebug("Http", "MediaTypeStream", "ParseError", message);
+
         this->state = State::parse_error;
     }
 
@@ -251,7 +255,7 @@ namespace Http
             break;
 
         default:
-            throw FatalError("Http", "MediaTypeStream::write_element unhandled state");
+            throw FatalError("Http", "MediaTypeStream", "write_element", "unhandled state", this->state);
         }
     }
 

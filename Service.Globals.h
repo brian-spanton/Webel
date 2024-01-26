@@ -131,7 +131,7 @@ namespace Service
 
             DWORD exe_path_count = GetModuleFileNameA(0, exe_path, sizeof(exe_path));
             if (exe_path_count == sizeof(exe_path))
-                throw FatalError("Service", "Globals::GetFilePath GetModuleFileNameA { exe_path_count == sizeof(exe_path) } failed", GetLastError());
+                throw FatalError("Service", "Globals", "GetFilePath", "GetModuleFileNameA exe_path_count == sizeof(exe_path)", GetLastError());
 
             char drive[MAX_PATH + 0x100];
             char directory[MAX_PATH + 0x100];

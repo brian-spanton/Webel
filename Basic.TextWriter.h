@@ -24,7 +24,6 @@ namespace Basic
         void write_c_str(const char* text);
         void WriteLine(const char* text);
         void WriteLine();
-        void WriteThreadId();
         void WriteTimestamp();
         void WriteError(uint32 error);
 
@@ -43,7 +42,7 @@ namespace Basic
             char temp[max + 1];
             uint32 count = vsprintf_s(temp, format, args);
             if (count < 0)
-                throw FatalError("Basic", "TextWriter::WriteFormat failed");
+                throw FatalError("Basic", "TextWriter", "WriteFormat", "error result", count);
 
             return write_elements(temp, count);
         }

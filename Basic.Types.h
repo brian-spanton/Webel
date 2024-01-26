@@ -12,8 +12,8 @@ namespace Basic
 {
     struct FatalError
     {
-        FatalError(const char* component, const char* message);
-        FatalError(const char* component, const char* message, uint32 code);
+        FatalError();
+        FatalError(const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
     };
 
     struct Path : std::vector<UnicodeStringRef>

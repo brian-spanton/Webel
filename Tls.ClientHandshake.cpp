@@ -33,7 +33,7 @@ namespace Tls
             {
                 if (event->get_type() != Basic::EventType::can_send_bytes_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -43,7 +43,7 @@ namespace Tls
 
                 NTSTATUS error = BCryptGenRandom(0, this->security_parameters->client_random.random_bytes, sizeof(this->security_parameters->client_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                 if (error != 0)
-                    throw FatalError("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
+                    throw FatalError("Tls", "ClientHandshake", "process_event", "BCryptGenRandom", error);
 
                 ClientHello clientHello;
                 clientHello.client_version = this->session->version_high;
@@ -70,7 +70,7 @@ namespace Tls
                 send_buffer.swap(this->send_buffer);
 
                 this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -223,7 +223,7 @@ namespace Tls
                     NTSTATUS error = BCryptGenRandom(0, pre_master_secret.random, sizeof(pre_master_secret.random), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
                     if (error != 0)
                     {
-                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptGenRandom failed", error);
+                        Basic::LogError("Tls", "ClientHandshake", "process_event", "BCryptGenRandom", error);
                         switch_to_state(State::BCryptGenRandom_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -248,7 +248,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
+                        Basic::LogError("Tls", "ClientHandshake", "process_event", "BCryptEncrypt", error);
                         switch_to_state(State::BCryptEncrypt_1_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -269,7 +269,7 @@ namespace Tls
                         BCRYPT_PAD_PKCS1);
                     if (error != 0)
                     {
-                        Basic::LogError("Tls", "ClientHandshake::process_event BCryptEncrypt failed", error);
+                        Basic::LogError("Tls", "ClientHandshake", "process_event", "BCryptEncrypt", error);
                         switch_to_state(State::BCryptEncrypt_2_failed);
                         return ProcessResult::process_result_ready;
                     }
@@ -316,7 +316,7 @@ namespace Tls
                     send_buffer.swap(this->send_buffer);
 
                     this->session->write_record_elements(ContentType::handshake, send_buffer->address(), send_buffer->size());
-                    return ProcessResult::process_result_blocked; // event consumed
+                    return ProcessResult::process_result_blocked;
                 }
             }
             break;
@@ -325,13 +325,13 @@ namespace Tls
             {
                 if (event->get_type() != Tls::EventType::change_cipher_spec_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Tls", "ClientHandshake", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
                 this->handshake_frame.reset();
                 switch_to_state(State::expecting_finished_state);
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -374,7 +374,7 @@ namespace Tls
                     }
                 }
 
-			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Tls");
+			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Tls", "ClientHandshake", "process_event");
 			    TextWriter(&entry->unicode_message).WriteFormat<0x100>("TLS client handshake successfully negotiated 0x%04X", this->session->version);
 			    Basic::globals->add_entry(entry);
 
@@ -384,7 +384,7 @@ namespace Tls
             break;
 
         default:
-            throw FatalError("Tls", "ClientHandshake::process_event unhandled state");
+            throw FatalError("Tls", "ClientHandshake", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;

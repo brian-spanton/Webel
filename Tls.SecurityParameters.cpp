@@ -86,9 +86,8 @@ namespace Tls
             break;
 
         default:
-            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
-            // connections are failing due to an unsupported algorithm
-            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported cipher_suite");
+            // use LogDebug instead of LogError so we are less vulnerable to a logging attack
+            Basic::LogDebug("Tls", "SecurityParameters", "InitializeCipherSuite", "unsupported cipher_suite", cipher_suite);
             return false;
         }
 
@@ -107,9 +106,8 @@ namespace Tls
             break;
 
         default:
-            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
-            // connections are failing due to an unsupported algorithm
-            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported version");
+            // use LogDebug instead of LogError so we are less vulnerable to a logging attack
+            Basic::LogDebug("Tls", "SecurityParameters", "InitializeCipherSuite", "unsupported version", version);
             return false;
         }
 
@@ -160,9 +158,8 @@ namespace Tls
             break;
 
         default:
-            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
-            // connections are failing due to an unsupported algorithm
-            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported interim_cipher");
+            // use LogDebug instead of LogError so we are less vulnerable to a logging attack
+            Basic::LogDebug("Tls", "SecurityParameters", "InitializeCipherSuite", "unsupported interim_cipher", interim_cipher);
             return false;
         }
 
@@ -196,9 +193,8 @@ namespace Tls
             break;
 
         default:
-            // $ perhaps should be LogDebug - don't want to be open to a logging attack, but then again do want to know if otherwise valid TLS
-            // connections are failing due to an unsupported algorithm
-            Basic::LogError("Tls", "SecurityParameters::Initialize unsupported mac_algorithm");
+            // use LogDebug instead of LogError so we are less vulnerable to a logging attack
+            Basic::LogDebug("Tls", "SecurityParameters", "InitializeCipherSuite", "unsupported mac_algorithm", this->mac_algorithm);
             return false;
         }
 

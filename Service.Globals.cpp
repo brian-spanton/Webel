@@ -130,13 +130,13 @@ namespace Service
         initialize_unicode(&as_of_property, "as of"); // $ schema for search index
         initialize_unicode(&source_property, "source"); // $ schema for search index
 
-        Basic::LogInfo("Service", "initializing io completion port");
+        Basic::LogInfo("Service", "Globals", "Initialize", "initializing io completion port");
 
         this->queue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
         if (this->queue == 0)
-            throw FatalError("Service", "Globals::Initialize CreateIoCompletionPort failed", GetLastError());
+            throw FatalError("Service", "Globals", "Initialize", "CreateIoCompletionPort", GetLastError());
 
-        Basic::LogInfo("Service", "initializing log file");
+        Basic::LogInfo("Service", "Globals", "Initialize", "initializing log file");
 
         char log_path[MAX_PATH + 0x100];
         GetFilePath("service.log", log_path);
@@ -145,13 +145,13 @@ namespace Service
         this->file_log->Initialize(log_path);
         this->logs.push_back(this->file_log);
 
-        Basic::LogInfo("Service", "initializing stop event");
+        Basic::LogInfo("Service", "Globals", "Initialize", "initializing stop event");
 
         this->stopEvent = CreateEvent(0, TRUE, FALSE, 0);
         if (this->stopEvent == 0)
-            throw FatalError("Service", "Globals::Initialize CreateEvent failed", GetLastError());
+            throw FatalError("Service", "Globals", "Initialize", "CreateEvent", GetLastError());
 
-        Basic::LogInfo("Service", "initializing console");
+        Basic::LogInfo("Service", "Globals", "Initialize", "initializing console");
 
         this->console = std::make_shared<Basic::Console>();
         this->console->Initialize(std::make_shared<AdminProtocol>(this->console), &this->consoleThread);
@@ -166,7 +166,7 @@ namespace Service
 
     bool Globals::TestUtf16()
     {
-        Basic::LogInfo("Service", "testing utf-16");
+        Basic::LogInfo("Service", "Globals", "TestUtf16", "testing utf-16");
 
         UnicodeString test;
         test.push_back(0x1F600); // smiley face emoji 😀
@@ -183,7 +183,7 @@ namespace Service
                 return false;
         }
 
-		std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, "Service");
+		std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Info, "Service", "Globals", "TestUtf16");
         TextWriter(&entry->unicode_message).write_literal("utf-16 encoding passed, rendering smiley face emoji: ");
         entry->unicode_message.push_back(0x1F600); // smiley face emoji 😀
         Basic::globals->add_entry(entry);
@@ -204,7 +204,7 @@ namespace Service
 
     bool Globals::TestGzip()
     {
-        Basic::LogInfo("Service", "testing gzip");
+        Basic::LogInfo("Service", "Globals", "TestGzip", "testing gzip");
 
         this->gzip_test_file = ::CreateFileA(
             "test.gz",
@@ -216,14 +216,14 @@ namespace Service
             0);
         if (this->gzip_test_file == INVALID_HANDLE_VALUE)
         {
-            Basic::LogDebug("Service", "Globals::TestGzip CreateFileA failed", GetLastError());
+            Basic::LogDebug("Service", "Globals", "TestGzip", "::CreateFileA", GetLastError());
             return false;
         }
 
         HANDLE result = CreateIoCompletionPort(this->gzip_test_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
         if (result == 0)
         {
-            Basic::LogError("Service", "Globals::TestGzip CreateIoCompletionPort failed", GetLastError());
+            Basic::LogError("Service", "Globals", "TestGzip", "CreateIoCompletionPort", GetLastError());
             return false;
         }
 
@@ -231,13 +231,13 @@ namespace Service
         bool success = (bool)GetFileSizeEx(this->gzip_test_file, &size);
         if (!success)
         {
-            Basic::LogError("Service", "Globals::TestGzip GetFileSizeEx failed", GetLastError());
+            Basic::LogError("Service", "Globals", "TestGzip", "GetFileSizeEx", GetLastError());
             return false;
         }
 
         if (size.HighPart > 0)
         {
-            Basic::LogError("Service", "Globals::TestGzip GetFileSizeEx { size.HighPart > 0 }", 0);
+            Basic::LogError("Service", "Globals", "TestGzip", "size.HighPart > 0 (file is unexpectedly huge)", 0);
             return false;
         }
 
@@ -262,7 +262,7 @@ namespace Service
 
     bool Globals::ReadCertificate()
     {
-        Basic::LogInfo("Service", "initializing certificate");
+        Basic::LogInfo("Service", "Globals", "ReadCertificate", "initializing certificate");
 
         if (Service::globals->certificate_file_name.empty())
             return false;
@@ -272,7 +272,7 @@ namespace Service
 
         char message[0x100];
         sprintf_s(message, "reading certificate %s", pfx_path);
-        Basic::LogInfo("Service", message);
+        Basic::LogInfo("Service", "Globals", "ReadCertificate", message);
 
         this->pfx_file = ::CreateFileA(
             pfx_path,
@@ -284,14 +284,14 @@ namespace Service
             0);
         if (this->pfx_file == INVALID_HANDLE_VALUE)
         {
-            Basic::LogDebug("Service", "Globals::ReadCertificate CreateFileA failed", GetLastError());
+            Basic::LogDebug("Service", "Globals", "ReadCertificate", "::CreateFileA", GetLastError());
             return false;
         }
 
         HANDLE result = CreateIoCompletionPort(this->pfx_file, this->queue, reinterpret_cast<ULONG_PTR>(static_cast<ICompleter*>(this)), 0);
         if (result == 0)
         {
-            Basic::LogError("Service", "Globals::ReadCertificate CreateIoCompletionPort failed", GetLastError());
+            Basic::LogError("Service", "Globals", "ReadCertificate", "CreateIoCompletionPort", GetLastError());
             return false;
         }
 
@@ -299,13 +299,13 @@ namespace Service
         bool success = (bool)GetFileSizeEx(this->pfx_file, &size);
         if (!success)
         {
-            Basic::LogError("Service", "Globals::ReadCertificate GetFileSizeEx failed", GetLastError());
+            Basic::LogError("Service", "Globals", "ReadCertificate", "GetFileSizeEx", GetLastError());
             return false;
         }
 
         if (size.HighPart > 0)
         {
-            Basic::LogError("Service", "Globals::ReadCertificate GetFileSizeEx { size.HighPart > 0 }");
+            Basic::LogError("Service", "Globals", "ReadCertificate", "size.HighPart > 0 (file is unexpectedly huge)");
             return false;
         }
 
@@ -335,14 +335,14 @@ namespace Service
 
     void Globals::Cleanup()
     {
-        Basic::LogInfo("Service", "exiting");
+        Basic::LogInfo("Service", "Globals", "Cleanup", "exiting");
 
         DWORD result = WaitForMultipleObjectsEx(threads.size(), &threads.front(), true, 30000, false);
         if (result == WAIT_FAILED)
-            throw FatalError("Service", "Globals::Cleanup WaitForMultipleObjectsEx failed", GetLastError());
+            throw FatalError("Service", "Globals", "Cleanup", "WaitForMultipleObjectsEx", GetLastError());
 
         if (result == WAIT_TIMEOUT)
-            throw FatalError("Service", "Globals::Cleanup { result == WAIT_TIMEOUT }");
+            throw FatalError("Service", "Globals", "Cleanup", "result == WAIT_TIMEOUT");
 
         for (ThreadList::iterator it = threads.begin(); it != threads.end(); it++)
             CloseHandle(*it);
@@ -351,7 +351,7 @@ namespace Service
 
         int error = WSACleanup();
         if (error == SOCKET_ERROR)
-            throw FatalError("Service", "Globals::Cleanup WSACleanup failed", WSAGetLastError());
+            throw FatalError("Service", "Globals", "Cleanup", "WSACleanup", WSAGetLastError());
     }
 
     void Globals::complete(std::shared_ptr<void> context, uint32 count, uint32 error)
@@ -374,19 +374,19 @@ namespace Service
             &free);
         if (!success)
         {
-            Basic::LogError("Service", "Globals::ExtractPrivateKey CryptAcquireCertificatePrivateKey failed", GetLastError());
+            Basic::LogError("Service", "Globals", "ExtractPrivateKey", "CryptAcquireCertificatePrivateKey", GetLastError());
             return false;
         }
 
         if (!free)
         {
-            Basic::LogError("Service", "Globals::ExtractPrivateKey handle_event::main { !free }");
+            Basic::LogError("Service", "Globals", "ExtractPrivateKey", "!free (private key not free)");
             return false;
         }
 
         if (keySpec != CERT_NCRYPT_KEY_SPEC)
         {
-            Basic::LogError("Service", "Globals::ExtractPrivateKey { keySpec != CERT_NCRYPT_KEY_SPEC }");
+            Basic::LogError("Service", "Globals", "ExtractPrivateKey", "keySpec != CERT_NCRYPT_KEY_SPEC");
             return false;
         }
 
@@ -410,12 +410,12 @@ namespace Service
 
         char message[0x100];
         sprintf_s(message, "creating transient self-sign certificate %s", x_500.c_str());
-        Basic::LogInfo("Service", message);
+        Basic::LogInfo("Service", "Globals", "CreateSelfSignCert", message);
 
         bool success = (bool)CertStrToNameA(X509_ASN_ENCODING, x_500.c_str(), 0, 0, name, &count, 0);
         if (!success)
         {
-            Basic::LogError("Service", "Globals::CreateSelfSignCert CertStrToNameA failed", GetLastError());
+            Basic::LogError("Service", "Globals", "CreateSelfSignCert", "CertStrToNameA", GetLastError());
             return false;
         }
 
@@ -426,7 +426,7 @@ namespace Service
         this->cert = CertCreateSelfSignCertificate(0, &blob, 0, 0, 0, 0, 0, 0); // $ seems to spin up win32 thread pool?
         if (this->cert == 0)
         {
-            Basic::LogError("Service", "Globals::CreateSelfSignCert CertCreateSelfSignCertificate failed", GetLastError());
+            Basic::LogError("Service", "Globals", "CreateSelfSignCert", "CertCreateSelfSignCertificate", GetLastError());
             return false;
         }
 
@@ -441,13 +441,13 @@ namespace Service
     {
         if (error != ERROR_SUCCESS)
         {
-            Basic::LogError("Service", "Globals::ParseCert ReadFile overlapped failed", error);
+            Basic::LogError("Service", "Globals", "ParseCert", "ReadFile overlapped error", error);
             return false;
         }
 
         bytes->resize(count);
 
-        Basic::LogInfo("Service", "initializing certificate from file");
+        Basic::LogInfo("Service", "Globals", "ParseCert", "initializing certificate from file");
 
         CRYPT_DATA_BLOB pfx_blob;
         pfx_blob.pbData = bytes->address();
@@ -456,14 +456,14 @@ namespace Service
         Basic::HCERTSTORE store = PFXImportCertStore(&pfx_blob, this->certificate_file_password.c_str(), CRYPT_MACHINE_KEYSET | PKCS12_ALLOW_OVERWRITE_KEY);
         if (store == 0)
         {
-            Basic::LogError("Service", "Globals::ParseCert PFXImportCertStore failed", GetLastError());
+            Basic::LogError("Service", "Globals", "ParseCert", "PFXImportCertStore", GetLastError());
             return false;
         }
 
         this->cert = CertFindCertificateInStore(store, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_ANY, 0, 0);
         if (this->cert == 0)
         {
-            Basic::LogError("Service", "Globals::ParseCert CertFindCertificateInStore failed", GetLastError());
+            Basic::LogError("Service", "Globals", "ParseCert", "CertFindCertificateInStore", GetLastError());
             return false;
         }
 
@@ -533,7 +533,7 @@ namespace Service
             {
                 if (event->get_type() != Basic::EventType::io_completion_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Service", "Globals::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Service", "Globals", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -564,7 +564,7 @@ namespace Service
 
         case State::initialize_encodings_state:
             {
-                Basic::LogInfo("Service", "initializing encodings");
+                Basic::LogInfo("Service", "Globals", "process_event", "initializing encodings");
 
                 switch_to_state(State::pending_encodings_state);
 
@@ -579,7 +579,7 @@ namespace Service
             {
                 if (event->get_type() != Basic::EventType::encodings_complete_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Service", "Globals::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Service", "Globals", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
@@ -589,7 +589,7 @@ namespace Service
 
         case State::initialize_html_globals_state:
             {
-                Basic::LogInfo("Service", "initializing html globals");
+                Basic::LogInfo("Service", "Globals", "process_event", "initializing html globals");
 
                 switch_to_state(State::pending_html_globals_state);
 
@@ -604,11 +604,11 @@ namespace Service
             {
                 if (event->get_type() != Service::EventType::characters_complete_event)
                 {
-                    StateMachine::LogUnexpectedEvent("Service", "Globals::process_event", event);
+                    StateMachine::LogUnexpectedEvent("Service", "Globals", "process_event", event);
                     return ProcessResult::process_result_blocked;
                 }
 
-                Basic::LogInfo("Service", "initializing endpoints");
+                Basic::LogInfo("Service", "Globals", "process_event", "initializing endpoints");
 
                 switch_to_state(State::accepts_pending_state);
 
@@ -621,7 +621,7 @@ namespace Service
                 this->ftp_control_endpoint = std::make_shared<FtpServerEndpoint>(Basic::ListenSocket::Face_Default, 21);
                 this->ftp_control_endpoint->SpawnListeners(20);
 
-                return ProcessResult::process_result_blocked; // event consumed
+                return ProcessResult::process_result_blocked;
             }
             break;
 
@@ -630,7 +630,7 @@ namespace Service
             return ProcessResult::process_result_blocked;
 
         default:
-            throw FatalError("Service", "Globals::process_event unhandled state");
+            throw FatalError("Service", "Globals", "process_event", "unhandled state", this->get_state());
         }
 
         return ProcessResult::process_result_ready;
@@ -638,7 +638,7 @@ namespace Service
 
     void Globals::SetThreadCount(uint32 count)
     {
-        Basic::LogInfo("Service", "initializing threads");
+        Basic::LogInfo("Service", "Globals", "SetThreadCount", "initializing threads");
 
         if (count == 0)
         {
@@ -652,7 +652,7 @@ namespace Service
         {
             HANDLE thread = CreateThread(0, 0, Thread, static_cast<Globals*>(this), 0, 0);
             if (thread == 0)
-                throw FatalError("Service", "Globals::SetThreadCount CreateThread failed", GetLastError());
+                throw FatalError("Service", "Globals", "SetThreadCount", "CreateThread", GetLastError());
 
             threads.push_back(thread);
         }
@@ -662,7 +662,7 @@ namespace Service
     {
         BOOL success = SetEvent(stopEvent);
         if (success == FALSE)
-            throw FatalError("Service", "Globals::SendStopSignal SetEvent failed", GetLastError());
+            throw FatalError("Service", "Globals", "SendStopSignal", "SetEvent", GetLastError());
     }
 
     bool Globals::Thread()
@@ -679,7 +679,7 @@ namespace Service
                 if (error != WAIT_TIMEOUT)
                 {
                     if (error != ERROR_ABANDONED_WAIT_0 && error != ERROR_INVALID_HANDLE)
-                        throw Basic::FatalError("Service", "Globals::Thread GetQueuedCompletionStatusEx { error != ERROR_ABANDONED_WAIT_0 && error != ERROR_INVALID_HANDLE }", error);
+                        throw Basic::FatalError("Service", "Globals", "Thread", "GetQueuedCompletionStatusEx error != ERROR_ABANDONED_WAIT_0 && error != ERROR_INVALID_HANDLE", error);
 
                     return false;
                 }
@@ -707,14 +707,14 @@ namespace Service
     {
         BOOL success = PostQueuedCompletionStatus(this->queue, 0, 0, job.get());
         if (success == 0)
-            throw FatalError("Service", "Globals::QueueJob PostQueuedCompletionStatus failed", GetLastError());
+            throw FatalError("Service", "Globals", "QueueJob", "PostQueuedCompletionStatus", GetLastError());
     }
 
     void Globals::BindToCompletionQueue(HANDLE handle)
     {
         HANDLE result = CreateIoCompletionPort(handle, this->queue, 0, 0);
         if (result == 0)
-            throw FatalError("Serivce", "Globals::BindToCompletionQueue CreateIoCompletionPort failed", GetLastError());
+            throw FatalError("Serivce", "Globals", "BindToCompletionQueue", "CreateIoCompletionPort", GetLastError());
     }
 
     bool Globals::CertDecrypt(PBYTE pbInput, DWORD cbInput, PBYTE pbOutput, DWORD cbOutput, DWORD* pcbResult)
@@ -730,7 +730,7 @@ namespace Service
             NCRYPT_PAD_PKCS1_FLAG);
         if (error != 0)
         {
-            Basic::LogError("Service", "Globals::CertDecrypt NCryptDecrypt failed", error);
+            Basic::LogError("Service", "Globals", "CertDecrypt", "NCryptDecrypt", error);
             return false;
         }
 
@@ -773,7 +773,7 @@ void __stdcall ServiceProc(DWORD, char**)
 {
     service_status_handle = RegisterServiceCtrlHandlerA(Service::globals->service_name.c_str(), ServiceHandlerProc);
     if (service_status_handle == 0)
-        throw Basic::FatalError("Service", "ServiceProc RegisterServiceCtrlHandler failed", GetLastError());
+        throw Basic::FatalError("", "", "ServiceProc", "RegisterServiceCtrlHandlerA", GetLastError());
 
     service_status.dwControlsAccepted = SERVICE_ACCEPT_SHUTDOWN | SERVICE_ACCEPT_STOP;
     service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
@@ -816,14 +816,14 @@ int main(int argc, char* argv[])
 
         SC_HANDLE sc_manager = ::OpenSCManagerA(0, 0, GENERIC_READ | GENERIC_WRITE);
         if (sc_manager == 0)
-            throw Basic::FatalError("Service", "main OpenSCManagerA failed", GetLastError());
+            throw Basic::FatalError("", "", "main", "::OpenSCManagerA", GetLastError());
 
         SC_HANDLE service = ::OpenServiceA(sc_manager, Service::globals->service_name.c_str(), SERVICE_QUERY_CONFIG);
         if (service != 0)
         {
             bool success = (bool)::DeleteService(service);
             if (!success)
-                throw Basic::FatalError("Service", "main DeleteService failed", GetLastError());
+                throw Basic::FatalError("", "", "main", "::DeleteService", GetLastError());
 
             ::CloseServiceHandle(service);
         }
@@ -856,7 +856,7 @@ int main(int argc, char* argv[])
 
             DWORD count = GetModuleFileNameA(0, exe_path, sizeof(exe_path));
             if (count == sizeof(exe_path))
-                throw Basic::FatalError("Service", "main GetModuleFileNameA failed { count == sizeof(exe_path) }", GetLastError());
+                throw Basic::FatalError("", "", "main", "GetModuleFileNameA failed { count == sizeof(exe_path) }", GetLastError());
 
             strcat_s(exe_path, " /service \"");
             strcat_s(exe_path, argv[2]);
@@ -873,7 +873,7 @@ int main(int argc, char* argv[])
 
             SC_HANDLE sc_manager = ::OpenSCManagerA(0, 0, GENERIC_READ | GENERIC_WRITE);
             if (sc_manager == 0)
-                throw Basic::FatalError("Service", "main OpenSCManagerA failed", GetLastError());
+                throw Basic::FatalError("", "", "main", "::OpenSCManagerA", GetLastError());
 
             SC_HANDLE service = ::OpenServiceA(sc_manager, Service::globals->service_name.c_str(), SERVICE_QUERY_CONFIG);
             if (service == 0)
@@ -893,7 +893,7 @@ int main(int argc, char* argv[])
                     0,
                     0);
                 if (service == 0)
-                    throw Basic::FatalError("Service", "main CreateServiceA failed", GetLastError());
+                    throw Basic::FatalError("", "", "main", "::CreateServiceA", GetLastError());
             }
 
             ::CloseServiceHandle(service);
@@ -917,7 +917,7 @@ int main(int argc, char* argv[])
 
             bool success = StartServiceCtrlDispatcherA(service_entry);
             if (!success)
-                throw Basic::FatalError("Service", "main StartServiceCtrlDispatcherA failed", GetLastError());
+                throw Basic::FatalError("", "", "main", "StartServiceCtrlDispatcherA", GetLastError());
 
             return 0;
         }

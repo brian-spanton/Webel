@@ -29,14 +29,14 @@ namespace Basic
             FILE_FLAG_OVERLAPPED | FILE_FLAG_WRITE_THROUGH,
             0);
         if (this->file == INVALID_HANDLE_VALUE)
-            throw FatalError("Basic", "FileLog::Initialize CreateFileA failed", GetLastError());
+            throw FatalError("Basic", "FileLog", "Initialize", "::CreateFileA", GetLastError());
 
         Basic::globals->BindToCompletionQueue(this->file);
 
         LARGE_INTEGER size;
         BOOL success = GetFileSizeEx(this->file, &size);
         if (success == FALSE)
-            throw FatalError("Basic", "FileLog::Initialize GetFileSizeEx failed", GetLastError());
+            throw FatalError("Basic", "FileLog", "Initialize", "GetFileSizeEx", GetLastError());
 
         if (size.QuadPart == 0)
         {
@@ -97,7 +97,7 @@ namespace Basic
         {
             close_file();
 
-            Basic::LogError("Basic", "FileLog::complete", error);
+            Basic::LogError("Basic", "FileLog", "complete", "error != ERROR_SUCCESS", error);
         }
     }
 }

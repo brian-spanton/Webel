@@ -42,10 +42,10 @@ namespace Http
             else if (!equals<UnicodeString, false>(contentEncoding.get(), Http::globals->identity.get()))
             {
                 ByteString error;
-                error.append((byte*)"BodyFrame::make_body_frame unhandled content encoding=");
+                error.append((byte*)"unhandled content encoding=");
                 ascii_encode(contentEncoding.get(), &error);
 
-                Basic::LogDebug("Http", (const char*)error.c_str());
+                Basic::LogDebug("Http", "BodyFrame", "make_body_frame", (const char*)error.c_str());
 
                 (*output) = std::shared_ptr<BodyFrame>();
                 return;

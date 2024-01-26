@@ -7,14 +7,13 @@
 
 namespace Basic
 {
-    FatalError::FatalError(const char* component, const char* message)
+    FatalError::FatalError()
     {
-        LogCritical(component, message);
     }
 
-    FatalError::FatalError(const char* component, const char* message, uint32 code)
+    FatalError::FatalError(const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
-        LogCritical(component, message, code);
+        LogEntry::make(LogLevel::Critical, ns, cl, func, message, code);
     }
 
     IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :
