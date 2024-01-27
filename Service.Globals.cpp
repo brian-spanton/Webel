@@ -49,6 +49,14 @@ namespace Service
 
     DWORD WINAPI Globals::Thread(void* param)
     {
+        DWORD pid = GetCurrentProcessId();
+        if (pid == 0)
+            throw FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
+
+        char process_id[0x10];
+        sprintf_s(process_id, "%d", pid);
+        LogCallContextFrame call_frame(process_id);
+
         Globals* process = reinterpret_cast<Globals*>(param);
         bool success = process->Thread();
         if (!success)
@@ -801,6 +809,15 @@ void __stdcall ServiceProc(DWORD, char**)
 
 int main(int argc, char* argv[])
 {
+    DWORD pid = GetCurrentProcessId();
+    if (pid == 0)
+        throw Basic::FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
+
+    char process_id[0x10];
+    sprintf_s(process_id, "%d", pid);
+    Basic::LogCallContextFrame call_frame1(process_id);
+    Basic::LogCallContextFrame call_frame2("main");
+
     // must be constructed first because Basic::globals needs it, and we set some variables from the command line parameters
     std::shared_ptr<Service::Globals> service_global_ref;
     make_immortal<Service::Globals>(&Service::globals, &service_global_ref);

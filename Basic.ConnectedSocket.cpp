@@ -16,20 +16,6 @@ namespace Basic
     void ConnectedSocket::InitializePeer(sockaddr_in* remoteAddress)
     {
         this->remoteAddress = (*remoteAddress);
-
-        UnicodeStringRef id = std::make_shared<UnicodeString>();
-        id->reserve(0x40);
-
-        TextWriter text(id.get());
-        text.WriteFormat<0x40>(
-            "%d.%d.%d.%d:%d",
-            this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
-            this->remoteAddress.sin_addr.S_un.S_un_b.s_b2,
-            this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
-            this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
-            this->remoteAddress.sin_port);
-
-        // $$$ correlate this id to all related log entries, across async and network hops too
     }
 
     void ConnectedSocket::Received(ByteString* bytes)

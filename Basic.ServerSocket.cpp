@@ -32,6 +32,20 @@ namespace Basic
 
         InitializePeer((sockaddr_in*)&remoteAddress);
 
+        char client_id[0x100];
+
+        sprintf_s(
+            client_id,
+            "%d.%d.%d.%d:%d",
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b2,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
+            this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
+            this->remoteAddress.sin_port);
+
+        LogEntry::current_call_context.clear();
+        LogCallContextFrame call_frame(client_id);
+
         std::shared_ptr<IProcess> protocol = this->protocol.lock();
         if (!protocol)
         {

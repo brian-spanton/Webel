@@ -15,14 +15,24 @@ namespace Basic
 
     typedef std::vector<std::shared_ptr<std::string> > LogContext;
 
+    class LogCallContextFrame
+    {
+    public:
+        LogCallContextFrame(const char* frame);
+        ~LogCallContextFrame();
+    };
+
     class LogEntry
     {
     private:
-        DWORD thread;
+        DWORD thread_id;
         SYSTEMTIME time = { 0 };
-        LogContext context;
+        LogContext code_context;
+        LogContext call_context;
 
     public:
+        static thread_local LogContext current_call_context;
+
         static void make(LogLevel level, const char* ns, const char* cl, const char* func, const char* message, uint32 code = 0);
 
         LogLevel level = LogLevel::Debug;

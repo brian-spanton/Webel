@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Basic.ICompleter.h"
+#include "Basic.LogEntry.h"
 
 namespace Basic
 {
@@ -16,6 +17,7 @@ namespace Basic
         std::shared_ptr<Job> self;
         std::weak_ptr<ICompleter> completer;
         std::shared_ptr<void> context;
+        LogContext call_context;
 
     public:
         static void complete(OVERLAPPED_ENTRY* entry);

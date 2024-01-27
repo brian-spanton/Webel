@@ -29,6 +29,7 @@ namespace Basic
                 continue;
 
             this->tail[next]->render_utf32(stream);
+            TextWriter(stream).write_literal("\n");
         }
     }
 }

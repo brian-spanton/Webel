@@ -15,6 +15,8 @@ namespace Basic
 
         this->completer = completer;
         this->context = context;
+
+        this->call_context = LogEntry::current_call_context;
     }
 
     std::shared_ptr<Job> Job::make(std::shared_ptr<ICompleter> completer, std::shared_ptr<void> context)
@@ -32,6 +34,8 @@ namespace Basic
 
     void Job::complete(uint32 count, uint32 error)
     {
+        LogEntry::current_call_context = this->call_context;
+
         std::shared_ptr<ICompleter> completer = this->completer.lock();
 
         if (completer)

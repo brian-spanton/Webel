@@ -61,6 +61,14 @@ namespace Basic
 
     DWORD WINAPI Console::Thread(void* param)
     {
+        DWORD pid = GetCurrentProcessId();
+        if (pid == 0)
+            throw FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
+
+        char process[0x10];
+        sprintf_s(process, "%d", pid);
+        LogCallContextFrame call_frame(process);
+
         Console* console = reinterpret_cast<Console*>(param);
         bool success = console->Thread();
         if (!success)
@@ -79,6 +87,8 @@ namespace Basic
             BOOL success = ReadConsoleInputW(input, &record, 1, &count);
             if (success == FALSE)
                 throw FatalError("Basic", "Console", "Thread", "ReadConsoleInputW", GetLastError());
+
+            LogCallContextFrame call_frame("local admin console");
 
             if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown == TRUE)
             {

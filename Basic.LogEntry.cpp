@@ -7,6 +7,18 @@
 
 namespace Basic
 {
+    LogCallContextFrame::LogCallContextFrame(const char* frame)
+    {
+        LogEntry::current_call_context.push_back(std::make_shared<std::string>(frame));
+    }
+
+    LogCallContextFrame::~LogCallContextFrame()
+    {
+        LogEntry::current_call_context.pop_back();
+    }
+
+    thread_local LogContext LogEntry::current_call_context;
+
     void LogEntry::make(LogLevel level, const char* ns, const char* cl, const char* func, const char* message, uint32 code)
     {
         std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(level, ns, cl, func);
@@ -16,21 +28,23 @@ namespace Basic
     }
 
     LogEntry::LogEntry(LogLevel level, const char* ns, const char* cl, const char* func) :
-        thread(GetCurrentThreadId()),
+        thread_id(GetCurrentThreadId()),
         level(level)
     {
-        this->context.push_back(std::make_shared<std::string>(ns));
-        this->context.push_back(std::make_shared<std::string>(cl));
-        this->context.push_back(std::make_shared<std::string>(func));
+        this->code_context.push_back(std::make_shared<std::string>(ns));
+        this->code_context.push_back(std::make_shared<std::string>(cl));
+        this->code_context.push_back(std::make_shared<std::string>(func));
+
+        this->call_context = LogEntry::current_call_context;
 
         GetSystemTime(&this->time);
     }
 
     void LogEntry::render_ascii(std::string* output)
     {
-        char runtime_context[0x40];
-        int runtime_context_length = sprintf_s(runtime_context, "%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
-            this->thread, 
+        char execution_context[0x40];
+        int runtime_context_length = sprintf_s(execution_context, "%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
+            this->thread_id, 
             this->time.wYear, 
             this->time.wMonth, 
             this->time.wDay, 
@@ -39,9 +53,10 @@ namespace Basic
             this->time.wSecond, 
             this->time.wMilliseconds);
 
-        output->reserve(sizeof(runtime_context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
+        output->reserve(sizeof(execution_context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
 
-        output->append(runtime_context, runtime_context_length);
+        output->append("[");
+        output->append(execution_context, runtime_context_length);
 
         switch (this->level)
         {
@@ -70,11 +85,21 @@ namespace Basic
             return;
         }
 
-        output->append(": [");
+        output->append("] [");
 
-        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        for (auto context_frame = this->code_context.begin(); context_frame != this->code_context.end(); context_frame++)
         {
-            if (context_frame != this->context.begin())
+            if (context_frame != this->code_context.begin())
+                output->append("/");
+
+            output->append((*context_frame)->begin(), (*context_frame)->end());
+        }
+
+        output->append("] [");
+
+        for (auto context_frame = this->call_context.begin(); context_frame != this->call_context.end(); context_frame++)
+        {
+            if (context_frame != this->call_context.begin())
                 output->append("/");
 
             output->append((*context_frame)->begin(), (*context_frame)->end());
@@ -115,9 +140,9 @@ namespace Basic
 
     void LogEntry::render_utf16(std::wstring* output)
     {
-        wchar_t runtime_context[0x40];
-        int runtime_context_length = swprintf_s(runtime_context, L"%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
-            this->thread, 
+        wchar_t execution_context[0x40];
+        int runtime_context_length = swprintf_s(execution_context, L"%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
+            this->thread_id, 
             this->time.wYear, 
             this->time.wMonth, 
             this->time.wDay, 
@@ -126,9 +151,10 @@ namespace Basic
             this->time.wSecond, 
             this->time.wMilliseconds);
 
-        output->reserve(sizeof(context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
+        output->reserve(sizeof(code_context) + 0x100 + this->ascii_message.length() + this->unicode_message.length());
 
-        output->append(runtime_context, runtime_context_length);
+        output->append(L"[");
+        output->append(execution_context, runtime_context_length);
 
         switch (this->level)
         {
@@ -157,11 +183,21 @@ namespace Basic
             return;
         }
 
-        output->append(L": [");
+        output->append(L"] [");
 
-        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        for (auto context_frame = this->code_context.begin(); context_frame != this->code_context.end(); context_frame++)
         {
-            if (context_frame != this->context.begin())
+            if (context_frame != this->code_context.begin())
+                output->append(L"/");
+
+            output->append((*context_frame)->begin(), (*context_frame)->end());
+        }
+
+        output->append(L"] [");
+
+        for (auto context_frame = this->call_context.begin(); context_frame != this->call_context.end(); context_frame++)
+        {
+            if (context_frame != this->call_context.begin())
                 output->append(L"/");
 
             output->append((*context_frame)->begin(), (*context_frame)->end());
@@ -194,8 +230,10 @@ namespace Basic
     {
         TextWriter writer(stream);
 
+        writer.write_literal("[");
+
         writer.WriteFormat<0x40>("%010d %04d/%02d/%02d %02d:%02d:%02d.%03d ", 
-            this->thread, 
+            this->thread_id, 
             this->time.wYear, 
             this->time.wMonth, 
             this->time.wDay, 
@@ -231,11 +269,21 @@ namespace Basic
             return;
         }
 
-        writer.write_literal(": [");
+        writer.write_literal("] [");
 
-        for (auto context_frame = this->context.begin(); context_frame != this->context.end(); context_frame++)
+        for (auto context_frame = this->code_context.begin(); context_frame != this->code_context.end(); context_frame++)
         {
-            if (context_frame != this->context.begin())
+            if (context_frame != this->code_context.begin())
+                writer.write_literal("/");
+
+            writer.write_elements((*context_frame)->c_str(), (*context_frame)->length());
+        }
+
+        writer.write_literal("] [");
+
+        for (auto context_frame = this->call_context.begin(); context_frame != this->call_context.end(); context_frame++)
+        {
+            if (context_frame != this->call_context.begin())
                 writer.write_literal("/");
 
             writer.write_elements((*context_frame)->c_str(), (*context_frame)->length());
