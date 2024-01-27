@@ -34,7 +34,7 @@ namespace Basic
 
         char client_id[0x100];
 
-        sprintf_s(
+        int result = sprintf_s(
             client_id,
             "%d.%d.%d.%d:%d",
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b1,
@@ -42,6 +42,8 @@ namespace Basic
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b3,
             this->remoteAddress.sin_addr.S_un.S_un_b.s_b4,
             this->remoteAddress.sin_port);
+        if (result == -1)
+            throw FatalError("Basic", "ServerSocket", "CompleteAccept", "sprintf_s", result);
 
         LogEntry::current_call_context.clear();
         LogCallContextFrame call_frame(client_id);

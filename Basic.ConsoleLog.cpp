@@ -9,9 +9,6 @@ namespace Basic
 {
     void ConsoleLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        if (entry->level < LogLevel::Info)
-            return;
-
         std::wstring output;
         entry->render_utf16(&output);
         output.push_back('\n');

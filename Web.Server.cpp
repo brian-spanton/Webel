@@ -96,6 +96,14 @@ namespace Web
                 if (result == process_result_blocked)
                     return ProcessResult::process_result_blocked;
 
+                auto time_stamp = GetTickCount64();
+                char request_id[0x100];
+                int result2 = sprintf_s(request_id, "%llu", time_stamp);
+                if (result2 == -1)
+                    throw FatalError("Web", "Server", "process_event", "sprintf_s", result2);
+
+                LogCallContextFrame call_frame(request_id);
+
 			    std::shared_ptr<LogEntry> entry = std::make_shared<LogEntry>(LogLevel::Debug, "Web", "Server", "process_event");
                 TextWriter(&entry->unicode_message).write_literal("Request received: ");
                 this->request->render_request_line(&entry->unicode_message);

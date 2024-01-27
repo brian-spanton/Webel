@@ -45,7 +45,7 @@ namespace Service
         };
 
         typedef std::vector<HANDLE> ThreadList;
-        typedef std::list<std::weak_ptr<ILog> > LogList;
+        typedef std::list<std::shared_ptr<ILog> > LogList;
 
         LogList logs;
 

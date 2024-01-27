@@ -26,6 +26,7 @@
 #include "Basic.SplitStream.h"
 #include "Scrape.Globals.h"
 #include "Basic.Utf16Encoder.h"
+#include "Basic.LogFilter.h"
 
 template <typename type>
 void make_immortal(type** pointer, std::shared_ptr<type>* ref)
@@ -54,7 +55,10 @@ namespace Service
             throw FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
 
         char process_id[0x10];
-        sprintf_s(process_id, "%d", pid);
+        int result = sprintf_s(process_id, "%d", pid);
+        if (result == -1)
+            throw FatalError("Service", "Globals", "Thread", "sprintf_s", result);
+
         LogCallContextFrame call_frame(process_id);
 
         Globals* process = reinterpret_cast<Globals*>(param);
@@ -72,7 +76,12 @@ namespace Service
         // these get used before Globals::Initialize is called
 
         this->console_log = std::make_shared<Basic::ConsoleLog>();
-        this->logs.push_back(this->console_log);
+
+        auto console_log_filter = std::make_shared<LogFilter>(this->console_log);
+        console_log_filter->min_level = LogLevel::Info;
+        // $$ implement dynamic filter control
+
+        this->logs.push_back(console_log_filter);
 
         this->debug_log = std::make_shared<Basic::DebugLog>();
         this->logs.push_back(this->debug_log);
@@ -151,7 +160,12 @@ namespace Service
 
         this->file_log = std::make_shared<Basic::FileLog>();
         this->file_log->Initialize(log_path);
-        this->logs.push_back(this->file_log);
+
+        auto file_log_filter = std::make_shared<LogFilter>(this->file_log);
+        file_log_filter->min_level = LogLevel::Info;
+        // $$ implement dynamic filter control
+
+        this->logs.push_back(file_log_filter);
 
         Basic::LogInfo("Service", "Globals", "Initialize", "initializing stop event");
 
@@ -752,14 +766,8 @@ namespace Service
 
     void Globals::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        for (LogList::iterator it = this->logs.begin(); it != this->logs.end(); it++)
-        {
-            std::shared_ptr<ILog> log = it->lock();
-            if (!log)
-                continue;
-
+        for (auto log : this->logs)
             log->add_entry(entry);
-        }
     }
 }
 
@@ -811,10 +819,13 @@ int main(int argc, char* argv[])
 {
     DWORD pid = GetCurrentProcessId();
     if (pid == 0)
-        throw Basic::FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
+        throw Basic::FatalError("", "", "main", "GetCurrentProcessId", GetLastError());
 
     char process_id[0x10];
-    sprintf_s(process_id, "%d", pid);
+    int result = sprintf_s(process_id, "%d", pid);
+    if (result == -1)
+        throw Basic::FatalError("", "", "main", "sprintf_s", result);
+
     Basic::LogCallContextFrame call_frame1(process_id);
     Basic::LogCallContextFrame call_frame2("main");
 

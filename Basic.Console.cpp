@@ -63,11 +63,14 @@ namespace Basic
     {
         DWORD pid = GetCurrentProcessId();
         if (pid == 0)
-            throw FatalError("Basic", "Console", "Thread", "GetProcessId", GetLastError());
+            throw FatalError("Basic", "Console", "Thread", "GetCurrentProcessId", GetLastError());
 
-        char process[0x10];
-        sprintf_s(process, "%d", pid);
-        LogCallContextFrame call_frame(process);
+        char process_id[0x10];
+        int result = sprintf_s(process_id, "%d", pid);
+        if (result == -1)
+            throw FatalError("Basic", "Console", "Thread", "sprintf_s", result);
+
+        LogCallContextFrame call_frame(process_id);
 
         Console* console = reinterpret_cast<Console*>(param);
         bool success = console->Thread();
@@ -88,7 +91,7 @@ namespace Basic
             if (success == FALSE)
                 throw FatalError("Basic", "Console", "Thread", "ReadConsoleInputW", GetLastError());
 
-            LogCallContextFrame call_frame("local admin console");
+            LogCallContextFrame call_frame("console");
 
             if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown == TRUE)
             {

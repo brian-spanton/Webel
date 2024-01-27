@@ -60,11 +60,6 @@ namespace Basic
 
     void FileLog::add_entry(std::shared_ptr<LogEntry> entry)
     {
-        // $$$ implement log sampling controls
-
-        if (entry->level < LogLevel::Info)
-            return;
-
         std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
         entry->render_utf8(bytes.get());
         bytes->append(reinterpret_cast<byte*>("\r\n"), 2);
