@@ -282,9 +282,6 @@ namespace Tls
 
                     Serializer<EncryptedPreMasterSecret> encrypted_pre_master_secret_serializer(&pre_master_secret_encrypted);
 
-                    // $$ move this comment; do logging to a logging microservice instead of local file
-                    // $$ move this comment; pass peer in write bytes ready path
-
                     success = WriteMessage(HandshakeType::client_key_exchange, &encrypted_pre_master_secret_serializer);
                     if (!success)
                     {

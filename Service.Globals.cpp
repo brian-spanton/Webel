@@ -153,6 +153,8 @@ namespace Service
         if (this->queue == 0)
             throw FatalError("Service", "Globals", "Initialize", "CreateIoCompletionPort", GetLastError());
 
+        // $$ consider logging to a remote service instead of (or as well as) a local file
+
         Basic::LogInfo("Service", "Globals", "Initialize", "initializing log file");
 
         char log_path[MAX_PATH + 0x100];
