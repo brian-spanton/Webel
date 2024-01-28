@@ -9,6 +9,10 @@
 
 namespace Basic
 {
+    byte Globals::utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
+    byte Globals::utf_16_little_endian_bom[2] = { 0xFF, 0xFE };
+    byte Globals::utf_8_bom[3] = { 0xEF, 0xBB, 0xBF };
+
     Globals* globals = 0;
 
     Globals::Globals()

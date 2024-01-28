@@ -19,9 +19,9 @@ namespace Basic
 
         std::shared_ptr<std::string> component_name = std::make_shared<std::string>("Basic");
 
-        byte utf_16_big_endian_bom[2] = { 0xFE, 0xFF };
-        byte utf_16_little_endian_bom[2] = { 0xFF, 0xFE };
-        byte utf_8_bom[3] = { 0xEF, 0xBB, 0xBF };
+        static byte utf_16_big_endian_bom[2];
+        static byte utf_16_little_endian_bom[2];
+        static byte utf_8_bom[3];
 
         UnicodeStringRef ftp_scheme;
         UnicodeStringRef file_scheme;

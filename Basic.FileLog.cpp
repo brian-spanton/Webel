@@ -6,8 +6,6 @@
 
 namespace Basic
 {
-    byte FileLog::encoding[] = { 0xef, 0xbb, 0xbf };
-
     FileLog::FileLog() :
         file(INVALID_HANDLE_VALUE)
     {
@@ -41,7 +39,7 @@ namespace Basic
         if (size.QuadPart == 0)
         {
             std::shared_ptr<ByteString> bytes = std::make_shared<ByteString>();
-            bytes->write_elements(encoding, sizeof(encoding));
+            bytes->write_elements(Globals::utf_8_bom, sizeof(Globals::utf_8_bom));
 
             std::shared_ptr<Job> job = Job::make(this->shared_from_this(), bytes);
 

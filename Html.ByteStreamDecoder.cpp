@@ -38,23 +38,23 @@ namespace Html
 
                 uint8 consumed = 0;
 
-                if (memcmp(this->bom, Basic::globals->utf_16_big_endian_bom, sizeof(Basic::globals->utf_16_big_endian_bom)) == 0)
+                if (memcmp(this->bom, Basic::Globals::utf_16_big_endian_bom, sizeof(Basic::Globals::utf_16_big_endian_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_16_big_endian_label;
                     this->confidence = Confidence_Certain;
-                    consumed = _countof(Basic::globals->utf_16_big_endian_bom);
+                    consumed = _countof(Basic::Globals::utf_16_big_endian_bom);
                 }
-                else if (memcmp(this->bom, Basic::globals->utf_16_little_endian_bom, sizeof(Basic::globals->utf_16_little_endian_bom)) == 0)
+                else if (memcmp(this->bom, Basic::Globals::utf_16_little_endian_bom, sizeof(Basic::Globals::utf_16_little_endian_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_16_little_endian_label;
                     this->confidence = Confidence_Certain;
-                    consumed = _countof(Basic::globals->utf_16_little_endian_bom);
+                    consumed = _countof(Basic::Globals::utf_16_little_endian_bom);
                 }
-                else if (memcmp(this->bom, Basic::globals->utf_8_bom, sizeof(Basic::globals->utf_8_bom)) == 0)
+                else if (memcmp(this->bom, Basic::Globals::utf_8_bom, sizeof(Basic::Globals::utf_8_bom)) == 0)
                 {
                     this->encoding = Basic::globals->utf_8_label;
                     this->confidence = Confidence_Certain;
-                    consumed = _countof(Basic::globals->utf_8_bom);
+                    consumed = _countof(Basic::Globals::utf_8_bom);
                 }
                 else if (this->transport_charset)
                 {
