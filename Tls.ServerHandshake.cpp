@@ -133,15 +133,8 @@ namespace Tls
                 }
 
                 this->security_parameters->client_random = this->clientHello.random;
-                this->security_parameters->server_random.gmt_unix_time = 0;
 
-                NTSTATUS error = BCryptGenRandom(0, this->security_parameters->server_random.random_bytes, sizeof(this->security_parameters->server_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-                if (error != 0)
-                {
-                    Basic::LogError("Tls", "ServerHandshake", "process_event", "BCryptGenRandom", error);
-                    switch_to_state(State::BCryptGenRandom_1_failed);
-                    return ProcessResult::process_result_ready;
-                }
+                GenerateRandom(&this->security_parameters->server_random);
 
                 ServerHello serverHello;
                 serverHello.cipher_suite = cipher_suite;

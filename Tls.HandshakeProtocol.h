@@ -36,6 +36,7 @@ namespace Tls
 
         virtual void PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount) = 0;
         void GenerateKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount, byte* output, uint32 output_length);
+        void GenerateRandom(Random* random);
         void switch_to_state(uint32 state);
         void Complete(bool success);
 

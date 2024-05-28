@@ -25,7 +25,9 @@ namespace Tls
 
         this->version_low = 0x0301;
         this->version_high = 0x0303; // $$$$
-        this->version = this->version_high;
+
+        // see RFC5246 section E.1
+        this->version = 0x0300;
         this->version_finalized = false;
 
         this->session_id.resize(32);

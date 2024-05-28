@@ -33,7 +33,6 @@ namespace Tls
             client_version_error,
             SelectCipherSuite_failed,
             InitializeCipherSuite_failed,
-            BCryptGenRandom_1_failed,
             WriteMessage_1_failed,
             WriteMessage_2_failed,
             WriteMessage_3_failed,

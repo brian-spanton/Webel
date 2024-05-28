@@ -194,4 +194,14 @@ namespace Tls
             output,
             output_length);
     }
+
+    void HandshakeProtocol::GenerateRandom(Random* random)
+    {
+        auto now = std::chrono::system_clock::now();
+        random->gmt_unix_time = static_cast<uint32>(std::chrono::system_clock::to_time_t(now));
+
+        NTSTATUS error = BCryptGenRandom(0, random->random_bytes, sizeof(random->random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        if (error != 0)
+            throw FatalError("Tls", "HandshakeProtocol", "GenerateRandom", "BCryptGenRandom", error);
+    }
 }

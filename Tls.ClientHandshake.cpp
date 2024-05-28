@@ -39,11 +39,7 @@ namespace Tls
 
                 Event::AddObserver<byte>(event, this->handshake_messages);
 
-                this->security_parameters->client_random.gmt_unix_time = 0;
-
-                NTSTATUS error = BCryptGenRandom(0, this->security_parameters->client_random.random_bytes, sizeof(this->security_parameters->client_random.random_bytes), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-                if (error != 0)
-                    throw FatalError("Tls", "ClientHandshake", "process_event", "BCryptGenRandom", error);
+                GenerateRandom(&this->security_parameters->client_random);
 
                 // If handshake is failing, RFC5246 section D.4 may be helpful
 
