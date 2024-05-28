@@ -28,7 +28,6 @@ namespace Basic
     {
         this->state = Start_State;
     }
-
         
     void StateMachine::LogUnexpectedEvent(const char* ns, const char* cl, const char* func, IEvent* event)
     {

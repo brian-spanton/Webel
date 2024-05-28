@@ -19,7 +19,7 @@ namespace Tls
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA256);
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_AES_128_CBC_SHA);
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        //this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA); // $$
+        //this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA); // $$$
         this->supported_cipher_suites.push_back(CipherSuite::cs_TLS_RSA_WITH_RC4_128_MD5);
 
         initialize_ascii(&client_finished_label, "client finished");
@@ -63,6 +63,23 @@ namespace Tls
 
                 for (uint32 i = 0; i < output_length; i++)
                     output[i] = md5_stream[i] ^ sha1_stream[i];
+            }
+            break;
+
+        case PRFAlgorithm::tls_prf_sha256:
+            {
+                uint32 S_length = secret->size();
+                byte* S1 = secret->address();
+
+                ByteString sha256_stream;
+                sha256_stream.resize(3 * output_length); // $$$ magic number = what?  2x didn't work because 2 * 12 == 24, but we got 32 empirically 
+                P_hash(BCRYPT_SHA256_ALGORITHM, S1, S_length, seed, seed_count, sha256_stream.address(), output_length, sha256_stream.size());
+
+                sha256_stream.resize(output_length);
+
+                // $$$ is it really necessary to call P_hash with extra buffer and then copy it?  If so, optimize.
+                for (uint32 i = 0; i < output_length; i++)
+                    output[i] = sha256_stream[i];
             }
             break;
 

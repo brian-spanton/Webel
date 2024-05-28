@@ -24,7 +24,7 @@ namespace Tls
         this->certificate = certificate;
 
         this->version_low = 0x0301;
-        this->version_high = 0x0302;
+        this->version_high = 0x0303; // $$$$
         this->version = this->version_high;
         this->version_finalized = false;
 
@@ -581,13 +581,22 @@ namespace Tls
                 if (this->version <= 0x0301)
                 {
                     record_iv_length = 0;
-
-                    mask = this->active_write_state->IV;
+                }
+                else if (this->version >= 0x0303)
+                {
+                    record_iv_length = this->active_write_state->security_parameters->record_iv_length;
                 }
                 else
                 {
                     record_iv_length = this->active_write_state->security_parameters->block_length;
+                }
 
+                if (record_iv_length == 0)
+                {
+                    mask = this->active_write_state->IV;
+                }
+                else
+                {
                     mask = std::make_shared<ByteString>();
                     mask->resize(record_iv_length);
 
@@ -894,7 +903,7 @@ namespace Tls
         this->version = version;
         this->version_finalized = true;
 
-        // $ todo for tls 1.1:
+        // $$$ todo for tls 1.1:
         //-  Handling of padding errors is changed to use the bad_record_mac
         //   alert rather than the decrypt_stream_decryption_failed alert to protect against
         //   CBC attacks.
@@ -904,12 +913,12 @@ namespace Tls
         //-  Additional informational notes were added for various new attacks
         //   on TLS.
 
-        // $ todo for tls 1.2:
-        //-  The MD5/SHA-1 combination in the pseudorandom function (PRF) has
+        // $$$ todo for tls 1.2:
+        //-  [DONE] The MD5/SHA-1 combination in the pseudorandom function (PRF) has
         //   been replaced with cipher-suite-specified PRFs.  All cipher suites
         //   in this document use P_SHA256.
 
-        //-  The MD5/SHA-1 combination in the digitally-signed element has been
+        //-  [DONE] The MD5/SHA-1 combination in the digitally-signed element has been
         //   replaced with a single hash.  Signed elements now include a field
         //   that explicitly specifies the hash algorithm used.
 
@@ -928,7 +937,7 @@ namespace Tls
 
         //-  Tightened up a number of requirements.
 
-        //-  Verify_data length now depends on the cipher suite (default is
+        //-  [DONE] Verify_data length now depends on the cipher suite (default is
         //   still 12).
 
         //-  Cleaned up description of Bleichenbacher/Klima attack defenses.
@@ -938,7 +947,7 @@ namespace Tls
         //-  After a certificate_request, if no certificates are available,
         //   clients now MUST send an empty certificate list.
 
-        //-  TLS_RSA_WITH_AES_128_CBC_SHA is now the mandatory to implement
+        //-  [DONE] TLS_RSA_WITH_AES_128_CBC_SHA is now the mandatory to implement
         //   cipher suite.
 
         //-  Added HMAC-SHA256 cipher suites.
@@ -946,7 +955,7 @@ namespace Tls
         //-  Removed IDEA and DES cipher suites.  They are now deprecated and
         //   will be documented in a separate document.
 
-        //-  Support for the SSLv2 backward-compatible hello is now a MAY, not
+        //-  [DONE] Support for the SSLv2 backward-compatible hello is now a MAY, not
         //   a SHOULD, with sending it a SHOULD NOT.  Support will probably
         //   become a SHOULD NOT in the future.
 

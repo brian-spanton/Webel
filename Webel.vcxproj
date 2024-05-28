@@ -124,6 +124,7 @@
     <ClInclude Include="Service.WebProxyEndpoint.h" />
     <ClInclude Include="Service.WebServer.h" />
     <ClInclude Include="Service.WebServerEndpoint.h" />
+    <ClInclude Include="Tls.DigitallySignedFrame.h" />
     <ClInclude Include="Tls.HeartbeatExtensionFrame.h" />
     <ClInclude Include="Tls.HeartbeatMessageFrame.h" />
     <ClInclude Include="Tls.HeartbeatProtocol.h" />
@@ -341,6 +342,7 @@
     <ClCompile Include="Http.DisconnectBodyFrame.cpp" />
     <ClCompile Include="Http.BodyFrame.cpp" />
     <ClCompile Include="Service.WebServerEndpoint.cpp" />
+    <ClCompile Include="Tls.DigitallySignedFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatExtensionFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatMessageFrame.cpp" />
     <ClCompile Include="Tls.HeartbeatProtocol.cpp" />

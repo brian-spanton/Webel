@@ -75,6 +75,13 @@ namespace Service
 
             case Http::EventType::response_complete_event:
                 {
+                    if (!this->json_parser)
+                    {
+                        Basic::LogError("Service", "StandardEncodings", "process_event", "!this->json_parser");
+                        switch_to_state(State::unexpected_json_error);
+                        return ProcessResult::process_result_blocked;
+                    }
+
                     if (this->json_parser->text->value->type != Json::Value::Type::array_value)
                     {
                         Basic::LogError("Service", "StandardEncodings", "process_event", "this->json_parser->text->value->type != Json::Value::Type::array_value");

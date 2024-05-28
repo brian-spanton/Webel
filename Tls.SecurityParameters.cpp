@@ -13,6 +13,8 @@ namespace Tls
         cipher_type(stream),
         enc_key_length(0),
         block_length(0),
+        fixed_iv_length(0),
+        record_iv_length(0),
         mac_algorithm(ma_null),
         mac_length(0),
         mac_key_length(0),
@@ -161,6 +163,11 @@ namespace Tls
             // use LogDebug instead of LogError so we are less vulnerable to a logging attack
             Basic::LogDebug("Tls", "SecurityParameters", "InitializeCipherSuite", "unsupported interim_cipher", interim_cipher);
             return false;
+        }
+
+        if (this->cipher_type == CipherType::block)
+        {
+            this->record_iv_length = this->block_length;
         }
 
         // MAC       Algorithm    mac_length  mac_key_length

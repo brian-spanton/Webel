@@ -31,10 +31,11 @@ namespace Tls
 
         bool WriteMessage(HandshakeType msg_type, IStreamWriter<byte>* message);
         bool WriteFinished(ByteString* label);
-        void CalculateVerifyData(ByteString* label, byte* output, uint16 output_max);
+        void CalculateVerifyData(ByteString* label, ByteString* output);
         void CalculateKeys(IVector<byte>* pre_master_key);
 
-        virtual void PartitionKeyMaterial(ByteString* key_material) = 0;
+        virtual void PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount) = 0;
+        void GenerateKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount, byte* output, uint32 output_length);
         void switch_to_state(uint32 state);
         void Complete(bool success);
 

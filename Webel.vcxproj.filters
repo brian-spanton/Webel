@@ -502,6 +502,9 @@
     <ClInclude Include="Basic.LogFilter.h">
       <Filter>Basic</Filter>
     </ClInclude>
+    <ClInclude Include="Tls.DigitallySignedFrame.h">
+      <Filter>Tls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Http.BodyChunksFrame.cpp">
@@ -917,6 +920,9 @@
     </ClCompile>
     <ClCompile Include="Basic.LogFilter.cpp">
       <Filter>Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="Tls.DigitallySignedFrame.cpp">
+      <Filter>Tls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

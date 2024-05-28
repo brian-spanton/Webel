@@ -40,47 +40,76 @@ namespace Tls
         }
     }
 
-    void HandshakeProtocol::CalculateVerifyData(ByteString* label, byte* output, uint16 output_max)
+    void HandshakeProtocol::CalculateVerifyData(ByteString* label, ByteString* output)
     {
-        if (output_max < this->security_parameters->verify_data_length)
-            throw FatalError("Tls", "HandshakeProtocol", "CalculateVerifyData", "output_max < this->security_parameters->verify_data_length", this->security_parameters->verify_data_length);
-
         IStreamWriter<byte>* seed[] = { this->handshake_messages.get(), };
+        std::vector<std::shared_ptr<ByteString> > prf_seed;
 
-        std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
-        hashAlgorithm->Initialize(BCRYPT_MD5_ALGORITHM, false);
+        switch (this->session->version)
+        {
+        case 0x0301:
+        case 0x0302:
+            {
+                std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
+                hashAlgorithm->Initialize(BCRYPT_MD5_ALGORITHM, false);
 
-        std::shared_ptr<ByteString> md5 = std::make_shared<ByteString>();
-        md5->resize(hashAlgorithm->hash_output_length);
-        Tls::globals->Hash(hashAlgorithm.get(), 0, 0, seed, _countof(seed), md5->address(), md5->size());
+                std::shared_ptr<ByteString> md5 = std::make_shared<ByteString>();
+                md5->resize(hashAlgorithm->hash_output_length);
+                Tls::globals->Hash(hashAlgorithm.get(), 0, 0, seed, _countof(seed), md5->address(), md5->size());
 
-        hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
-        hashAlgorithm->Initialize(BCRYPT_SHA1_ALGORITHM, false);
+                hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
+                hashAlgorithm->Initialize(BCRYPT_SHA1_ALGORITHM, false);
 
-        std::shared_ptr<ByteString> sha1 = std::make_shared<ByteString>();
-        sha1->resize(hashAlgorithm->hash_output_length);
-        Tls::globals->Hash(hashAlgorithm.get(), 0, 0, seed, _countof(seed), sha1->address(), sha1->size());
+                std::shared_ptr<ByteString> sha1 = std::make_shared<ByteString>();
+                sha1->resize(hashAlgorithm->hash_output_length);
+                Tls::globals->Hash(hashAlgorithm.get(), 0, 0, seed, _countof(seed), sha1->address(), sha1->size());
 
-        IStreamWriter<byte>* prf_seed[] = { md5.get(), sha1.get(), };
+                prf_seed.push_back(md5);
+                prf_seed.push_back(sha1);
+            }
+            break;
+
+        case 0x0303:
+            {
+                std::shared_ptr<Basic::HashAlgorithm> hashAlgorithm = std::make_shared<Basic::HashAlgorithm>();
+                hashAlgorithm->Initialize(BCRYPT_SHA256_ALGORITHM, false);
+
+                std::shared_ptr<ByteString> sha256 = std::make_shared<ByteString>();
+                sha256->resize(hashAlgorithm->hash_output_length);
+                Tls::globals->Hash(hashAlgorithm.get(), 0, 0, seed, _countof(seed), sha256->address(), sha256->size());
+
+                prf_seed.push_back(sha256);
+            }
+            break;
+
+        default:
+            throw FatalError("Tls", "HandshakeProtocol", "CalculateVerifyData", "unsupported version", this->session->version);
+        }
+
+        output->resize(this->security_parameters->verify_data_length);
+
+        std::vector<IStreamWriter<byte>*> prf_seed_ptrs;
+        for (auto ptr : prf_seed)
+            prf_seed_ptrs.push_back(ptr.get());
 
         Tls::globals->PRF(
             this->security_parameters->prf_algorithm,
             &this->security_parameters->master_secret,
             label,
-            prf_seed,
-            _countof(prf_seed),
-            output,
-            this->security_parameters->verify_data_length);
+            &*prf_seed_ptrs.begin(),
+            prf_seed_ptrs.size(),
+            output->address(),
+            output->size());
     }
 
     bool HandshakeProtocol::WriteFinished(ByteString* label)
     {
         // http://www.ietf.org/mail-archive/web/tls/current/msg09221.html
 
-        std::shared_ptr<ByteString> finished_data = std::make_shared<ByteString>();
-        finished_data->resize(this->security_parameters->verify_data_length);
+        std::shared_ptr<ByteString> verify_data = std::make_shared<ByteString>();
+        verify_data->resize(this->security_parameters->verify_data_length);
 
-        CalculateVerifyData(label, finished_data->address(), (uint16)finished_data->size());
+        CalculateVerifyData(label, verify_data.get());
 
         // send the handshake buffer so far, before sending change cipher spec
 
@@ -94,7 +123,7 @@ namespace Tls
 
         this->session->WriteChangeCipherSpec();
 
-        bool success = WriteMessage(HandshakeType::finished, finished_data.get());
+        bool success = WriteMessage(HandshakeType::finished, verify_data.get());
         if (!success)
             return false;
 
@@ -144,31 +173,25 @@ namespace Tls
             this->security_parameters->master_secret.address(),
             this->security_parameters->master_secret.size());
 
-        // generate keys per TLS section 6.3
-
-        uint16 key_material_length = 2 * (this->security_parameters->mac_key_length + this->security_parameters->enc_key_length + this->security_parameters->block_length);
-        ByteString key_material;
-        key_material.resize(key_material_length);
-
         IStreamWriter<byte>* keyExpansionSeed[] = { &server_random_serializer, &client_random_serializer, };
 
-        Tls::globals->PRF(
-            this->security_parameters->prf_algorithm,
-            &this->security_parameters->master_secret,
-            &Tls::globals->key_expansion_label,
-            keyExpansionSeed,
-            _countof(keyExpansionSeed),
-            key_material.address(),
-            key_material.size());
-
-        this->session->pending_read_state->IV = std::make_shared<ByteString>();
-        this->session->pending_write_state->IV = std::make_shared<ByteString>();
-
-        PartitionKeyMaterial(&key_material);
+        PartitionKeyMaterial(keyExpansionSeed, _countof(keyExpansionSeed));
 
         this->session->pending_read_state->Initialize(this->security_parameters);
         this->session->pending_write_state->Initialize(this->security_parameters);
 
         ZeroMemory(pre_master_secret->address(), pre_master_secret->size());
+    }
+
+    void HandshakeProtocol::GenerateKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount, byte* output, uint32 output_length)
+    {
+        Tls::globals->PRF(
+            this->security_parameters->prf_algorithm,
+            &this->security_parameters->master_secret,
+            &Tls::globals->key_expansion_label,
+            keyExpansionSeed,
+            keyExpansionSeedCount,
+            output,
+            output_length);
     }
 }

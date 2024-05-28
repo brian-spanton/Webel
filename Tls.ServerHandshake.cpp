@@ -109,7 +109,7 @@ namespace Tls
                         this->key_exchange_algorithm == KeyExchangeAlgorithm::ECDH_RSA ||
                         this->key_exchange_algorithm == KeyExchangeAlgorithm::ECDHE_RSA)
                     {
-                        SignatureAndHashAlgorithm alg = {sha1, _sa_rsa};
+                        SignatureAndHashAlgorithm alg = { HashAlgorithm::sha1, SignatureAlgorithm::_sa_rsa };
                         supported_signature_algorithms.push_back(alg);
                     }
 
@@ -118,7 +118,7 @@ namespace Tls
                     else if (this->key_exchange_algorithm == KeyExchangeAlgorithm::DHE_DSS ||
                         this->key_exchange_algorithm == KeyExchangeAlgorithm::DH_DSS)
                     {
-                        SignatureAndHashAlgorithm alg = {sha1, dsa};
+                        SignatureAndHashAlgorithm alg = { HashAlgorithm::sha1, SignatureAlgorithm::dsa };
                         supported_signature_algorithms.push_back(alg);
                     }
 
@@ -127,7 +127,7 @@ namespace Tls
                     else if (this->key_exchange_algorithm == KeyExchangeAlgorithm::ECDH_ECDSA ||
                         this->key_exchange_algorithm == KeyExchangeAlgorithm::ECDHE_ECDSA)
                     {
-                        SignatureAndHashAlgorithm alg = {sha1, ecdsa};
+                        SignatureAndHashAlgorithm alg = { HashAlgorithm::sha1, SignatureAlgorithm::ecdsa };
                         supported_signature_algorithms.push_back(alg);
                     }
                 }
@@ -203,7 +203,7 @@ namespace Tls
                     }
                     break;
 
-                // $$ implement DHE_DSS
+                // $$$ implement DHE_DSS
                 //case KeyExchangeAlgorithm::DHE_DSS:
                 //    {
                 //        std::shared_ptr<CertificatesFrame> frame = std::make_shared<Tls::CertificatesFrame>();
@@ -268,7 +268,7 @@ namespace Tls
                         switch_to_state(State::pre_master_secret_frame_pending);
                         break;
 
-                    // $$ implement DHE_DSS
+                    // $$$ implement DHE_DSS
                     //case KeyExchangeAlgorithm::DHE_DSS:
                     //    {
                     //        this->pre_master_secret_bytes = std::make_shared<ByteString>();
@@ -325,9 +325,7 @@ namespace Tls
 
                 this->pre_master_secret_bytes.clear();
 
-                this->finished_expected.resize(this->security_parameters->verify_data_length);
-
-                CalculateVerifyData(&Tls::globals->client_finished_label, finished_expected.address(), (uint16)finished_expected.size());
+                CalculateVerifyData(&Tls::globals->client_finished_label, &this->finished_expected);
 
                 switch_to_state(State::expecting_cipher_change_state);
                 return ProcessResult::process_result_blocked;
@@ -379,7 +377,7 @@ namespace Tls
 
                 for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
                 {
-                    if (finished_received[i] != finished_expected[i])
+                    if (this->finished_received[i] != this->finished_expected[i])
                     {
                         switch_to_state(State::finished_received_error);
                         return ProcessResult::process_result_ready;
@@ -466,7 +464,7 @@ namespace Tls
             }
             break;
 
-        // $$ NYI implement DHE_DSS
+        // $$$ NYI implement DHE_DSS
         //case KeyExchangeAlgorithm::DHE_DSS:
         //    break;
 
@@ -480,17 +478,42 @@ namespace Tls
         return true;
     }
 
-    void ServerHandshake::PartitionKeyMaterial(ByteString* key_material)
+    void ServerHandshake::PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount)
     {
-        Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_read_state->MAC_key);
-        Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_write_state->MAC_key);
-        Tls::globals->Partition(key_material, this->security_parameters->enc_key_length, &this->session->pending_read_state->encryption_key);
-        Tls::globals->Partition(key_material, this->security_parameters->enc_key_length, &this->session->pending_write_state->encryption_key);
+        // generate keys per TLS section 6.3
+        uint8 fixed_iv_length = 0;
 
         if (this->session->version <= 0x0301)
         {
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_read_state->IV.get());
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_write_state->IV.get());
+            fixed_iv_length = this->security_parameters->block_length;
         }
+        else if(this->session->version >= 0x303)
+        {
+            fixed_iv_length = this->security_parameters->fixed_iv_length;
+        }
+
+        uint16 key_material_length = 2 * (this->security_parameters->mac_key_length + this->security_parameters->enc_key_length + fixed_iv_length);
+
+        ByteString key_material;
+        key_material.resize(key_material_length);
+
+        GenerateKeyMaterial(
+            keyExpansionSeed,
+            keyExpansionSeedCount,
+            key_material.address(),
+            key_material.size());
+
+        Tls::globals->Partition(&key_material, this->security_parameters->mac_key_length, &this->session->pending_read_state->MAC_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->mac_key_length, &this->session->pending_write_state->MAC_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->enc_key_length, &this->session->pending_read_state->encryption_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->enc_key_length, &this->session->pending_write_state->encryption_key);
+
+        this->session->pending_read_state->IV = std::make_shared<ByteString>();
+        this->session->pending_read_state->IV->resize(fixed_iv_length);
+        Tls::globals->Partition(&key_material, fixed_iv_length, this->session->pending_read_state->IV.get());
+
+        this->session->pending_write_state->IV = std::make_shared<ByteString>();
+        this->session->pending_write_state->IV->resize(fixed_iv_length);
+        Tls::globals->Partition(&key_material, fixed_iv_length, this->session->pending_write_state->IV.get());
     }
 }

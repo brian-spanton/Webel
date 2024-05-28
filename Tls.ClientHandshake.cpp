@@ -45,6 +45,8 @@ namespace Tls
                 if (error != 0)
                     throw FatalError("Tls", "ClientHandshake", "process_event", "BCryptGenRandom", error);
 
+                // If handshake is failing, RFC5246 section D.4 may be helpful
+
                 ClientHello clientHello;
                 clientHello.client_version = this->session->version_high;
                 clientHello.random = this->security_parameters->client_random;
@@ -147,7 +149,7 @@ namespace Tls
                     switch_to_state(State::expecting_certificate_state);
                     break;
 
-                // $$ implement DHE_DSS
+                // $$$ implement DHE_DSS
                 //case KeyExchangeAlgorithm::DHE_DSS:
                 //    break;
 
@@ -289,6 +291,14 @@ namespace Tls
                         return ProcessResult::process_result_ready;
                     }
 
+                    // $$$ implement certificate verify per RFC5246 section 7.4.8
+                    //success = WriteMessage(HandshakeType::certificate_verify, &CertificateVerify);
+                    //if (!success)
+                    //{
+                    //    switch_to_state(State::WriteMessage_2a_failed);
+                    //    return ProcessResult::process_result_ready;
+                    //}
+
                     success = WriteFinished(&Tls::globals->client_finished_label);
                     if (!success)
                     {
@@ -296,11 +306,9 @@ namespace Tls
                         return ProcessResult::process_result_ready;
                     }
 
-                    this->finished_expected.resize(this->security_parameters->verify_data_length);
-
                     Event::RemoveObserver<byte>(event, this->handshake_messages);
 
-                    CalculateVerifyData(&Tls::globals->server_finished_label, finished_expected.address(), (uint16)finished_expected.size());
+                    CalculateVerifyData(&Tls::globals->server_finished_label, &this->finished_expected);
 
                     ZeroMemory(this->handshake_messages->address(), this->handshake_messages->size());
                     this->handshake_messages->clear();
@@ -349,7 +357,6 @@ namespace Tls
                 else
                 {
                     this->finished_received.resize(this->security_parameters->verify_data_length);
-
                     this->finished_received_frame.reset(this->finished_received.address(), this->finished_received.size());
                     switch_to_state(State::finished_received_frame_pending_state);
                 }
@@ -364,7 +371,7 @@ namespace Tls
 
                 for (uint32 i = 0; i < this->security_parameters->verify_data_length; i++)
                 {
-                    if (finished_received[i] != finished_expected[i])
+                    if (this->finished_received[i] != this->finished_expected[i])
                     {
                         switch_to_state(State::finished_received_error);
                         return ProcessResult::process_result_ready;
@@ -387,17 +394,42 @@ namespace Tls
         return ProcessResult::process_result_ready;
     }
 
-    void ClientHandshake::PartitionKeyMaterial(ByteString* key_material)
+    void ClientHandshake::PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount)
     {
-        Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_write_state->MAC_key);
-        Tls::globals->Partition(key_material, this->security_parameters->mac_key_length, &this->session->pending_read_state->MAC_key);
-        Tls::globals->Partition(key_material, this->security_parameters->enc_key_length, &this->session->pending_write_state->encryption_key);
-        Tls::globals->Partition(key_material, this->security_parameters->enc_key_length, &this->session->pending_read_state->encryption_key);
+        // generate keys per TLS section 6.3
+        uint8 fixed_iv_length = 0;
 
         if (this->session->version <= 0x0301)
         {
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_write_state->IV.get());
-            Tls::globals->Partition(key_material, this->security_parameters->block_length, this->session->pending_read_state->IV.get());
+            fixed_iv_length = this->security_parameters->block_length;
         }
+        else if(this->session->version >= 0x303)
+        {
+            fixed_iv_length = this->security_parameters->fixed_iv_length;
+        }
+
+        uint16 key_material_length = 2 * (this->security_parameters->mac_key_length + this->security_parameters->enc_key_length + fixed_iv_length);
+
+        ByteString key_material;
+        key_material.resize(key_material_length);
+
+        GenerateKeyMaterial(
+            keyExpansionSeed,
+            keyExpansionSeedCount,
+            key_material.address(),
+            key_material.size());
+
+        Tls::globals->Partition(&key_material, this->security_parameters->mac_key_length, &this->session->pending_write_state->MAC_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->mac_key_length, &this->session->pending_read_state->MAC_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->enc_key_length, &this->session->pending_write_state->encryption_key);
+        Tls::globals->Partition(&key_material, this->security_parameters->enc_key_length, &this->session->pending_read_state->encryption_key);
+
+        this->session->pending_write_state->IV = std::make_shared<ByteString>();
+        this->session->pending_write_state->IV->resize(fixed_iv_length);
+        Tls::globals->Partition(&key_material, fixed_iv_length, this->session->pending_write_state->IV.get());
+
+        this->session->pending_read_state->IV = std::make_shared<ByteString>();
+        this->session->pending_read_state->IV->resize(fixed_iv_length);
+        Tls::globals->Partition(&key_material, fixed_iv_length, this->session->pending_read_state->IV.get());
     }
 }

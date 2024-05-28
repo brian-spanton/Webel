@@ -677,6 +677,7 @@ namespace Tls
     typedef Vector<byte, 1, 0xffff, 2> DhP;
     typedef Vector<byte, 1, 0xffff, 2> DhG;
     typedef Vector<byte, 1, 0xffff, 2> DhYs;
+    typedef Vector<byte, 0, 0xffff, 2> Signature;
 
     ///////////////////////////////////////////////////////////////////////////
     // vectors of vectors
@@ -719,6 +720,12 @@ namespace Tls
     {
         HandshakeType msg_type;
         uint32 length;
+    };
+
+    struct DigitallySigned
+    {
+        SignatureAndHashAlgorithm algorithm;
+        Signature signature;
     };
 
     struct ExtensionHeader
@@ -799,6 +806,8 @@ namespace Tls
         SessionId session_id;
         CipherSuites cipher_suites;
         CompressionMethods compression_methods;
+
+        // $$$$ is the rest of this correct as in RFC5246?  Check 7.4.1.1 and 7.4.1.2
         ServerNameList server_name_list;
         SignatureAndHashAlgorithms supported_signature_algorithms;
         RenegotiationInfo renegotiation_info;
@@ -816,6 +825,8 @@ namespace Tls
         SessionId session_id;
         CipherSuite cipher_suite = CipherSuite::cs_TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA;
         CompressionMethod compression_method = CompressionMethod::cm_null;
+
+        // $$$$ is the rest of this correct as in RFC5246?  Check 7.4.1.1 and 7.4.1.3
         HeartbeatExtension heartbeat_extension;
         bool heartbeat_extension_initialized;
     };
@@ -925,7 +936,7 @@ namespace Basic
     template <> struct __declspec(novtable) serialize<Tls::Certificates> : public serialize_vector<Tls::Certificates> {};
     template <> struct __declspec(novtable) serialize<Tls::SessionId> : public serialize_vector<Tls::SessionId> {};
     template <> struct __declspec(novtable) serialize<Tls::RenegotiationInfo> : public serialize_vector<Tls::RenegotiationInfo> {};
-    template <> struct __declspec(novtable) serialize<Tls::Extensions> : public serialize_vector<Tls::Extensions> {}; // also covers the synonym EncryptedPreMasterSecret
+    template <> struct __declspec(novtable) serialize<Tls::Extensions> : public serialize_vector<Tls::Extensions> {}; // also covers the synonyms EncryptedPreMasterSecret and Signature
     template <> struct __declspec(novtable) serialize<Tls::SignatureAndHashAlgorithms> : public serialize_vector<Tls::SignatureAndHashAlgorithms> {};
     template <> struct __declspec(novtable) serialize<Tls::ServerNameList> : public serialize_vector<Tls::ServerNameList> {};
     template <> struct __declspec(novtable) serialize<Tls::EllipticCurveList> : public serialize_vector<Tls::EllipticCurveList> {};
@@ -1093,7 +1104,7 @@ namespace Basic
     template <> struct __declspec(novtable) make_deserializer<Tls::Certificates> : public make_vector_deserializer<Tls::Certificates> {};
     template <> struct __declspec(novtable) make_deserializer<Tls::SessionId> : public make_vector_deserializer<Tls::SessionId> {};
     template <> struct __declspec(novtable) make_deserializer<Tls::RenegotiationInfo> : public make_vector_deserializer<Tls::RenegotiationInfo> {};
-    template <> struct __declspec(novtable) make_deserializer<Tls::Extensions> : public make_vector_deserializer<Tls::Extensions> {}; // also covers the synonym EncryptedPreMasterSecret
+    template <> struct __declspec(novtable) make_deserializer<Tls::Extensions> : public make_vector_deserializer<Tls::Extensions> {}; // also covers the synonyms EncryptedPreMasterSecret and Signature
     template <> struct __declspec(novtable) make_deserializer<Tls::SignatureAndHashAlgorithms> : public make_vector_deserializer<Tls::SignatureAndHashAlgorithms> {};
     template <> struct __declspec(novtable) make_deserializer<Tls::ServerNameList> : public make_vector_deserializer<Tls::ServerNameList> {};
     template <> struct __declspec(novtable) make_deserializer<Tls::EllipticCurveList> : public make_vector_deserializer<Tls::EllipticCurveList> {};

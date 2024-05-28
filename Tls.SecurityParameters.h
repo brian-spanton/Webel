@@ -16,6 +16,8 @@ namespace Tls
         CipherType cipher_type;
         uint8 enc_key_length;
         uint8 block_length;
+        uint8 fixed_iv_length;
+        uint8 record_iv_length;
         MACAlgorithm mac_algorithm;
         uint8 mac_length;
         uint8 mac_key_length;

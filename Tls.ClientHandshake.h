@@ -60,7 +60,7 @@ namespace Tls
         Certificates certificates;
         VectorFrame<Certificates> certificates_frame;
 
-        virtual void PartitionKeyMaterial(ByteString* key_material);
+        virtual void PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount);
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:

@@ -58,7 +58,7 @@ namespace Tls
         ClientHelloFrame client_hello_frame;
         VectorFrame<EncryptedPreMasterSecret> pre_master_secret_frame;
 
-        virtual void PartitionKeyMaterial(ByteString* key_material);
+        virtual void PartitionKeyMaterial(IStreamWriter<byte>** keyExpansionSeed, uint32 keyExpansionSeedCount);
         bool ProcessClientKeyExchange(KeyExchangeAlgorithm key_exchange_algorithm);
 
         virtual ProcessResult IProcess::process_event(IEvent* event);
