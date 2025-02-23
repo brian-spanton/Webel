@@ -26,7 +26,7 @@ namespace Web
 
         std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
-        ByteStringRef completion_cookie;
+        std::shared_ptr<void> context;
         std::shared_ptr<RequestFrame> request_frame;
         std::shared_ptr<Server> self;
 
@@ -40,7 +40,7 @@ namespace Web
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        Server(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         void start(ListenSocket* listen_socket, std::shared_ptr<Tls::ICertificate> certificate);
         virtual void handle_event() = 0;

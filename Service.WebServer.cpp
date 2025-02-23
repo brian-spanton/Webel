@@ -15,8 +15,8 @@ namespace Service
 {
     using namespace Basic;
 
-    WebServer::WebServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
-        Server(completion, cookie)
+    WebServer::WebServer(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
+        Server(completion, context)
     {
     }
 

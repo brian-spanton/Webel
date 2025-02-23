@@ -44,12 +44,12 @@ namespace Http
         std::shared_ptr<IStream<byte> > decoded_content_stream;
         std::shared_ptr<BodyFrame> body_frame;
         std::weak_ptr<IProcess> completion;
-        ByteStringRef completion_cookie;
+        std::shared_ptr<void> context;
 
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         void set_decoded_content_stream(std::shared_ptr<IStream<byte> > decoded_content_stream);
     };

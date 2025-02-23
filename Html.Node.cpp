@@ -64,7 +64,7 @@ namespace Html
 
     bool Node::has_ancestor(ElementName* element_name)
     {
-        std::shared_ptr<Node> parent(this->parent);
+        std::shared_ptr<Node> parent(this->parent.lock());
 
         if (!parent)
             return false;

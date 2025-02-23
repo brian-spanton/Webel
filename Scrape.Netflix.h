@@ -54,7 +54,7 @@ namespace Scrape
 		std::shared_ptr<Web::Client> client;
 		std::shared_ptr<Html::Parser> html_parser;
         std::weak_ptr<IProcess> completion;
-        ByteStringRef completion_cookie;
+        std::shared_ptr<void> context;
 		std::vector<UnicodeStringRef> movies;
 		UnicodeStringRef search_term;
 		uint32 current_row = 0;
@@ -72,7 +72,7 @@ namespace Scrape
 	public:
 		std::shared_ptr<Web::Page> current_page;
 
-		Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie);
+		Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         void start();
 		virtual ProcessResult IProcess::process_event(IEvent* event);

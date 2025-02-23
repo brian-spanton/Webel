@@ -24,7 +24,7 @@ namespace Tls
         this->certificate = certificate;
 
         this->version_low = 0x0301;
-        this->version_high = 0x0303; // $$$$
+        this->version_high = 0x0302; // $$$$
 
         // see RFC5246 section E.1
         this->version = 0x0300;

@@ -12,10 +12,10 @@ namespace Web
 {
     using namespace Basic;
 
-    Proxy::Proxy(std::shared_ptr<IProcess> completion, ByteStringRef cookie, std::shared_ptr<Uri> server_url) :
+    Proxy::Proxy(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context, std::shared_ptr<Uri> server_url) :
         server_url(server_url),
         completion(completion),
-        completion_cookie(cookie)
+        context(context)
     {
     }
 
@@ -73,7 +73,7 @@ namespace Web
                 if (completion)
                 {
                     AcceptCompleteEvent event;
-                    event.cookie = this->completion_cookie;
+                    event.context = this->context;
                     process_event_ignore_failures(completion.get(), &event);
                 }
 

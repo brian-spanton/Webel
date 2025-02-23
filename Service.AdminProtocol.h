@@ -44,12 +44,12 @@ namespace Service
         std::shared_ptr<Html::Parser> html_parser;
         std::shared_ptr<Web::Page> current_page;
         std::shared_ptr<Web::Form> current_form;
-        Basic::ByteStringRef get_cookie;
+        std::shared_ptr<void> get_context;
 
-		ByteStringRef amazon_cookie;
+		std::shared_ptr<void> amazon_context;
 		std::shared_ptr<Scrape::Amazon> amazon_scrape;
 
-		ByteStringRef netflix_cookie;
+		std::shared_ptr<void> netflix_context;
 		std::shared_ptr<Scrape::Netflix> netflix_scrape;
 
         void write_to_human_with_context(Html::Node* node, Basic::IStream<Codepoint>* stream, bool verbose);

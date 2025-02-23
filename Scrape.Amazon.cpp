@@ -7,10 +7,10 @@ namespace Scrape
 {
 	using namespace Basic;
 
-	Amazon::Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie) :
+	Amazon::Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
 		client(std::make_shared<Web::Client>()),
 		completion(completion),
-		completion_cookie(completion_cookie),
+		context(context),
         name(name),
         password(password)
 	{
@@ -350,7 +350,7 @@ namespace Scrape
         if (completion)
         {
             TaskCompleteEvent event;
-            event.cookie = this->completion_cookie;
+            event.context = this->context;
             process_event_ignore_failures(completion.get(), &event);
         }
 	}

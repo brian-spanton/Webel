@@ -7,9 +7,9 @@
 
 namespace Service
 {
-    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
         completion(completion),
-        completion_cookie(cookie),
+        context(context),
         client(std::make_shared<Web::Client>())
     {
         initialize_unicode(&this->codepoints_member_name, "codepoints");
@@ -127,7 +127,7 @@ namespace Service
                     if (completion)
                     {
                         CharactersCompleteEvent event;
-                        event.cookie = this->completion_cookie;
+                        event.context = context;
                         process_event_ignore_failures(completion.get(), &event);
                     }
 

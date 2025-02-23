@@ -84,11 +84,20 @@ namespace Basic
     typedef StringMapCaseInsensitive<std::shared_ptr<IEncoderFactory> > EncoderMap;
     typedef StringMapCaseInsensitive<std::shared_ptr<IDecoderFactory> > DecoderMap;
 
-    struct IoCompletionEvent : public IEvent
+    struct ContextualizedEvent : public Basic::IEvent
+    {
+        ContextualizedEvent();
+        ContextualizedEvent(std::shared_ptr<void> context);
+
+        std::shared_ptr<void> context;
+
+        virtual uint32 Basic::IEvent::get_type() = 0;
+    };
+
+    struct IoCompletionEvent : public ContextualizedEvent
     {
         IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error);
 
-        std::shared_ptr<void> context;
         uint32 count;
         uint32 error;
 
@@ -140,10 +149,8 @@ namespace Basic
         virtual uint32 get_type();
     };
 
-    struct EncodingsCompleteEvent : public IEvent
+    struct EncodingsCompleteEvent : public ContextualizedEvent
     {
-        ByteStringRef cookie;
-
         virtual uint32 get_type();
     };
 }

@@ -51,10 +51,10 @@ namespace Service
 
         if (event->get_type() == Scrape::EventType::task_complete_event)
         {
-			Scrape::TaskCompleteEvent* cookie_event = (Scrape::TaskCompleteEvent*)event;
+			Scrape::ContextualizedEvent* contextualized_event = (Scrape::ContextualizedEvent*)event;
 
             // $ this comparison won't work cross-process
-			if (cookie_event->cookie.get() == this->amazon_cookie.get())
+			if (contextualized_event->context.get() == this->amazon_context.get())
 			{
 				this->current_page = this->amazon_scrape->current_page;
 				writer.WriteLine("Amazon completed");
@@ -62,7 +62,7 @@ namespace Service
                 return ProcessResult::process_result_blocked;
 			}
             // $ this comparison won't work cross-process
-			else if (cookie_event->cookie.get() == this->netflix_cookie.get())
+			else if (contextualized_event->context.get() == this->netflix_context.get())
 			{
 				this->current_page = this->netflix_scrape->current_page;
 				writer.WriteLine("Netflix completed");
@@ -111,10 +111,10 @@ namespace Service
         }
         else if (event->get_type() == Http::EventType::response_complete_event)
         {
-            Http::ResponseHeadersEvent* cookie_event = (Http::ResponseHeadersEvent*)event;
+            Basic::ContextualizedEvent* contextualized_event = (Basic::ContextualizedEvent*)event;
 
-            if (cookie_event->cookie.get() != this->get_cookie.get())
-                throw FatalError("Service", "AdminProtocol", "process_event", "cookie_event->cookie.get() != this->get_cookie.get()");
+            if (contextualized_event->context.get() != this->get_context.get())
+                throw FatalError("Service", "AdminProtocol", "process_event", "contextualized_event->context.get() != this->get_context.get()");
 
             if (this->html_parser)
             {
@@ -172,12 +172,13 @@ namespace Service
                         }
                         else
                         {
-                            this->get_cookie = std::make_shared<ByteString>();
+                            this->get_context = std::make_shared<ByteString>();
+                            this->html_parser.reset();
 
                             if (this->current_page)
                                 this->client->http_cookies = this->current_page->http_cookies;
 
-                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie);
+                            this->client->Get(url, 0, this->shared_from_this(), this->get_context);
                         }
                     }
                     else
@@ -197,9 +198,9 @@ namespace Service
                         {
                             auto link = this->current_page->links[index];
                             std::shared_ptr<Uri> url = link->url;
-                            this->get_cookie = std::make_shared<ByteString>();
+                            this->get_context = std::make_shared<ByteString>();
                             this->client->http_cookies = this->current_page->http_cookies;
-                            this->client->Get(url, 0, this->shared_from_this(), this->get_cookie, link->is_iframe);
+                            this->client->Get(url, 0, this->shared_from_this(), this->get_context, link->is_iframe);
                         }
                         else
                         {
@@ -254,9 +255,12 @@ namespace Service
                 }
                 else if (this->command.size() == 1 && equals<UnicodeString, false>(this->command.at(0).get(), Service::globals->command_submit.get()))
                 {
+                    this->get_context = std::make_shared<ByteString>();
+                    this->html_parser.reset();
+
                     this->client->http_cookies = this->current_page->http_cookies;
 
-                    bool success = this->current_form->Submit(this->client.get(), this->shared_from_this(), 0);
+                    bool success = this->current_form->Submit(this->client.get(), this->shared_from_this(), this->get_context);
                     if (!success)
                         writer.WriteLine("Form submit failed");
 
@@ -354,8 +358,8 @@ namespace Service
 				}
 				else if (this->command.size() == 3 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_amazon.get()))
 				{
-					this->amazon_cookie = std::make_shared<ByteString>();
-					this->amazon_scrape = std::make_shared<Scrape::Amazon>(this->command.at(1), this->command.at(2), this->shared_from_this(), this->amazon_cookie);
+					this->amazon_context = std::make_shared<ByteString>();
+					this->amazon_scrape = std::make_shared<Scrape::Amazon>(this->command.at(1), this->command.at(2), this->shared_from_this(), this->amazon_context);
                     this->amazon_scrape->start();
 
 					writer.WriteLine("Amazon scrape started");
@@ -376,8 +380,8 @@ namespace Service
 				}
 				else if (this->command.size() == 4 && equals<UnicodeString, false>(this->command.at(0).get(), Scrape::globals->command_netflix.get()))
 				{
-					this->netflix_cookie = std::make_shared<ByteString>();
-					this->netflix_scrape = std::make_shared<Scrape::Netflix>(this->command.at(1), this->command.at(2), this->command.at(3), this->shared_from_this(), this->netflix_cookie);
+					this->netflix_context = std::make_shared<ByteString>();
+					this->netflix_scrape = std::make_shared<Scrape::Netflix>(this->command.at(1), this->command.at(2), this->command.at(3), this->shared_from_this(), this->netflix_context);
                     this->netflix_scrape->start();
 
 					writer.WriteLine("Netflix scrape started");

@@ -17,7 +17,7 @@ namespace Web
 {
     using namespace Basic;
 
-    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie, bool is_iframe)
+    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context, bool is_iframe)
     {
         std::shared_ptr<Request> request = std::make_shared<Request>();
         request->Initialize();
@@ -25,10 +25,10 @@ namespace Web
         request->resource = url;
         request->is_iframe = is_iframe;
 
-        Get(request, max_retries, completion, cookie);
+        Get(request, max_retries, completion, context);
     }
 
-    void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie)
+    void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context)
     {
         // $$ review how threading, eventing, job queueing and locking works with this class
 
@@ -41,7 +41,7 @@ namespace Web
         this->redirects = 0;
 
         this->completion = completion;
-        this->completion_cookie = cookie;
+        this->context = context;
 
         this->planned_request = request;
         this->max_retries = max_retries;
@@ -109,7 +109,7 @@ namespace Web
         if (completion)
         {
             ResponseCompleteEvent event;
-            event.cookie = this->completion_cookie;
+            event.context = this->context;
             process_event_ignore_failures(completion.get(), &event);
         }
     }
@@ -287,7 +287,7 @@ namespace Web
                     if (completion)
                     {
                         Http::ResponseHeadersEvent event;
-                        event.cookie = this->completion_cookie;
+                        event.context = this->context;
                         process_event_ignore_failures(completion.get(), &event);
                     }
                 }

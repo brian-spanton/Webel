@@ -78,24 +78,18 @@ namespace Http
         accept_complete_event,
     };
 
-    struct ResponseHeadersEvent : public IEvent
+    struct ResponseHeadersEvent : public Basic::ContextualizedEvent
     {
-        ByteStringRef cookie;
-
         virtual uint32 get_type();
     };
 
-    struct ResponseCompleteEvent : public IEvent
+    struct ResponseCompleteEvent : public Basic::ContextualizedEvent
     {
-        ByteStringRef cookie;
-
         virtual uint32 get_type();
     };
 
-    struct AcceptCompleteEvent : public IEvent
+    struct AcceptCompleteEvent : public Basic::ContextualizedEvent
     {
-        ByteStringRef cookie;
-
         virtual uint32 get_type();
     };
 

@@ -14,10 +14,8 @@ namespace Scrape
         task_complete_event = 0x3000,
     };
 
-    struct TaskCompleteEvent : public Basic::IEvent
+    struct TaskCompleteEvent : public Basic::ContextualizedEvent
     {
-        Basic::ByteStringRef cookie;
-
         virtual uint32 get_type();
     };
 

@@ -15,10 +15,10 @@ namespace Http
 {
     using namespace Basic;
 
-    ResponseFrame::ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+    ResponseFrame::ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
         transaction(transaction),
         completion(completion),
-        completion_cookie(cookie),
+        context(context),
         number_stream(&transaction->response->code), // initialization is in order of declaration in class def
         headers_frame(transaction->response->headers.get()) // initialization is in order of declaration in class def
     {
@@ -138,7 +138,7 @@ namespace Http
                 if (completion)
                 {
                     Http::ResponseHeadersEvent event;
-                    event.cookie = this->completion_cookie;
+                    event.context = this->context;
                     process_event_ignore_failures(completion.get(), &event);
                 }
 

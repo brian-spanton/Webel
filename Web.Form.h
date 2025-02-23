@@ -34,7 +34,7 @@ namespace Web
         Html::ElementList controls;
 
         void Initialize(std::shared_ptr<ElementNode> element);
-        bool Submit(Web::Client* client, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie);
+        bool Submit(Web::Client* client, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         bool find_control(UnicodeStringRef pattern, std::shared_ptr<Html::ElementNode>* result);
         void find_associated_submittable_elements(std::shared_ptr<Node> node, Html::ElementList* controls);

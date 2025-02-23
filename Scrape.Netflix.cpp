@@ -8,10 +8,10 @@ namespace Scrape
 {
 	using namespace Basic;
 
-	Netflix::Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, ByteStringRef completion_cookie) :
+	Netflix::Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
 		client(std::make_shared<Web::Client>()),
 		completion(completion),
-		completion_cookie(completion_cookie),
+		context(context),
 		search_term(search_term),
         name(name),
         password(password)
@@ -390,7 +390,7 @@ namespace Scrape
         if (completion)
         {
             TaskCompleteEvent event;
-            event.cookie = this->completion_cookie;
+            event.context = this->context;
             process_event_ignore_failures(completion.get(), &event);
         }
 	}

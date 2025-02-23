@@ -20,7 +20,7 @@ namespace Service
         static void LogRequest(Request* request, Response* response);
 
     public:
-        WebServer(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        WebServer(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         virtual void handle_event();
     };

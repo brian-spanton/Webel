@@ -15,19 +15,12 @@ namespace Service
         characters_complete_event,
     };
 
-    struct CookieContextualizedEvent : public Basic::IEvent
-    {
-        Basic::ByteStringRef cookie;
-
-        virtual uint32 Basic::IEvent::get_type() = 0;
-    };
-
-    struct TaskCompleteEvent : public CookieContextualizedEvent
+    struct TaskCompleteEvent : public Basic::ContextualizedEvent
     {
         virtual uint32 Basic::IEvent::get_type();
     };
 
-    struct CharactersCompleteEvent : public CookieContextualizedEvent
+    struct CharactersCompleteEvent : public Basic::ContextualizedEvent
     {
         virtual uint32 Basic::IEvent::get_type();
     };

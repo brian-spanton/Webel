@@ -13,9 +13,9 @@ namespace Web
 {
     using namespace Basic;
 
-    Server::Server(std::shared_ptr<IProcess> completion, ByteStringRef cookie) :
+    Server::Server(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
         completion(completion),
-        completion_cookie(cookie)
+        context(context)
     {
     }
 
@@ -70,7 +70,7 @@ namespace Web
                 if (completion)
                 {
                     AcceptCompleteEvent event;
-                    event.cookie = this->completion_cookie;
+                    event.context = this->context;
                     process_event_ignore_failures(completion.get(), &event);
                 }
 

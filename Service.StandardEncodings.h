@@ -25,7 +25,7 @@ namespace Service
         std::shared_ptr<Web::Client> client;
         std::shared_ptr<Json::Parser> json_parser;
         std::weak_ptr<IProcess> completion;
-        ByteStringRef completion_cookie;
+        std::shared_ptr<void> context;
 
         UnicodeStringRef Name_encodings;
         UnicodeStringRef Name_heading;
@@ -38,7 +38,7 @@ namespace Service
         void switch_to_state(State state);
 
     public:
-        StandardEncodings(std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        StandardEncodings(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         void start();
     };

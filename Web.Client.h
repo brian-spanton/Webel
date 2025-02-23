@@ -32,7 +32,7 @@ namespace Web
         TransactionList history;
         std::shared_ptr<IStream<byte> > transport;
         std::weak_ptr<IProcess> completion;
-        ByteStringRef completion_cookie;
+        std::shared_ptr<void> context;
         std::shared_ptr<ResponseFrame> response_frame;
         uint8 max_retries = 0;
         uint8 retries = 0;
@@ -55,8 +55,8 @@ namespace Web
         std::shared_ptr<Transaction> transaction;
         CookieList http_cookies;
 
-        void Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie, bool is_iframe = false);
-        void Get(std::shared_ptr<Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, ByteStringRef cookie);
+        void Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context, bool is_iframe = false);
+        void Get(std::shared_ptr<Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
 
         virtual void ICompleter::complete(std::shared_ptr<void> context, uint32 count, uint32 error);
 

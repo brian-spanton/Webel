@@ -16,8 +16,17 @@ namespace Basic
         LogEntry::make(LogLevel::Critical, ns, cl, func, message, code);
     }
 
+    ContextualizedEvent::ContextualizedEvent()
+    {
+    }
+
+    ContextualizedEvent::ContextualizedEvent(std::shared_ptr<void> context) :
+        context(context)
+    {
+    }
+
     IoCompletionEvent::IoCompletionEvent(std::shared_ptr<void> context, uint32 count, uint32 error) :
-        context(context),
+        ContextualizedEvent(context),
         count(count),
         error(error)
     {
