@@ -10,8 +10,8 @@ namespace Ftp
 {
     using namespace Basic;
 
-    Server::Server(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
-        completion(completion),
+    Server::Server(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
+        call_back(call_back),
         context(context),
         command_frame(&this->command) // initialization is in order of declaration in class def
     {
@@ -45,12 +45,12 @@ namespace Ftp
             {
                 Basic::LogInfo("Ftp", "Server", "process_event", "accepted connection");
 
-                std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion)
+                std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                if (call_back)
                 {
                     Http::AcceptCompleteEvent event;
                     event.context = this->context;
-                    process_event_ignore_failures(completion.get(), &event);
+                    process_event_ignore_failures(call_back.get(), &event);
                 }
 
                 Ftp::globals->greeting->write_to_stream(this->transport.get());

@@ -10,8 +10,8 @@
 
 namespace Service
 {
-    StandardEncodings::StandardEncodings(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
-        completion(completion),
+    StandardEncodings::StandardEncodings(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
+        call_back(call_back),
         context(context),
         client(std::make_shared<Web::Client>())
     {
@@ -241,12 +241,12 @@ namespace Service
                     sprintf_s(message, "recognized %d encodings", Basic::globals->decoder_map.size());
                     Basic::LogInfo("Service", "StandardEncodings", "process_event", message);
 
-                    std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion)
+                    std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                    if (call_back)
                     {
                         EncodingsCompleteEvent event;
                         event.context = this->context;
-                        process_event_ignore_failures(completion.get(), &event);
+                        process_event_ignore_failures(call_back.get(), &event);
                     }
 
                     switch_to_state(State::done_state);

@@ -17,7 +17,7 @@ namespace Web
 {
     using namespace Basic;
 
-    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context, bool is_iframe)
+    void Client::Get(std::shared_ptr<Uri> url, uint8 max_retries, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context, bool is_iframe)
     {
         std::shared_ptr<Request> request = std::make_shared<Request>();
         request->Initialize();
@@ -25,10 +25,10 @@ namespace Web
         request->resource = url;
         request->is_iframe = is_iframe;
 
-        Get(request, max_retries, completion, context);
+        Get(request, max_retries, call_back, context);
     }
 
-    void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context)
+    void Client::Get(std::shared_ptr<Http::Request> request, uint8 max_retries, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context)
     {
         // $$ review how threading, eventing, job queueing and locking works with this class
 
@@ -40,7 +40,7 @@ namespace Web
         this->retries = 0;
         this->redirects = 0;
 
-        this->completion = completion;
+        this->call_back = call_back;
         this->context = context;
 
         this->planned_request = request;
@@ -105,12 +105,12 @@ namespace Web
 
     void Client::Completion()
     {
-        std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion)
+        std::shared_ptr<IProcess> call_back = this->call_back.lock();
+        if (call_back)
         {
             ResponseCompleteEvent event;
             event.context = this->context;
-            process_event_ignore_failures(completion.get(), &event);
+            process_event_ignore_failures(call_back.get(), &event);
         }
     }
 
@@ -283,12 +283,12 @@ namespace Web
                     TextWriter(&entry->unicode_message).WriteFormat<0x40>(" returned %d", this->transaction->response->code);
 			        Basic::globals->add_entry(entry);
 
-                    std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion)
+                    std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                    if (call_back)
                     {
                         Http::ResponseHeadersEvent event;
                         event.context = this->context;
-                        process_event_ignore_failures(completion.get(), &event);
+                        process_event_ignore_failures(call_back.get(), &event);
                     }
                 }
             }

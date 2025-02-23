@@ -12,9 +12,9 @@ namespace Web
 {
     using namespace Basic;
 
-    Proxy::Proxy(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context, std::shared_ptr<Uri> server_url) :
+    Proxy::Proxy(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context, std::shared_ptr<Uri> server_url) :
         server_url(server_url),
-        completion(completion),
+        call_back(call_back),
         context(context)
     {
     }
@@ -69,12 +69,12 @@ namespace Web
 
                 Basic::LogInfo("Web", "Proxy", "process_event", "accepted connection");
 
-                std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion)
+                std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                if (call_back)
                 {
                     AcceptCompleteEvent event;
                     event.context = this->context;
-                    process_event_ignore_failures(completion.get(), &event);
+                    process_event_ignore_failures(call_back.get(), &event);
                 }
 
                 this->buffer = std::make_shared<ByteString>();

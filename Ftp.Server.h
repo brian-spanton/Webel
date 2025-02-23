@@ -22,7 +22,7 @@ namespace Ftp
         };
 
         std::shared_ptr<IStream<byte> > transport;
-        std::weak_ptr<IProcess> completion;
+        std::weak_ptr<IProcess> call_back;
         std::shared_ptr<void> context;
         std::vector<Basic::ByteStringRef> command;
         Basic::CommandFrame<byte> command_frame;
@@ -32,7 +32,7 @@ namespace Ftp
         virtual ProcessResult IProcess::process_event(IEvent* event);
 
     public:
-        Server(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
+        Server(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context);
 
         void start(ListenSocket* listen_socket);
     };

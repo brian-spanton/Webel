@@ -15,8 +15,8 @@ namespace Service
 {
     using namespace Basic;
 
-    WebServer::WebServer(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
-        Server(completion, context)
+    WebServer::WebServer(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
+        Server(call_back, context)
     {
     }
 

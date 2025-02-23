@@ -484,7 +484,7 @@ namespace Web
         (*result) = bytes_result;
     }
 
-    bool Form::Submit(Web::Client* client, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context)
+    bool Form::Submit(Web::Client* client, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context)
     {
         FormDataSet form_data_set;
         construct_form_data_set(&this->controls, &form_data_set);
@@ -494,7 +494,7 @@ namespace Web
         if (!success)
             return false;
 
-        client->Get(request, 0, completion, context);
+        client->Get(request, 0, call_back, context);
         return true;
     }
 

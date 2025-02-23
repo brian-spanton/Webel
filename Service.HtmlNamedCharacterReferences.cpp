@@ -7,8 +7,8 @@
 
 namespace Service
 {
-    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
-        completion(completion),
+    HtmlNamedCharacterReferences::HtmlNamedCharacterReferences(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
+        call_back(call_back),
         context(context),
         client(std::make_shared<Web::Client>())
     {
@@ -123,12 +123,12 @@ namespace Service
                     sprintf_s(message, "recognized %d HTML named character references", Html::globals->named_character_references_table->size());
                     Basic::LogInfo("Service", "HtmlNamedCharacterReferences", "process_event", message);
 
-                    std::shared_ptr<IProcess> completion = this->completion.lock();
-                    if (completion)
+                    std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                    if (call_back)
                     {
                         CharactersCompleteEvent event;
                         event.context = context;
-                        process_event_ignore_failures(completion.get(), &event);
+                        process_event_ignore_failures(call_back.get(), &event);
                     }
 
                     switch_to_state(State::done_state);

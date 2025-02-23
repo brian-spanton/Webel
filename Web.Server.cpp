@@ -13,8 +13,8 @@ namespace Web
 {
     using namespace Basic;
 
-    Server::Server(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
-        completion(completion),
+    Server::Server(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
+        call_back(call_back),
         context(context)
     {
     }
@@ -66,12 +66,12 @@ namespace Web
 
                 Basic::LogInfo("Web", "Server", "process_event", "accepted connection");
 
-                std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion)
+                std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                if (call_back)
                 {
                     AcceptCompleteEvent event;
                     event.context = this->context;
-                    process_event_ignore_failures(completion.get(), &event);
+                    process_event_ignore_failures(call_back.get(), &event);
                 }
 
                 switch_to_state(State::new_request_state);

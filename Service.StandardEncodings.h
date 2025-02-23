@@ -24,7 +24,7 @@ namespace Service
         std::shared_ptr<StandardEncodings> self;
         std::shared_ptr<Web::Client> client;
         std::shared_ptr<Json::Parser> json_parser;
-        std::weak_ptr<IProcess> completion;
+        std::weak_ptr<IProcess> call_back;
         std::shared_ptr<void> context;
 
         UnicodeStringRef Name_encodings;
@@ -38,7 +38,7 @@ namespace Service
         void switch_to_state(State state);
 
     public:
-        StandardEncodings(std::shared_ptr<IProcess> completion, std::shared_ptr<void> context);
+        StandardEncodings(std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context);
 
         void start();
     };

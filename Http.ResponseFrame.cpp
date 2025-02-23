@@ -15,9 +15,9 @@ namespace Http
 {
     using namespace Basic;
 
-    ResponseFrame::ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
+    ResponseFrame::ResponseFrame(std::shared_ptr<Transaction> transaction, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
         transaction(transaction),
-        completion(completion),
+        call_back(call_back),
         context(context),
         number_stream(&transaction->response->code), // initialization is in order of declaration in class def
         headers_frame(transaction->response->headers.get()) // initialization is in order of declaration in class def
@@ -134,18 +134,18 @@ namespace Http
                 this->transaction->response->render_response_line(&entry->unicode_message);
 			    Basic::globals->add_entry(entry);
 
-                std::shared_ptr<IProcess> completion = this->completion.lock();
-                if (completion)
+                std::shared_ptr<IProcess> call_back = this->call_back.lock();
+                if (call_back)
                 {
                     Http::ResponseHeadersEvent event;
                     event.context = this->context;
-                    process_event_ignore_failures(completion.get(), &event);
+                    process_event_ignore_failures(call_back.get(), &event);
                 }
 
                 if (!this->decoded_content_stream)
                     this->decoded_content_stream = std::make_shared<IgnoreFrame<byte> >();
 
-                // get the body frame set up first, because the ResponseHeadersEvent completion can recurse into
+                // get the body frame set up first, because the ResponseHeadersEvent call_back can recurse into
                 // this class to set the decoded content stream on the body frame
 
                 uint16 code = this->transaction->response->code;

@@ -71,7 +71,7 @@ namespace Service
 			}
 			else
 			{
-                throw FatalError("Service", "AdminProtocol", "process_event", "unexpected completion");
+                throw FatalError("Service", "AdminProtocol", "process_event", "unexpected call_back");
             }
         }
         else if (event->get_type() == Http::EventType::response_headers_event)

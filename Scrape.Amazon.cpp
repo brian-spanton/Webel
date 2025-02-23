@@ -7,9 +7,9 @@ namespace Scrape
 {
 	using namespace Basic;
 
-	Amazon::Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
+	Amazon::Amazon(UnicodeStringRef name, UnicodeStringRef password, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
 		client(std::make_shared<Web::Client>()),
-		completion(completion),
+		call_back(call_back),
 		context(context),
         name(name),
         password(password)
@@ -346,12 +346,12 @@ namespace Scrape
 
 	void Amazon::Complete()
 	{
-		std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion)
+		std::shared_ptr<IProcess> call_back = this->call_back.lock();
+        if (call_back)
         {
             TaskCompleteEvent event;
             event.context = this->context;
-            process_event_ignore_failures(completion.get(), &event);
+            process_event_ignore_failures(call_back.get(), &event);
         }
 	}
 }

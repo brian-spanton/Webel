@@ -8,9 +8,9 @@ namespace Scrape
 {
 	using namespace Basic;
 
-	Netflix::Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> completion, std::shared_ptr<void> context) :
+	Netflix::Netflix(UnicodeStringRef name, UnicodeStringRef password, UnicodeStringRef search_term, std::shared_ptr<IProcess> call_back, std::shared_ptr<void> context) :
 		client(std::make_shared<Web::Client>()),
-		completion(completion),
+		call_back(call_back),
 		context(context),
 		search_term(search_term),
         name(name),
@@ -386,12 +386,12 @@ namespace Scrape
 
 	void Netflix::Complete()
 	{
-		std::shared_ptr<IProcess> completion = this->completion.lock();
-        if (completion)
+		std::shared_ptr<IProcess> call_back = this->call_back.lock();
+        if (call_back)
         {
             TaskCompleteEvent event;
             event.context = this->context;
-            process_event_ignore_failures(completion.get(), &event);
+            process_event_ignore_failures(call_back.get(), &event);
         }
 	}
 }
